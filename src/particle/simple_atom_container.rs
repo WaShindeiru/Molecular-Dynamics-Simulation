@@ -47,6 +47,8 @@ impl SimpleAtomContainer {
   pub fn get_all_atoms_mutable(&mut self) -> &mut Vec<Atom> {
     &mut self.atoms
   }
+
+  pub fn get_atom_by_index(&self, index: usize) -> Option<&Atom> { self.atoms.get(index) }
 }
 
 impl AtomCollection for SimpleAtomContainer {

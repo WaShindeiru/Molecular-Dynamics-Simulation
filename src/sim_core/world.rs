@@ -40,7 +40,7 @@ impl World {
     }
   }
 
-  pub fn update(&mut self, time_step: f64, next_iteration: usize) {
+  pub fn update_euler(&mut self, time_step: f64, next_iteration: usize) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
 
     assert_eq!(self.atoms.len() - 1, self.current_iteration);
@@ -56,10 +56,40 @@ impl World {
 
     for i in 0..previous_atom_container.get_all_atoms().len() {
       let atom_i = previous_atom_container.get_all_atoms().get(i).unwrap();
-      let atom_force_i = previous_forces_container.get_atom_force_for_atom_id(atom_i.get_id());
+      let atom_force_i = previous_forces_container.get_atom_force_by_id(atom_i.get_id());
 
       let new_atom_i = (self.integration_scheme)(atom_i, atom_force_i, time_step);
       next_iteration_atom_container.add_atom(new_atom_i);
+    }
+
+    let next_iteration_force_container = SimpleForceContainer::new_from_atom_container(&next_iteration_atom_container);
+
+    self.current_iteration += 1;
+    assert_eq!(self.current_iteration, next_iteration);
+
+    self.atoms.push(next_iteration_atom_container);
+    self.atom_forces.push(next_iteration_force_container);
+
+    assert_eq!(self.atoms.len() - 1, self.current_iteration);
+    assert_eq!(self.atom_forces.len() - 1, self.current_iteration);
+  }
+
+  pub fn update(&mut self, time_step: f64, next_iteration: usize) {
+    let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
+
+    assert_eq!(self.atoms.len() - 1, self.current_iteration);
+    assert_eq!(self.atom_forces.len() - 1, self.current_iteration);
+    let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
+    let previous_forces_container = self.atom_forces.get_mut(self.current_iteration).unwrap();
+
+    for i in 0..previous_atom_container.len() {
+      let atom_i = previous_atom_container.get_atom_by_index(i).unwrap();
+      let atom_force_i = previous_forces_container.get_atom_force_by_index(i).unwrap();
+
+      let v_i_half = atom_i.get_velocity() + 0.5 * atom_force_i.get_acceleration() * time_step;
+      let position_i_next = atom_i.get_position() + v_i_half * time_step;
+
+      
     }
 
     let next_iteration_force_container = SimpleForceContainer::new_from_atom_container(&next_iteration_atom_container);

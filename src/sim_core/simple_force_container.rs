@@ -43,8 +43,12 @@ impl SimpleForceContainer {
     old_atom_force.set_acceleration(acceleration);
   }
 
-  pub fn get_atom_force_for_atom_id(&self, atom_id: u64) -> &AtomForce {
+  pub fn get_atom_force_by_id(&self, atom_id: u64) -> &AtomForce {
     let atom_index = *self.atom_map.get(&atom_id).unwrap();
     self.forces.get(atom_index).unwrap()
+  }
+  
+  pub fn get_atom_force_by_index(&self, index: usize) -> Option<&AtomForce> {
+    self.forces.get(index)
   }
 }
