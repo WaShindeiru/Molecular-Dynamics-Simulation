@@ -10,7 +10,7 @@ mod utils;
 mod sim_core;
 mod output;
 
-const TIME_STEP: f64 = 10e-15 / TIME_U;
+const TIME_STEP: f64 = 10e-16 / TIME_U;
 
 fn main() {
   test1();

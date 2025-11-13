@@ -1,20 +1,20 @@
 use nalgebra::Vector3;
 use crate::data::types::get_interaction_type;
 use crate::particle::Atom;
-use crate::particle::atom_collection::AtomCollection;
+use crate::particle::atom_collection::{AtomCollection, AtomMetadata};
 
 pub mod fc;
 pub mod vr;
 pub mod va;
 pub mod b;
 
-pub fn compute_force_i(atom_cont: &dyn AtomCollection, atom_i: &Atom) -> Vector3<f64> {
+pub fn compute_force_i(atom_cont: &dyn AtomCollection, atom_i: &AtomMetadata) -> Vector3<f64> {
 
   let mut result = Vector3::new(0., 0., 0.);
   let i_id = atom_i.get_id();
 
-  for atom_j in atom_cont.get_all_atoms().iter() {
-    if atom_j.get_id() == i_id {
+  for (atom_j_id, atom_j) in atom_cont.get_all_atoms().iter() {
+    if *atom_j_id == i_id {
       continue;
     }
 

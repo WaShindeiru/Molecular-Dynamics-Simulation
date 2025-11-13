@@ -4,6 +4,7 @@ use nalgebra::base::Vector3;
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::output::{change_length_unit, AtomDTO};
+use crate::particle::atom_collection::AtomMetadata;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Atom {
@@ -12,17 +13,31 @@ pub struct Atom {
   mass: f64,
   position: Vector3<f64>,
   velocity: Vector3<f64>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct AtomForce {
-  id: u64,
-  mass: f64,
   acceleration: Vector3<f64>,
   force: Vector3<f64>,
 }
 
 impl Atom {
+  pub fn new(
+    id: u64,
+    type_: AtomType,
+    mass: f64,
+    position: Vector3<f64>,
+    velocity: Vector3<f64>,
+    force: Vector3<f64>,
+    acceleration: Vector3<f64>,
+    ) -> Self {
+    Atom {
+      id,
+      type_,
+      mass,
+      position,
+      velocity,
+      force,
+      acceleration,
+    }
+  }
+  
   pub fn get_id(&self) -> u64 {
     self.id
   }
@@ -38,6 +53,14 @@ impl Atom {
   pub fn get_velocity(&self) -> &Vector3<f64> {
     &self.velocity
   }
+  
+  pub fn get_force(&self) -> &Vector3<f64> {
+    &self.force
+  }
+  
+  pub fn get_acceleration(&self) -> &Vector3<f64> {
+    &self.acceleration
+  }
 
   pub fn get_mass(&self) -> f64 {
     self.mass
@@ -51,16 +74,6 @@ impl Atom {
     self.position = position_;
   }
 
-  pub fn custom_clone(&self, new_velocity: Vector3<f64>, new_position: Vector3<f64>) -> Atom {
-    Atom {
-      id: self.id,
-      type_: self.type_.clone(),
-      mass: self.mass,
-      position: new_position,
-      velocity: new_velocity,
-    }
-  }
-
   pub fn to_transfer_struct(&self) -> AtomDTO {
     AtomDTO {
       id: self.id,
@@ -70,38 +83,15 @@ impl Atom {
       z: self.position.z,
     }
   }
-}
-
-impl AtomForce {
-  pub fn new(id: u64, mass: f64, acceleration: Vector3<f64>, force: Vector3<f64>) -> Self {
-    AtomForce {
-      id,
-      mass,
-      acceleration,
-      force,
-    }
+  
+  pub fn to_atom_metadata(&self) -> AtomMetadata {
+    AtomMetadata::new(
+      self.id,
+      &self.type_,
+      self.mass,
+      &self.position,
+    )
   }
-
-  pub fn from_atom(atom: &Atom) -> Self {
-    AtomForce {
-      id: atom.id,
-      mass: atom.mass,
-      force: Vector3::new(0., 0., 0.),
-      acceleration: Vector3::new(0., 0., 0.),
-    }
-  }
-
-  pub fn get_id(&self) -> u64 { self.id }
-
-  pub fn get_mass(&self) -> f64 { self.mass }
-
-  pub fn get_acceleration(&self) -> &Vector3<f64> { &self.acceleration }
-
-  pub fn get_force(&self) -> &Vector3<f64> { &self.force }
-
-  pub fn set_acceleration(&mut self, acceleration: Vector3<f64>) { self.acceleration = acceleration; }
-
-  pub fn set_force(&mut self, force: Vector3<f64>) { self.force = force; }
 }
 
 // impl PartialEq for Atom {
@@ -129,6 +119,8 @@ impl AtomFactory {
         mass: ATOMIC_MASS_C,
         position: position_,
         velocity: velocity_,
+        force: Vector3::new(0.0, 0.0, 0.0),
+        acceleration: Vector3::new(0.0, 0.0, 0.0),
       },
       AtomType::Fe => Atom{
         type_: AtomType::Fe,
@@ -136,6 +128,8 @@ impl AtomFactory {
         mass: ATOMIC_MASS_FE,
         position: position_,
         velocity: velocity_,
+        force: Vector3::new(0.0, 0.0, 0.0),
+        acceleration: Vector3::new(0.0, 0.0, 0.0),
       }
     };
     self.counter = self.counter + 1;

@@ -3,7 +3,7 @@ use crate::data::constants::get_constant;
 use crate::data::{Constant, InteractionType};
 use crate::data::types::get_interaction_type;
 use crate::particle::atom_collection::AtomCollection;
-use crate::particle::simple_atom_container::SimpleAtomContainer;
+use crate::sim_core::simple_atom_container::SimpleAtomContainer;
 use crate::particle::potential::fc::{fc, fc_gradient};
 use crate::utils::math::cos_from_vec;
 
@@ -54,8 +54,8 @@ pub fn x_value(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) -> f6
 
     let mut result = 0.;
 
-    for k_atom in atoms.iter() {
-        if k_atom.get_id() == i_index as u64 || k_atom.get_id() == j_index as u64 {
+    for (k_atom_id, k_atom) in atoms.iter() {
+        if *k_atom_id == i_index || *k_atom_id == j_index as u64 {
             continue;
         }
 
@@ -86,8 +86,8 @@ pub fn x_gradient(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) ->
 
     let mut result = Vector3::new(0., 0., 0.);
 
-    for k_atom in atoms.iter() {
-        if k_atom.get_id() == i_index || k_atom.get_id() == j_index {
+    for (k_atom_id, k_atom) in atoms.iter() {
+        if *k_atom_id == i_index || *k_atom_id == j_index {
             continue;
         }
 

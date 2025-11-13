@@ -2,7 +2,6 @@ use nalgebra::Vector3;
 use crate::output::EngineDTO;
 use crate::sim_core::world::World;
 use crate::particle::{Atom};
-use crate::particle::atom::AtomForce;
 
 use std::fs;
 use chrono::prelude::*;
@@ -15,12 +14,12 @@ pub struct Engine {
   num_of_iterations: usize,
 }
 
-fn semi_implicit_euler_integration(atom: &Atom, atom_force: &AtomForce, time_step: f64) -> Atom {
-  let new_velocity = atom.get_velocity() + atom_force.get_acceleration() * time_step;
-  let new_position = atom.get_position() + new_velocity * time_step;
-
-  atom.custom_clone(new_velocity, new_position)
-}
+// fn semi_implicit_euler_integration(atom: &Atom, atom_force: &AtomForce, time_step: f64) -> Atom {
+//   let new_velocity = atom.get_velocity() + atom_force.get_acceleration() * time_step;
+//   let new_position = atom.get_position() + new_velocity * time_step;
+// 
+//   atom.custom_clone(new_velocity, new_position)
+// }
 
 impl Engine {
   pub fn new(world: World, time_step: f64, num_of_iterations: usize) -> Self {
@@ -34,8 +33,7 @@ impl Engine {
   }
 
   pub fn new_from_atoms(atoms: Vec<Atom>, size: Vector3<f64>, time_step: f64, num_of_iterations: usize) -> Self {
-    let integration_scheme = semi_implicit_euler_integration;
-    let world = World::new_from_atoms(atoms, size, integration_scheme);
+    let world = World::new_from_atoms(atoms, size);
 
     Engine {
       world,

@@ -4,8 +4,7 @@ pub use atom::{Atom, SafeAtomFactory};
 mod potential;
 pub use potential::compute_force_i;
 
-mod simple_atom_container;
-pub use simple_atom_container::SimpleAtomContainer;
+pub use crate::sim_core::simple_atom_container::SimpleAtomContainer;
 
-mod atom_collection;
+pub(crate) mod atom_collection;
 pub use atom_collection::AtomCollection;
