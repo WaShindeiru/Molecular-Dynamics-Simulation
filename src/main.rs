@@ -32,7 +32,7 @@ fn test1() {
   let atom_2 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.));
   let atoms: Vec<Atom> = vec![atom_0, atom_1, atom_2];
 
-  let num_of_iterations = 100;
+  let num_of_iterations = 1000;
 
   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
 

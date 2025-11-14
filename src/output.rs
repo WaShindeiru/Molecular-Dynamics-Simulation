@@ -6,6 +6,9 @@ pub struct AtomDTO {
   pub x: f64,
   pub y: f64,
   pub z: f64,
+  
+  pub kinetic_energy: f64,
+  pub potential_energy: f64,
 }
 
 pub struct WorldDTO {

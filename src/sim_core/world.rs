@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::output::{AtomDTO, WorldDTO};
-use crate::particle::{compute_force_i, Atom, SimpleAtomContainer};
+use crate::particle::{compute_force_i, compute_potential_energy_i, Atom, SimpleAtomContainer};
 use crate::particle::atom_collection::AtomMetadata;
 use crate::sim_core::atom_wrapper::{new_atom_container_from_parts, AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
 
@@ -42,9 +42,9 @@ impl World {
     let mut atom_data_container: AtomDataContainer = AtomDataContainer::new();
     let mut force_container: AtomForceContainer = AtomForceContainer::new();
 
-    for (i_index, atom_i) in previous_atom_container.get_map() {
+    for (_, atom_i) in previous_atom_container.get_map() {
       let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + atom_i.get_acceleration() * (time_step / 2.0);
-      half_velocity_cache.insert(*i_index, half_velocity_i);
+      half_velocity_cache.insert(atom_i.get_id(), half_velocity_i);
 
       let next_position: Vector3<f64> = atom_i.get_position() + half_velocity_i * time_step;
       let next_atom_data = AtomData::new(
@@ -57,17 +57,19 @@ impl World {
       atom_data_container.add_atom(next_atom_data);
     }
 
-    for (i_index, atom_data_i) in atom_data_container.get_map().iter() {
+    for (_, atom_data_i) in atom_data_container.get_map().iter() {
       let atom_force_i = compute_force_i(&atom_data_container, atom_data_i.as_ref());
+      let atom_potential_energy_i = compute_potential_energy_i(&atom_data_container, atom_data_i.as_ref());
 
       let atom_acceleration_i: Vector3<f64> = atom_force_i / atom_data_i.get_mass();
-      let atom_velocity_i: Vector3<f64> = half_velocity_cache.get(i_index).unwrap() + atom_acceleration_i * (time_step / 2.0);
+      let atom_velocity_i: Vector3<f64> = half_velocity_cache.get(&atom_data_i.get_id()).unwrap() + atom_acceleration_i * (time_step / 2.0);
 
       let atom_force_data = AtomForceData::new(
-        *i_index,
+        atom_data_i.get_id(),
         atom_force_i,
         atom_velocity_i,
         atom_acceleration_i,
+        atom_potential_energy_i,
       );
 
       force_container.add_atom_force(atom_force_data);
@@ -80,6 +82,54 @@ impl World {
 
     self.atoms.push(next_iteration_atom_container);
 
+    assert_eq!(self.atoms.len() - 1, self.current_iteration);
+  }
+
+  pub fn update_semi_implicit_euler(&mut self, time_step: f64, next_iteration: usize) {
+    let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
+
+    assert_eq!(self.atoms.len() - 1, self.current_iteration);
+    let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
+
+    let (previous_atom_data_container, mut previous_force_data_container) = previous_atom_container.create_parts();
+
+    for (_, atom_data_i) in previous_atom_data_container.get_map().iter() {
+      let atom_force_i = compute_force_i(&previous_atom_data_container, atom_data_i.as_ref());
+      let atom_potential_energy_i = compute_potential_energy_i(&previous_atom_data_container, atom_data_i.as_ref());
+
+      let atom_force_data_i = previous_force_data_container.get_atom_force_mut(atom_data_i.get_id()).unwrap();
+      atom_force_data_i.set_force(atom_force_i);
+      atom_force_data_i.set_potential_energy(atom_potential_energy_i);
+      let atom_acceleration_i: Vector3<f64> = atom_force_i / atom_data_i.get_mass();
+      atom_force_data_i.set_acceleration(atom_acceleration_i);
+    }
+
+    for (_, atom_data_i) in previous_atom_data_container.get_map().iter() {
+      let atom_force_data_i = previous_force_data_container.get_atom_force_mut(atom_data_i.get_id()).unwrap();
+
+      let new_velocity: Vector3<f64> = atom_force_data_i.get_velocity() + atom_force_data_i.get_acceleration() * time_step;
+      let new_position: Vector3<f64> = atom_data_i.get_position() + new_velocity * time_step;
+
+      let new_atom = Atom::new(
+        atom_data_i.get_id(),
+        atom_data_i.get_type().clone(),
+        atom_data_i.get_mass(),
+        new_position,
+        new_velocity,
+        Vector3::new(0., 0., 0.,),
+        Vector3::new(0., 0., 0.,),
+        0.
+      );
+
+      next_iteration_atom_container.add_atom(new_atom);
+    }
+
+    *self.atoms.get_mut(self.current_iteration).unwrap() = new_atom_container_from_parts(previous_atom_data_container, previous_force_data_container);
+
+    self.current_iteration += 1;
+    assert_eq!(self.current_iteration, next_iteration);
+
+    self.atoms.push(next_iteration_atom_container);
     assert_eq!(self.atoms.len() - 1, self.current_iteration);
   }
 

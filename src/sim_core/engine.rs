@@ -5,6 +5,7 @@ use crate::particle::{Atom};
 
 use std::fs;
 use chrono::prelude::*;
+use csv::Writer;
 
 pub struct Engine {
   world: World,
@@ -13,13 +14,6 @@ pub struct Engine {
   current_iteration: usize,
   num_of_iterations: usize,
 }
-
-// fn semi_implicit_euler_integration(atom: &Atom, atom_force: &AtomForce, time_step: f64) -> Atom {
-//   let new_velocity = atom.get_velocity() + atom_force.get_acceleration() * time_step;
-//   let new_position = atom.get_position() + new_velocity * time_step;
-// 
-//   atom.custom_clone(new_velocity, new_position)
-// }
 
 impl Engine {
   pub fn new(world: World, time_step: f64, num_of_iterations: usize) -> Self {
@@ -46,7 +40,7 @@ impl Engine {
   
   pub fn run(&mut self) {
     for _ in 0..self.num_of_iterations {
-      self.world.update(self.time_step, self.current_iteration + 1);
+      self.world.update_semi_implicit_euler(self.time_step, self.current_iteration + 1);
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
@@ -93,6 +87,40 @@ impl Engine {
 
       fs::write(&format!("./{}/{}/output_{}.dump", path, time_string, i+1), result_string)?;
     }
+
+    let mut kinetic_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
+    let mut potential_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
+    let mut total_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
+
+    for i in 0..engine_dto.num_of_iterations {
+      let atom_container = engine_dto.world.atoms.get(i).unwrap();
+      let mut kinetic_energy_i = 0.;
+      let mut potential_energy_i = 0.;
+
+      for atom_dto in atom_container.iter() {
+        kinetic_energy_i += atom_dto.kinetic_energy;
+        potential_energy_i += atom_dto.potential_energy;
+      }
+
+      kinetic_energy.push(kinetic_energy_i);
+      potential_energy.push(potential_energy_i);
+      total_energy.push(kinetic_energy_i + potential_energy_i);
+    }
+
+    let mut wtr = Writer::from_path(&format!("./{}/{}/energy.csv", path, time_string))?;
+
+    assert!(kinetic_energy.len() == potential_energy.len() && kinetic_energy.len() == total_energy.len());
+
+    for i in 0..kinetic_energy.len() {
+      wtr.write_record(&[
+        format!("{}", i+1),
+        format!("{}", kinetic_energy.get(i).unwrap()),
+        format!("{}", potential_energy.get(i).unwrap()),
+        format!("{}", total_energy.get(i).unwrap()),
+      ])?;
+    }
+
+    wtr.flush()?;
 
     Ok(())
   }

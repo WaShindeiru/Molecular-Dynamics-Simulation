@@ -10,10 +10,15 @@ pub struct Atom {
   id: u64,
   type_: AtomType,
   mass: f64,
+
   position: Vector3<f64>,
   velocity: Vector3<f64>,
+
   acceleration: Vector3<f64>,
   force: Vector3<f64>,
+
+  kinetic_energy: f64,
+  potential_energy: f64,
 }
 
 impl Atom {
@@ -25,6 +30,7 @@ impl Atom {
     velocity: Vector3<f64>,
     force: Vector3<f64>,
     acceleration: Vector3<f64>,
+    potential_energy: f64,
     ) -> Self {
     Atom {
       id,
@@ -34,6 +40,8 @@ impl Atom {
       velocity,
       force,
       acceleration,
+      kinetic_energy: mass * velocity.magnitude_squared() / 2.0,
+      potential_energy,
     }
   }
   
@@ -67,6 +75,15 @@ impl Atom {
 
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     self.velocity = velocity_;
+    self.kinetic_energy = self.mass * velocity_.magnitude_squared() / 2.0;
+  }
+
+  pub fn set_potential_energy(&mut self, potential_energy_: f64) {
+    self.potential_energy = potential_energy_;
+  }
+
+  pub fn get_potential_energy(&self) -> f64 {
+    self.potential_energy
   }
 
   pub fn set_position(&mut self, position_: Vector3<f64>) {
@@ -80,6 +97,8 @@ impl Atom {
       x: self.position.x,
       y: self.position.y,
       z: self.position.z,
+      kinetic_energy: self.kinetic_energy,
+      potential_energy: self.potential_energy,
     }
   }
 }
@@ -105,6 +124,8 @@ impl AtomFactory {
         velocity: velocity_,
         force: Vector3::new(0.0, 0.0, 0.0),
         acceleration: Vector3::new(0.0, 0.0, 0.0),
+        kinetic_energy: ATOMIC_MASS_C * velocity_.magnitude_squared() / 2.0,
+        potential_energy: 0.0,
       },
       AtomType::Fe => Atom{
         type_: AtomType::Fe,
@@ -114,6 +135,8 @@ impl AtomFactory {
         velocity: velocity_,
         force: Vector3::new(0.0, 0.0, 0.0),
         acceleration: Vector3::new(0.0, 0.0, 0.0),
+        kinetic_energy: ATOMIC_MASS_FE * velocity_.magnitude_squared() / 2.0,
+        potential_energy: 0.0,
       }
     };
     self.counter = self.counter + 1;

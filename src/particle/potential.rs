@@ -41,3 +41,28 @@ pub fn compute_force_i(atom_cont: &dyn AtomCollection, atom_i: &dyn AtomMetadata
 
   result
 }
+
+pub fn compute_potential_energy_i(atom_cont: &dyn AtomCollection, atom_i: &dyn AtomMetadata) -> f64 {
+  let mut result = 0.;
+  let i_id = atom_i.get_id();
+  
+  for (atom_j_id, atom_j) in atom_cont.get_all_atoms().iter() {
+    if *atom_j_id == i_id {
+      continue;
+    }
+    
+    let r_ij_vec = atom_j.get_position() - atom_cont.get_atom_by_id(i_id).unwrap().get_position();
+    let r_ij_mag = r_ij_vec.magnitude();
+    let interaction_type_ij = get_interaction_type(atom_i.get_type(), atom_j.get_type());
+    
+    let fc_ij = fc::fc(r_ij_mag, &interaction_type_ij);
+    let vr_ij = vr::vr(r_ij_mag, &interaction_type_ij);
+    let b_ij = b::b(atom_cont, i_id, atom_j.get_id());
+    let va_ij = va::va(r_ij_mag, &interaction_type_ij);
+    
+    let potential_energy_ij = 0.5 * fc_ij * (vr_ij - b_ij * va_ij);
+    result += potential_energy_ij;
+  }
+  
+  result
+}

@@ -45,9 +45,9 @@ pub fn g(theta_cos: f64, interaction_type: &InteractionType) -> f64 {
     )
 }
 
-pub fn x_value(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) -> f64 {
-    let i_atom = atom_cont.get_atom_by_id(i_index).unwrap();
-    let j_atom = atom_cont.get_atom_by_id(j_index).unwrap();
+pub fn x_value(atom_cont: &dyn AtomCollection, i_id: u64, j_id: u64) -> f64 {
+    let i_atom = atom_cont.get_atom_by_id(i_id).unwrap();
+    let j_atom = atom_cont.get_atom_by_id(j_id).unwrap();
     let r_ij_vec = j_atom.get_position() - i_atom.get_position();
 
     let atoms = atom_cont.get_all_atoms();
@@ -55,7 +55,7 @@ pub fn x_value(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) -> f6
     let mut result = 0.;
 
     for (k_atom_id, k_atom) in atoms.iter() {
-        if *k_atom_id == i_index || *k_atom_id == j_index as u64 {
+        if *k_atom_id == i_id || *k_atom_id == j_id {
             continue;
         }
 
@@ -77,9 +77,9 @@ fn x_gradient_one(r_ij_vec: &Vector3<f64>, r_ik_vec: &Vector3<f64>, i_ik: &Inter
     fc_gradient(r_ik_vec, i_ik) * g(cos_theta_ijk, i_ik) + fc(r_ik_vec.magnitude(), i_ik) * g_ik_gradient(r_ij_vec, r_ik_vec, cos_theta_ijk, i_ik)
 }
 
-pub fn x_gradient(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) -> Vector3<f64> {
-    let i_atom = atom_cont.get_atom_by_id(i_index).unwrap();
-    let j_atom = atom_cont.get_atom_by_id(j_index).unwrap();
+pub fn x_gradient(atom_cont: &dyn AtomCollection, i_id: u64, j_id: u64) -> Vector3<f64> {
+    let i_atom = atom_cont.get_atom_by_id(i_id).unwrap();
+    let j_atom = atom_cont.get_atom_by_id(j_id).unwrap();
     let r_ij = j_atom.get_position() - i_atom.get_position();
 
     let atoms = atom_cont.get_all_atoms();
@@ -87,7 +87,7 @@ pub fn x_gradient(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) ->
     let mut result = Vector3::new(0., 0., 0.);
 
     for (k_atom_id, k_atom) in atoms.iter() {
-        if *k_atom_id == i_index || *k_atom_id == j_index {
+        if *k_atom_id == i_id || *k_atom_id == j_id {
             continue;
         }
 
@@ -100,15 +100,15 @@ pub fn x_gradient(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) ->
     result
 }
 
-pub fn b_gradient(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) -> Vector3<f64> {
-    let x_val = x_value(atom_cont, i_index, j_index);
-    let x_grad = x_gradient(atom_cont, i_index, j_index);
+pub fn b_gradient(atom_cont: &dyn AtomCollection, i_id: u64, j_id: u64) -> Vector3<f64> {
+    let x_val = x_value(atom_cont, i_id, j_id);
+    let x_grad = x_gradient(atom_cont, i_id, j_id);
 
     -0.5 * (1. + x_val).powf(-1.5) * x_grad
 }
 
-pub fn b(atom_cont: &dyn AtomCollection, i_index: u64, j_index: u64) -> f64 {
-    let x_val = x_value(atom_cont, i_index, j_index);
+pub fn b(atom_cont: &dyn AtomCollection, i_id: u64, j_id: u64) -> f64 {
+    let x_val = x_value(atom_cont, i_id, j_id);
 
     (1. + x_val).powf(-0.5)
 }

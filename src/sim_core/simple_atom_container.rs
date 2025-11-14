@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::particle::atom_collection::{AtomCollection, AtomMetadata};
 use crate::particle::atom::*;
+use crate::sim_core::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
 
 pub struct SimpleAtomContainer {
   atom_map: HashMap<u64, Atom>,
@@ -53,8 +54,20 @@ impl SimpleAtomContainer {
 
   pub fn get_atom_by_index(&self, index: u64) -> Option<&Atom> { self.atom_map.get(&index) }
 
-  fn get_atom_by_id(&self, id: u64) -> Option<&Atom> {
+  pub fn get_atom_by_id(&self, id: u64) -> Option<&Atom> {
     self.atom_map.get(&id)
+  }
+  
+  pub fn create_parts(&self) -> (AtomDataContainer, AtomForceContainer) {
+    let mut data_container = AtomDataContainer::new();
+    let mut force_container = AtomForceContainer::new();
+
+    for (id, atom) in &self.atom_map {
+      data_container.add_atom(AtomData::new_from_atom(atom));
+      force_container.add_atom_force(AtomForceData::new_from_atom(atom));
+    }
+
+    (data_container, force_container)
   }
 }
 

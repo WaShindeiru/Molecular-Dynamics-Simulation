@@ -20,6 +20,15 @@ impl AtomData {
       position,
     }
   }
+  
+  pub fn new_from_atom(atom: &Atom) -> Self {
+    AtomData {
+      id: atom.get_id(),
+      type_: atom.get_type().clone(),
+      mass: atom.get_mass(),
+      position: atom.get_position().clone(),
+    }
+  }
 }
 
 impl AtomMetadata for AtomData {
@@ -95,15 +104,29 @@ pub struct AtomForceData {
   velocity: Vector3<f64>,
   acceleration: Vector3<f64>,
   force: Vector3<f64>,
+  
+  potential_energy: f64,
 }
 
 impl AtomForceData {
-  pub fn new(id: u64, velocity: Vector3<f64>, acceleration: Vector3<f64>, force: Vector3<f64>) -> Self {
+  pub fn new(id: u64, velocity: Vector3<f64>, acceleration: Vector3<f64>, force: Vector3<f64>,
+             potential_energy: f64) -> Self {
     AtomForceData {
       id,
       velocity,
       acceleration,
       force,
+      potential_energy,
+    }
+  }
+  
+  pub fn new_from_atom(atom: &Atom) -> Self {
+    AtomForceData {
+      id: atom.get_id(),
+      velocity: atom.get_velocity().clone(),
+      acceleration: atom.get_acceleration().clone(),
+      force: atom.get_force().clone(),
+      potential_energy: atom.get_potential_energy(),
     }
   }
 
@@ -121,6 +144,22 @@ impl AtomForceData {
 
   pub fn get_force(&self) -> &Vector3<f64> {
     &self.force
+  }
+  
+  pub fn get_potential_energy(&self) -> f64 {
+    self.potential_energy
+  }
+  
+  pub fn set_force(&mut self, force: Vector3<f64>) {
+    self.force = force;
+  }
+  
+  pub fn set_acceleration(&mut self, acceleration: Vector3<f64>) {
+    self.acceleration = acceleration;
+  }
+  
+  pub fn set_potential_energy(&mut self, potential_energy: f64) {
+    self.potential_energy = potential_energy;
   }
 }
 
@@ -147,6 +186,10 @@ impl AtomForceContainer {
   pub fn get_atom_force(&self, id: u64) -> Option<&AtomForceData> {
     self.force_map.get(&id)
   }
+  
+  pub fn get_atom_force_mut(&mut self, id: u64) -> Option<&mut AtomForceData> {
+    self.force_map.get_mut(&id)
+  }
 
   pub fn get_map(&self) -> &HashMap<u64, AtomForceData> {
     &self.force_map
@@ -167,6 +210,7 @@ pub fn new_atom_container_from_parts(atom_data_container: AtomDataContainer, mut
       atom_force.velocity,
       atom_force.force,
       atom_force.acceleration,
+      atom_force.potential_energy,
     );
 
     atom_map.insert(id, atom);
