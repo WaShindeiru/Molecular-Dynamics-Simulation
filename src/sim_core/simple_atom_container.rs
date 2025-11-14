@@ -52,20 +52,21 @@ impl SimpleAtomContainer {
   }
 
   pub fn get_atom_by_index(&self, index: u64) -> Option<&Atom> { self.atom_map.get(&index) }
-}
 
-impl AtomCollection for SimpleAtomContainer {
-  fn get_atom_by_id(&self, id: u64) -> Option<AtomMetadata> {
-    self.atom_map.get(&id).map(|atom| atom.to_atom_metadata())
-  }
-
-  fn get_all_atoms(&self) -> HashMap<u64, AtomMetadata> {
-    let mut metadata_map: HashMap<u64, AtomMetadata> = HashMap::with_capacity(self.atom_map.len());
-
-    for (id, atom) in &self.atom_map {
-      metadata_map.insert(*id, atom.to_atom_metadata());
-    }
-
-    metadata_map
+  fn get_atom_by_id(&self, id: u64) -> Option<&Atom> {
+    self.atom_map.get(&id)
   }
 }
+
+// impl AtomCollection for SimpleAtomContainer {
+// 
+//   fn get_all_atoms(&self) -> HashMap<u64, AtomMetadata> {
+//     let mut metadata_map: HashMap<u64, AtomMetadata> = HashMap::with_capacity(self.atom_map.len());
+// 
+//     for (id, atom) in &self.atom_map {
+//       metadata_map.insert(*id, atom.to_atom_metadata());
+//     }
+// 
+//     metadata_map
+//   }
+// }

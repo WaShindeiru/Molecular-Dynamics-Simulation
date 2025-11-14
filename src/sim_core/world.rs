@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::output::{AtomDTO, WorldDTO};
 use crate::particle::{compute_force_i, Atom, SimpleAtomContainer};
+use crate::particle::atom_collection::AtomMetadata;
 use crate::sim_core::atom_wrapper::{new_atom_container_from_parts, AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
 
 pub struct World {
@@ -42,10 +43,10 @@ impl World {
     let mut force_container: AtomForceContainer = AtomForceContainer::new();
 
     for (i_index, atom_i) in previous_atom_container.get_map() {
-      let half_velocity_i = atom_i.get_velocity() + atom_i.get_acceleration() * (time_step * 0.5);
+      let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + atom_i.get_acceleration() * (time_step / 2.0);
       half_velocity_cache.insert(*i_index, half_velocity_i);
 
-      let next_position = atom_i.get_position() + half_velocity_i * time_step;
+      let next_position: Vector3<f64> = atom_i.get_position() + half_velocity_i * time_step;
       let next_atom_data = AtomData::new(
         atom_i.get_id(),
         atom_i.get_type().clone(),
@@ -57,10 +58,10 @@ impl World {
     }
 
     for (i_index, atom_data_i) in atom_data_container.get_map().iter() {
-      let atom_force_i = compute_force_i(&atom_data_container, &atom_data_i.to_atom_metadata());
+      let atom_force_i = compute_force_i(&atom_data_container, atom_data_i.as_ref());
 
       let atom_acceleration_i: Vector3<f64> = atom_force_i / atom_data_i.get_mass();
-      let atom_velocity_i: Vector3<f64> = half_velocity_cache.get(i_index).unwrap() + atom_acceleration_i * (time_step * 0.5);
+      let atom_velocity_i: Vector3<f64> = half_velocity_cache.get(i_index).unwrap() + atom_acceleration_i * (time_step / 2.0);
 
       let atom_force_data = AtomForceData::new(
         *i_index,

@@ -3,10 +3,9 @@ use std::sync::Mutex;
 use nalgebra::base::Vector3;
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
-use crate::output::{change_length_unit, AtomDTO};
-use crate::particle::atom_collection::AtomMetadata;
+use crate::output::{AtomDTO};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Atom {
   id: u64,
   type_: AtomType,
@@ -83,22 +82,7 @@ impl Atom {
       z: self.position.z,
     }
   }
-  
-  pub fn to_atom_metadata(&self) -> AtomMetadata {
-    AtomMetadata::new(
-      self.id,
-      &self.type_,
-      self.mass,
-      &self.position,
-    )
-  }
 }
-
-// impl PartialEq for Atom {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.id == other.id
-//     }
-// }
 
 struct AtomFactory {
   counter: u64
@@ -148,11 +132,6 @@ impl SafeAtomFactory {
       inner: Mutex::new(AtomFactory::new()),
     }
   }
-
-  // fn get_atom_default(&self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Atom {
-  //     let mut factory = self.inner.lock().unwrap();
-  //     factory.get_atom(atom, position_, velocity_)
-  // }
 
   pub fn get_atom(&self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Atom {
     let mut factory = self.inner.lock().unwrap();

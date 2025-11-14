@@ -20,35 +20,28 @@ impl AtomData {
       position,
     }
   }
+}
 
-  pub fn get_id(&self) -> u64 {
+impl AtomMetadata for AtomData {
+  fn get_id(&self) -> u64 {
     self.id
   }
 
-  pub fn get_type(&self) -> &AtomType {
+  fn get_type(&self) -> &AtomType {
     &self.type_
   }
 
-  pub fn get_mass(&self) -> f64 {
+  fn get_mass(&self) -> f64 {
     self.mass
   }
 
-  pub fn get_position(&self) -> &Vector3<f64> {
+  fn get_position(&self) -> &Vector3<f64> {
     &self.position
-  }
-
-  pub fn to_atom_metadata(&self) -> AtomMetadata {
-    AtomMetadata::new(
-      self.get_id(),
-      self.get_type(),
-      self.get_mass(),
-      self.get_position(),
-    )
   }
 }
 
 pub struct AtomDataContainer {
-  atom_map: HashMap<u64, AtomData>,
+  atom_map: HashMap<u64, Box<AtomData>>,
 }
 
 impl AtomDataContainer {
@@ -60,32 +53,37 @@ impl AtomDataContainer {
 
   pub fn add_atom(&mut self, atom: AtomData) {
     let id = atom.get_id();
-    self.atom_map.insert(id, atom);
+    self.atom_map.insert(id, Box::new(atom));
   }
 
   pub fn len(&self) -> usize {
     self.atom_map.len()
   }
 
-  pub fn get_map(&self) -> &HashMap<u64, AtomData> {
+  pub fn get_map(&self) -> &HashMap<u64, Box<AtomData>> {
     &self.atom_map
   }
 
   pub fn get_atom_data(&self, id: u64) -> Option<&AtomData> {
-    self.atom_map.get(&id)
+    self.atom_map.get(&id).map(|atom| atom.as_ref())
   }
 }
 
 impl AtomCollection for AtomDataContainer {
-  fn get_atom_by_id(&self, id: u64) -> Option<AtomMetadata> {
-    self.atom_map.get(&id).map(|atom| atom.to_atom_metadata())
+  fn get_atom_by_id(&self, id: u64) -> Option<&dyn AtomMetadata> {
+    self.atom_map.get(&id).map(|atom| atom.as_ref() as &dyn AtomMetadata)
   }
 
-  fn get_all_atoms(&self) -> HashMap<u64, AtomMetadata> {
-    let mut metadata_map: HashMap<u64, AtomMetadata> = HashMap::with_capacity(self.atom_map.len());
+  fn get_all_atoms(&self) -> HashMap<u64, Box<dyn AtomMetadata>> {
+    let mut metadata_map: HashMap<u64, Box<dyn AtomMetadata>> = HashMap::with_capacity(self.atom_map.len());
 
-    for (id, atom) in &self.atom_map {
-      metadata_map.insert(*id, atom.to_atom_metadata());
+    for (id, atom_data) in &self.atom_map {
+      metadata_map.insert(*id, Box::new(AtomData {
+        id: atom_data.id,
+        type_: atom_data.type_.clone(),
+        mass: atom_data.mass,
+        position: atom_data.position.clone(),
+      }) as Box<dyn AtomMetadata>);
     }
 
     metadata_map

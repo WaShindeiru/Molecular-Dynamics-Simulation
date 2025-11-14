@@ -8,7 +8,7 @@ pub mod vr;
 pub mod va;
 pub mod b;
 
-pub fn compute_force_i(atom_cont: &dyn AtomCollection, atom_i: &AtomMetadata) -> Vector3<f64> {
+pub fn compute_force_i(atom_cont: &dyn AtomCollection, atom_i: &dyn AtomMetadata) -> Vector3<f64> {
 
   let mut result = Vector3::new(0., 0., 0.);
   let i_id = atom_i.get_id();
