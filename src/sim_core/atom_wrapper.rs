@@ -196,11 +196,11 @@ impl AtomForceContainer {
   }
 }
 
-pub fn new_atom_container_from_parts(atom_data_container: AtomDataContainer, mut atom_force_container: AtomForceContainer) -> SimpleAtomContainer {
+pub fn new_atom_container_from_parts(atom_data_container: AtomDataContainer, atom_force_container: AtomForceContainer) -> SimpleAtomContainer {
   let mut atom_map: HashMap<u64, Atom> = HashMap::with_capacity(atom_data_container.len());
 
   for (id, atom_data) in atom_data_container.atom_map {
-    let atom_force = atom_force_container.force_map.remove(&id).unwrap();
+    let atom_force = atom_force_container.force_map.get(&id).unwrap();
 
     let atom = Atom::new(
       atom_data.id,

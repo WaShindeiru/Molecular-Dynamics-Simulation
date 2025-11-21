@@ -18,8 +18,18 @@ def show_energy_plot(path: str) -> None:
     plt.title("Energy plot")
 
     plt.legend()
+    plt.savefig(path + '/energy.png')
+    plt.show()
+
+    total_energy_difference = total_energy - total_energy[0]
+    plt.figure()
+    plt.plot(iteration, total_energy_difference, label="total energy difference")
+
+    plt.xlabel("iteration")
+    plt.ylabel("Energy [eV]")
+    plt.title("Total energy difference")
     plt.show()
 
 
 if __name__ == "__main__":
-    show_energy_plot("../output/2025-11-14_20-41-00_semi_implitic_euler_e_16")
+    show_energy_plot("../../output/2025-11-21_16-42-04")

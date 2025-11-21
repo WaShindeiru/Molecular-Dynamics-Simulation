@@ -1,6 +1,6 @@
 use std::sync::Mutex;
-
 use nalgebra::base::Vector3;
+use rand::distributions::{Distribution, Uniform};
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::output::{AtomDTO};
@@ -158,6 +158,25 @@ impl SafeAtomFactory {
 
   pub fn get_atom(&self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Atom {
     let mut factory = self.inner.lock().unwrap();
+    factory.get_atom(atom, position_, velocity_)
+  }
+
+  pub fn get_atom_random(&self, atom: AtomType, lower_bound: f64, upper_bound: f64) -> Atom {
+    let mut factory = self.inner.lock().unwrap();
+    let mut rng = rand::thread_rng();
+    let range = Uniform::new(lower_bound, upper_bound);
+    let range_vel = Uniform::new(-1., 1.);
+
+    let position_ = Vector3::new(
+      range.sample(&mut rng),
+      range.sample(&mut rng),
+      range.sample(&mut rng),
+    );
+    let velocity_ = Vector3::new(
+      range_vel.sample(&mut rng),
+      range_vel.sample(&mut rng),
+      range_vel.sample(&mut rng),
+    );
     factory.get_atom(atom, position_, velocity_)
   }
 }

@@ -30,14 +30,38 @@ fn test1() {
   let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.));
   let atom_1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 12.8, 10.), Vector3::new(0., 0., 0.));
   let atom_2 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.));
+  // let atom_3 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.8, 10., 12.8), Vector3::new(0., 0., 0.));
   let atoms: Vec<Atom> = vec![atom_0, atom_1, atom_2];
 
-  let num_of_iterations = 1000;
+  let num_of_iterations = 10000;
 
   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
 
   engine.run();
 }
+
+// fn test2() {
+//   let simulation_size = Vector3::new(100., 100., 100.);
+//
+//   let atom_factory = SafeAtomFactory::new();
+//
+//   let number_of_atoms = 10;
+//   let lower_bound = 46.;
+//   let upper_bound = 52.;
+//
+//   let mut atoms: Vec<Atom> = Vec::new();
+//
+//   for i in 0..number_of_atoms {
+//     let atom = atom_factory.get_atom_random(AtomType::Fe, lower_bound, upper_bound);
+//     atoms.push(atom);
+//   }
+//
+//   let num_of_iterations = 2000;
+//
+//   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
+//
+//   engine.run();
+// }
 
 // use macroquad::prelude::*;
 // 

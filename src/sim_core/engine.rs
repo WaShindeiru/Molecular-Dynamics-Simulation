@@ -40,12 +40,12 @@ impl Engine {
   
   pub fn run(&mut self) {
     for _ in 0..self.num_of_iterations {
-      self.world.update_semi_implicit_euler(self.time_step, self.current_iteration + 1);
+      self.world.update(self.time_step, self.current_iteration + 1);
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
 
-    self.save_in_laamps_format("output").unwrap();
+    self.save_in_laamps_format("../output").unwrap();
   }
 
   pub fn to_transfer_struct(&self) -> EngineDTO {

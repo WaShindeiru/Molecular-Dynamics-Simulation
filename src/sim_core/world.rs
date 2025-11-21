@@ -35,6 +35,32 @@ impl World {
 
   pub fn update(&mut self, time_step: f64, next_iteration: usize) {
     assert_eq!(self.atoms.len() - 1, self.current_iteration);
+
+    if self.current_iteration == 0 {
+      let (atom_data_container, mut force_data_container) = self.atoms.get(0).unwrap().create_parts();
+
+      for (id, atom_data_i) in atom_data_container.get_map().iter() {
+        assert_eq!(*id, atom_data_i.get_id());
+        let atom_force_i = compute_force_i(&atom_data_container, atom_data_i.as_ref());
+        let atom_potential_energy_i = compute_potential_energy_i(&atom_data_container, atom_data_i.as_ref());
+
+        let atom_acceleration_i: Vector3<f64> = atom_force_i / atom_data_i.get_mass();
+
+        let atom_force_data = AtomForceData::new(
+          atom_data_i.get_id(),
+          atom_force_i,
+          *force_data_container.get_atom_force(*id).unwrap().get_velocity(),
+          atom_acceleration_i,
+          atom_potential_energy_i,
+        );
+
+        force_data_container.add_atom_force(atom_force_data);
+      }
+
+      let initial_state = new_atom_container_from_parts(atom_data_container, force_data_container);
+      *self.atoms.get_mut(0).unwrap() = initial_state;
+    }
+
     let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
 
     let mut half_velocity_cache: HashMap<u64, Vector3<f64>> = HashMap::with_capacity(self.atom_count);
@@ -49,7 +75,7 @@ impl World {
       let next_position: Vector3<f64> = atom_i.get_position() + half_velocity_i * time_step;
       let next_atom_data = AtomData::new(
         atom_i.get_id(),
-        atom_i.get_type().clone(),
+        *atom_i.get_type(),
         atom_i.get_mass(),
         next_position,
       );
@@ -57,7 +83,8 @@ impl World {
       atom_data_container.add_atom(next_atom_data);
     }
 
-    for (_, atom_data_i) in atom_data_container.get_map().iter() {
+    for (id, atom_data_i) in atom_data_container.get_map().iter() {
+      assert_eq!(*id, atom_data_i.get_id());
       let atom_force_i = compute_force_i(&atom_data_container, atom_data_i.as_ref());
       let atom_potential_energy_i = compute_potential_energy_i(&atom_data_container, atom_data_i.as_ref());
 
@@ -105,14 +132,14 @@ impl World {
     }
 
     for (_, atom_data_i) in previous_atom_data_container.get_map().iter() {
-      let atom_force_data_i = previous_force_data_container.get_atom_force_mut(atom_data_i.get_id()).unwrap();
+      let atom_force_data_i = previous_force_data_container.get_atom_force(atom_data_i.get_id()).unwrap();
 
       let new_velocity: Vector3<f64> = atom_force_data_i.get_velocity() + atom_force_data_i.get_acceleration() * time_step;
       let new_position: Vector3<f64> = atom_data_i.get_position() + new_velocity * time_step;
 
       let new_atom = Atom::new(
         atom_data_i.get_id(),
-        atom_data_i.get_type().clone(),
+        *atom_data_i.get_type(),
         atom_data_i.get_mass(),
         new_position,
         new_velocity,
