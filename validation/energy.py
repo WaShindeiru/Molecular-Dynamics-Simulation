@@ -15,6 +15,7 @@ def show_energy_plot(path: str) -> None:
 
     plt.xlabel("iteration")
     plt.ylabel("Energy [eV]")
+    plt.xlim([0, 1000])
     plt.title("Energy plot")
 
     plt.legend()
@@ -28,8 +29,9 @@ def show_energy_plot(path: str) -> None:
     plt.xlabel("iteration")
     plt.ylabel("Energy [eV]")
     plt.title("Total energy difference")
+    plt.xlim([0, 1000])
     plt.show()
 
 
 if __name__ == "__main__":
-    show_energy_plot("../../output/2025-11-21_16-42-04")
+    show_energy_plot("../../output/2025-11-22_00-32-45_simple_vel_verlet_e_16_single_atom")

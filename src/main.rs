@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 use crate::data::types::AtomType;
 use crate::data::units::TIME_U;
-use crate::particle::{Atom, SafeAtomFactory};
+use crate::particle::{ParticleOperations, SafeAtomFactory};
 use crate::sim_core::Engine;
 
 mod data;
@@ -13,34 +13,44 @@ mod output;
 const TIME_STEP: f64 = 10e-16 / TIME_U;
 
 fn main() {
-  test1();
-  // println!("{}", (2.0_f64.sqrt() / 2.0));
-  // println!("{}", (PI/4.0).sin());
-
-  // let a = Vector3::new(-1, 0, 2);
-  // let b = Vector3::new(1, 3, 4);
-  //
-  // println!("{}", a.dot(&b));
+  single_atom();
 }
 
-fn test1() {
+fn single_atom() {
   let simulation_size = Vector3::new(50., 50., 50.);
 
+  let custom_path: Vec<Vector3<f64>> = vec![Vector3::new(10., 12.5, 10.)];
+  
   let atom_factory = SafeAtomFactory::new();
-  let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.));
-  let atom_1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 12.8, 10.), Vector3::new(0., 0., 0.));
-  let atom_2 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.));
-  // let atom_3 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.8, 10., 12.8), Vector3::new(0., 0., 0.));
-  let atoms: Vec<Atom> = vec![atom_0, atom_1, atom_2];
+  let atom_0 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
+  let static_atom = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, custom_path));
+  let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, static_atom];
 
-  let num_of_iterations = 10000;
+  let num_of_iterations = 1000;
 
   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
 
   engine.run();
 }
 
-// fn test2() {
+fn triangle() {
+  let simulation_size = Vector3::new(50., 50., 50.);
+
+  let atom_factory = SafeAtomFactory::new();
+  let atom_0 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
+  let atom_1 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 12.8, 10.), Vector3::new(0., 0., 0.)));
+  let atom_2 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.)));
+  // let atom_3 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.8, 10., 12.8), Vector3::new(0., 0., 0.));
+  let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, atom_1, atom_2];
+
+  let num_of_iterations = 1000;
+
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
+
+  engine.run();
+}
+
+// fn many_particles() {
 //   let simulation_size = Vector3::new(100., 100., 100.);
 //
 //   let atom_factory = SafeAtomFactory::new();

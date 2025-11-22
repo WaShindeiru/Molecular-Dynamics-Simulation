@@ -4,7 +4,7 @@ use crate::particle::atom::*;
 use crate::sim_core::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
 
 pub struct SimpleAtomContainer {
-  atom_map: HashMap<u64, Atom>,
+  atom_map: HashMap<u64, Box<dyn ParticleOperations>>,
 }
 
 impl SimpleAtomContainer {
@@ -14,8 +14,8 @@ impl SimpleAtomContainer {
     }
   }
 
-  pub fn new_from_atoms(atoms: Vec<Atom>) -> Self {
-    let mut atom_map: HashMap<u64, Atom> = HashMap::with_capacity(atoms.len());
+  pub fn new_from_atoms(atoms: Vec<Box<dyn ParticleOperations>>) -> Self {
+    let mut atom_map: HashMap<u64, Box<dyn ParticleOperations>> = HashMap::with_capacity(atoms.len());
 
     for atom in atoms {
       let id = atom.get_id();
@@ -27,7 +27,7 @@ impl SimpleAtomContainer {
     }
   }
 
-  pub fn new_from_map(atom_map: HashMap<u64, Atom>) -> Self {
+  pub fn new_from_map(atom_map: HashMap<u64, Box<dyn ParticleOperations>>) -> Self {
     SimpleAtomContainer {
       atom_map,
     }
@@ -39,12 +39,12 @@ impl SimpleAtomContainer {
     }
   }
 
-  pub fn add_atom(&mut self, atom: Atom) {
+  pub fn add_atom(&mut self, atom: Box<dyn ParticleOperations>) {
     let id = atom.get_id();
     self.atom_map.insert(id, atom);
   }
 
-  pub fn get_map(&self) -> &HashMap<u64, Atom> {
+  pub fn get_map(&self) -> &HashMap<u64, Box<dyn ParticleOperations>> {
     &self.atom_map
   }
 
@@ -52,9 +52,9 @@ impl SimpleAtomContainer {
     self.atom_map.len()
   }
 
-  pub fn get_atom_by_index(&self, index: u64) -> Option<&Atom> { self.atom_map.get(&index) }
+  pub fn get_atom_by_index(&self, index: u64) -> Option<&Box<dyn ParticleOperations>> { self.atom_map.get(&index) }
 
-  pub fn get_atom_by_id(&self, id: u64) -> Option<&Atom> {
+  pub fn get_atom_by_id(&self, id: u64) -> Option<&Box<dyn ParticleOperations>> {
     self.atom_map.get(&id)
   }
   

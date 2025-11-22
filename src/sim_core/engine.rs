@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 use crate::output::EngineDTO;
 use crate::sim_core::world::World;
-use crate::particle::{Atom};
+use crate::particle::{Atom, ParticleOperations};
 
 use std::fs;
 use chrono::prelude::*;
@@ -26,7 +26,7 @@ impl Engine {
     }
   }
 
-  pub fn new_from_atoms(atoms: Vec<Atom>, size: Vector3<f64>, time_step: f64, num_of_iterations: usize) -> Self {
+  pub fn new_from_atoms(atoms: Vec<Box<dyn ParticleOperations>>, size: Vector3<f64>, time_step: f64, num_of_iterations: usize) -> Self {
     let world = World::new_from_atoms(atoms, size);
 
     Engine {
@@ -40,7 +40,7 @@ impl Engine {
   
   pub fn run(&mut self) {
     for _ in 0..self.num_of_iterations {
-      self.world.update(self.time_step, self.current_iteration + 1);
+      self.world.update_simple_vel_verlet(self.time_step, self.current_iteration + 1);
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
