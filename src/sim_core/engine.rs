@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::output::EngineDTO;
 use crate::sim_core::world::World;
@@ -40,7 +41,7 @@ impl Engine {
   
   pub fn run(&mut self) {
     for _ in 0..self.num_of_iterations {
-      self.world.update_simple_vel_verlet(self.time_step, self.current_iteration + 1);
+      self.world.update_semi_implicit_euler(self.time_step, self.current_iteration + 1);
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
@@ -92,19 +93,25 @@ impl Engine {
     let mut potential_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
     let mut total_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
 
+    let mut forces: Vec<HashMap<usize, Vector3<f64>>> = Vec::new();
+
     for i in 0..engine_dto.num_of_iterations {
       let atom_container = engine_dto.world.atoms.get(i).unwrap();
+      let mut current_forces: HashMap<usize, Vector3<f64>> = HashMap::new();
       let mut kinetic_energy_i = 0.;
       let mut potential_energy_i = 0.;
 
       for atom_dto in atom_container.iter() {
         kinetic_energy_i += atom_dto.kinetic_energy;
         potential_energy_i += atom_dto.potential_energy;
+
+        current_forces.insert(atom_dto.id as usize, Vector3::new(atom_dto.force_x, atom_dto.force_y, atom_dto.force_z));
       }
 
       kinetic_energy.push(kinetic_energy_i);
       potential_energy.push(potential_energy_i);
       total_energy.push(kinetic_energy_i + potential_energy_i);
+      forces.push(current_forces);
     }
 
     let mut wtr = Writer::from_path(&format!("./{}/{}/energy.csv", path, time_string))?;
@@ -118,6 +125,23 @@ impl Engine {
         format!("{}", potential_energy.get(i).unwrap()),
         format!("{}", total_energy.get(i).unwrap()),
       ])?;
+    }
+
+    wtr.flush()?;
+
+    let mut wtr = Writer::from_path(&format!("./{}/{}/forces.csv", path, time_string))?;
+    for i in 0..forces.len() {
+      let force_map = forces.get(i).unwrap();
+
+      for (id, force_vector) in force_map.iter() {
+        wtr.write_record(&[
+          format!("{}", i+1),
+          format!("{}", id),
+          format!("{}", force_vector.x),
+          format!("{}", force_vector.y),
+          format!("{}", force_vector.z),
+        ])?;
+      }
     }
 
     wtr.flush()?;

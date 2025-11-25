@@ -69,6 +69,9 @@ impl ParticleOperations for CustomPathAtom {
       z: self.position.z,
       kinetic_energy: 0.,
       potential_energy: 0.,
+      force_x: self.force.x,
+      force_y: self.force.y,
+      force_z: self.force.z,
     }
   }
 

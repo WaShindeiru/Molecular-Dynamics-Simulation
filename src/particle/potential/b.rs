@@ -73,7 +73,6 @@ pub fn x_value(atom_cont: &dyn AtomCollection, i_id: u64, j_id: u64) -> f64 {
   result
 }
 
-// TODO: optimize, what do you even mean by that? Be explicit maybe???? Now I am talking to myself
 fn x_gradient_one(r_ij_vec: &Vector3<f64>, r_ik_vec: &Vector3<f64>, i_ik: &InteractionType) -> Vector3<f64> {
   let cos_theta_ijk = cos_from_vec(r_ij_vec, r_ik_vec);
 

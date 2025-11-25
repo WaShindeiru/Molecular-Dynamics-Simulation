@@ -13,7 +13,7 @@ mod output;
 const TIME_STEP: f64 = 10e-16 / TIME_U;
 
 fn main() {
-  single_atom();
+  triangle();
 }
 
 fn single_atom() {
@@ -25,6 +25,36 @@ fn single_atom() {
   let atom_0 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
   let static_atom = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, custom_path));
   let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, static_atom];
+
+  let num_of_iterations = 100;
+
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
+
+  engine.run();
+}
+
+fn symmetric_triangle_test() {
+  let simulation_size = Vector3::new(50., 50., 50.);
+  let atom_factory = SafeAtomFactory::new();
+
+  let atom_0_path = vec![Vector3::new(10., 10., 10.)];
+  let atom_1_path = vec![Vector3::new(10., 12., 10.)];
+
+  let mut atom_2_path: Vec<Vector3<f64>> = Vec::new();
+  let start_x = 11.73205;
+  let end_x = 12.26795;
+  for i in 0..100 {
+    let t = i as f64 / 99.;
+    let x = start_x + t * (end_x - start_x);
+    let y = 11.;
+    let z = 10.;
+    atom_2_path.push(Vector3::new(x, y, z));
+  }
+
+  let atom_0 = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, atom_0_path));
+  let atom_1 = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, atom_1_path));
+  let atom_2 = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, atom_2_path));
+  let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, atom_1, atom_2];
 
   let num_of_iterations = 1000;
 

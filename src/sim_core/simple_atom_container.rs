@@ -52,8 +52,6 @@ impl SimpleAtomContainer {
     self.atom_map.len()
   }
 
-  pub fn get_atom_by_index(&self, index: u64) -> Option<&Box<dyn ParticleOperations>> { self.atom_map.get(&index) }
-
   pub fn get_atom_by_id(&self, id: u64) -> Option<&Box<dyn ParticleOperations>> {
     self.atom_map.get(&id)
   }

@@ -13,7 +13,7 @@ pub fn fc(r_mag: f64, interaction_type: &InteractionType) -> f64 {
   match r_mag {
     r_ if r_ <= R1 => 1.,
     r_ if r_ > R2 => 0.,
-    _ => 0.5 - 0.5 * (PI / (2. * D) * (r_mag - R)).sin(),
+    r_ => 0.5 - 0.5 * (PI / (2. * D) * (r_ - R)).sin(),
   }
 }
 
@@ -29,12 +29,12 @@ pub fn fc_gradient(r_ij_vec: &Vector3<f64>, interaction_type: &InteractionType) 
   match r_ij_mag {
     rij_ if rij_ <= R1 => Vector3::new(0., 0., 0.),
     rij_ if rij_ > R2 => Vector3::new(0., 0., 0.),
-    _ => {
-      let common = PI / (4.0 * D) * (PI / (2. * D) * (r_ij_mag - R)).cos();
+    rij_ => {
+      let common = PI / (4.0 * D) * (PI / (2. * D) * (rij_ - R)).cos();
       Vector3::new(
-        common * r_ij_vec.x / r_ij_mag,
-        common * r_ij_vec.y / r_ij_mag,
-        common * r_ij_vec.z / r_ij_mag)
+        common * r_ij_vec.x / rij_,
+        common * r_ij_vec.y / rij_,
+        common * r_ij_vec.z / rij_)
     }
   }
 }

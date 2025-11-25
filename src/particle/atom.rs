@@ -105,6 +105,9 @@ impl ParticleOperations for Atom {
       z: self.position.z,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
+      force_x: self.force.x,
+      force_y: self.force.y,
+      force_z: self.force.z,
     }
   }
 
