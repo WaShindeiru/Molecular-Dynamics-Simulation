@@ -5,8 +5,10 @@ use crate::sim_core::world::World;
 use crate::particle::{Atom, ParticleOperations};
 
 use std::fs;
+use std::time::Instant;
 use chrono::prelude::*;
 use csv::Writer;
+use log::info;
 
 pub struct Engine {
   world: World,
@@ -39,14 +41,22 @@ impl Engine {
     }
   }
   
-  pub fn run(&mut self) {
+  pub fn run(&mut self, save: bool) {
+    let start = Instant::now();
+
     for _ in 0..self.num_of_iterations {
       self.world.update_semi_implicit_euler(self.time_step, self.current_iteration + 1);
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
 
-    self.save_in_laamps_format("../output").unwrap();
+    let elapsed = start.elapsed();
+
+    info!("Simulation completed in {:.2?} seconds.", elapsed);
+
+    if save {
+      self.save_in_laamps_format("../output").unwrap();
+    }
   }
 
   pub fn to_transfer_struct(&self) -> EngineDTO {
@@ -58,6 +68,8 @@ impl Engine {
   }
 
   pub fn save_in_laamps_format(&self, path: &str) -> std::io::Result<()> {
+
+    let start = Instant::now();
     let now: DateTime<Local> = Local::now();
     let time_string = now.format("%Y-%m-%d_%H-%M-%S").to_string();
 
@@ -145,6 +157,9 @@ impl Engine {
     }
 
     wtr.flush()?;
+
+    let elapsed = start.elapsed();
+    info!("Data saved in LAMMPS format in {:.2?} seconds.", elapsed);
 
     Ok(())
   }

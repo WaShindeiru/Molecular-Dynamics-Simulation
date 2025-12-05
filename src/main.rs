@@ -1,3 +1,4 @@
+use log::info;
 use nalgebra::Vector3;
 use crate::data::types::AtomType;
 use crate::data::units::TIME_U;
@@ -13,10 +14,15 @@ mod output;
 const TIME_STEP: f64 = 10e-16 / TIME_U;
 
 fn main() {
-  triangle();
+  env_logger::init();
+  info!("Starting simulation...");
+
+  let num_iterations = 100000;
+  let save = false;
+  triangle(save, num_iterations);
 }
 
-fn single_atom() {
+fn single_atom(save: bool, num_iterations: usize) {
   let simulation_size = Vector3::new(50., 50., 50.);
 
   let custom_path: Vec<Vector3<f64>> = vec![Vector3::new(10., 12.5, 10.)];
@@ -26,14 +32,12 @@ fn single_atom() {
   let static_atom = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, custom_path));
   let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, static_atom];
 
-  let num_of_iterations = 100;
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
 
-  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
-
-  engine.run();
+  engine.run(save);
 }
 
-fn symmetric_triangle_test() {
+fn symmetric_triangle_test(save: bool, num_iterations: usize) {
   let simulation_size = Vector3::new(50., 50., 50.);
   let atom_factory = SafeAtomFactory::new();
 
@@ -56,14 +60,12 @@ fn symmetric_triangle_test() {
   let atom_2 = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, atom_2_path));
   let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, atom_1, atom_2];
 
-  let num_of_iterations = 1000;
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
 
-  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
-
-  engine.run();
+  engine.run(save);
 }
 
-fn triangle() {
+fn triangle(save: bool, num_iterations: usize) {
   let simulation_size = Vector3::new(50., 50., 50.);
 
   let atom_factory = SafeAtomFactory::new();
@@ -73,11 +75,9 @@ fn triangle() {
   // let atom_3 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.8, 10., 12.8), Vector3::new(0., 0., 0.));
   let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, atom_1, atom_2];
 
-  let num_of_iterations = 1000;
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
 
-  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
-
-  engine.run();
+  engine.run(save);
 }
 
 // fn many_particles() {
