@@ -81,27 +81,29 @@ impl Engine {
     let engine_dto = self.to_transfer_struct();
 
     for i in 0..engine_dto.num_of_iterations {
-      let mut result_string = String::new();
-      result_string.push_str(&"ITEM: TIMESTEP\n".to_string());
-      result_string.push_str(&format!("{}\n", i+1));
+      if i % 100 == 0 {
+        let mut result_string = String::new();
+        result_string.push_str(&"ITEM: TIMESTEP\n".to_string());
+        result_string.push_str(&format!("{}\n", i+1));
 
-      result_string.push_str(&"ITEM: NUMBER OF ATOMS\n".to_string());
-      let atom_container = engine_dto.world.atoms.get(i).unwrap();
-      let num_of_atoms = atom_container.len();
-      result_string.push_str(&format!("{}\n", num_of_atoms));
+        result_string.push_str(&"ITEM: NUMBER OF ATOMS\n".to_string());
+        let atom_container = engine_dto.world.atoms.get(i).unwrap();
+        let num_of_atoms = atom_container.len();
+        result_string.push_str(&format!("{}\n", num_of_atoms));
 
-      result_string.push_str(&"ITEM: BOX BOUNDS pp pp pp\n".to_string());
-      result_string.push_str(&format!("0.0 {}\n", engine_dto.world.box_x));
-      result_string.push_str(&format!("0.0 {}\n", engine_dto.world.box_y));
-      result_string.push_str(&format!("0.0 {}\n", engine_dto.world.box_z));
+        result_string.push_str(&"ITEM: BOX BOUNDS pp pp pp\n".to_string());
+        result_string.push_str(&format!("0.0 {}\n", engine_dto.world.box_x));
+        result_string.push_str(&format!("0.0 {}\n", engine_dto.world.box_y));
+        result_string.push_str(&format!("0.0 {}\n", engine_dto.world.box_z));
 
-      result_string.push_str(&"ITEM: ATOMS id type x y z\n".to_string());
+        result_string.push_str(&"ITEM: ATOMS id type x y z\n".to_string());
 
-      for atom_dto in atom_container.iter() {
-        result_string.push_str(&format!("{} {} {} {} {}\n", atom_dto.id, atom_dto.atom_type, atom_dto.x, atom_dto.y, atom_dto.z));
+        for atom_dto in atom_container.iter() {
+          result_string.push_str(&format!("{} {} {} {} {}\n", atom_dto.id, atom_dto.atom_type, atom_dto.x, atom_dto.y, atom_dto.z));
+        }
+
+        fs::write(&format!("./{}/{}/output_{}.dump", path, time_string, i+1), result_string)?;
       }
-
-      fs::write(&format!("./{}/{}/output_{}.dump", path, time_string, i+1), result_string)?;
     }
 
     let mut kinetic_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);

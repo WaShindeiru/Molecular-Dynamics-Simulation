@@ -30,6 +30,53 @@ impl World {
     }
   }
 
+  pub fn apply_boundary_constraint(&self, mut atom: Particle) -> Particle {
+    atom = match atom.get_position().x {
+      x if x < 0.0 => {
+        atom.set_velocity(Vector3::new(-atom.get_velocity().x, atom.get_velocity().y, atom.get_velocity().z));
+        atom.update_position(Vector3::new(-atom.get_position().x, atom.get_position().y, atom.get_position().z));
+        atom
+      }
+      x if x > self.size.x => {
+        atom.set_velocity(Vector3::new(-atom.get_velocity().x, atom.get_velocity().y, atom.get_velocity().z));
+        atom.update_position(Vector3::new( 2. * self.size.x - atom.get_position().x, atom.get_position().y, atom.get_position().z));
+        atom
+      },
+      _ => atom
+    };
+
+    atom = match atom.get_position().y {
+      y if y < 0.0 => {
+        atom.set_velocity(Vector3::new(atom.get_velocity().x, -atom.get_velocity().y, atom.get_velocity().z));
+        atom.update_position(Vector3::new(atom.get_position().x, -atom.get_position().y, atom.get_position().z));
+        atom
+      }
+      y if y > self.size.y => {
+        atom.set_velocity(Vector3::new(atom.get_velocity().x, -atom.get_velocity().y, atom.get_velocity().z));
+        atom.update_position(Vector3::new(atom.get_position().x, 2. * self.size.y - atom.get_position().y, atom.get_position().z));
+        atom
+      },
+      _ => atom
+    };
+
+    atom = match atom.get_position().z {
+      z if z < 0.0 => {
+        atom.set_velocity(Vector3::new(atom.get_velocity().x, atom.get_velocity().y, -atom.get_velocity().z));
+        atom.update_position(Vector3::new(atom.get_position().x, atom.get_position().y, -atom.get_position().z));
+        atom
+      }
+      z if z > self.size.z => {
+        atom.set_velocity(Vector3::new(atom.get_velocity().x, atom.get_velocity().y, -atom.get_velocity().z));
+        atom.update_position(Vector3::new(atom.get_position().x, atom.get_position().y, 2. * self.size.z - atom.get_position().z));
+        atom
+      },
+      _ => atom
+    };
+
+    atom
+  }
+
+  // TODO: Fix boundary conditions check
   pub fn update_verlet(&mut self, time_step: f64, next_iteration: usize) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
 
@@ -47,6 +94,9 @@ impl World {
       let next_position: Vector3<f64> = atom_i.get_position() + half_velocity_i * time_step;
       let mut new_atom_data = atom_i.custom_clone();
       new_atom_data.update_position(next_position);
+
+      // new_atom_data = self.apply_boundary_constraint(new_atom_data);
+
       new_position_atoms.push(new_atom_data);
     }
 
@@ -65,6 +115,8 @@ impl World {
       new_atom.set_force(new_force);
       new_atom.set_acceleration(new_acceleration);
       new_atom.set_velocity(new_velocity);
+
+      new_atom = self.apply_boundary_constraint(new_atom);
 
       next_iteration_atom_container.add_atom(new_atom);
     }

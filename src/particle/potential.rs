@@ -9,7 +9,7 @@ use crate::particle::potential::va::{va, va_gradient};
 use crate::particle::potential::vr::{vr, vr_gradient};
 use crate::utils::math::cos_from_vec;
 
-const OPTIMIZATION: bool = false;
+const OPTIMIZATION: bool = true;
 
 pub mod fc;
 pub mod vr;

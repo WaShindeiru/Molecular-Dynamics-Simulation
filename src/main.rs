@@ -11,15 +11,105 @@ mod utils;
 mod sim_core;
 mod output;
 
-const TIME_STEP: f64 = 1e-17 / TIME_U;
+const TIME_STEP: f64 = 1e-19 / TIME_U;
+
 
 fn main() {
   env_logger::init();
   info!("Starting simulation...");
 
-  let num_iterations = 100000;
+  let num_iterations = 1000000;
   let save = true;
-  triangle(save, num_iterations);
+  sphere_particles(save, num_iterations, 20);
+}
+
+fn small_box_one_particle(save: bool, num_iterations: usize) {
+  let simulation_size = Vector3::new(8., 8., 8.);
+
+  let atom_factory = SafeAtomFactory::new();
+
+  let atom_0 = Particle::Atom(atom_factory.get_atom(AtomType::Fe, Vector3::new(2., 2., 2.), Vector3::new(2., 0., 0.)));
+  let atoms: Vec<Particle> = vec![atom_0];
+
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
+
+  engine.run(save);
+}
+
+fn small_box(save: bool, num_iterations: usize, num_particles: usize) {
+  let simulation_size = Vector3::new(8., 8., 8.);
+
+  let atom_factory = SafeAtomFactory::new();
+
+  let mut atoms: Vec<Particle> = Vec::new();
+
+  for _ in 0..num_particles {
+    let x = rand::random::<f64>() * 6.0 + 1.0;
+    let y = rand::random::<f64>() * 6.0 + 1.0;
+    let z = rand::random::<f64>() * 6.0 + 1.0;
+
+    let atom_type = match rand::random::<f64>() {
+      v if v < 0.5 => AtomType::Fe,
+      _ => AtomType::C,
+    };
+
+    let atom_0 = Particle::Atom(atom_factory.get_atom(atom_type, Vector3::new(x, y, z), Vector3::new(0., 0., 0.)));
+
+
+  }
+
+  let atom_0 = Particle::Atom(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
+  let atom_1 = Particle::Atom(atom_factory.get_atom(AtomType::C, Vector3::new(12., 10., 10.), Vector3::new(0., 0., 0.)));
+  let atoms: Vec<Particle> = vec![atom_0, atom_1];
+
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
+
+  engine.run(save);
+}
+
+fn sphere_particles(save: bool, num_iterations: usize, num_particles: usize) {
+  let simulation_size = Vector3::new(16., 16., 16.);
+
+  let atom_factory = SafeAtomFactory::new();
+
+  let center = Vector3::new(8., 8., 8.); // Center of the simulation space
+  let sphere_radius = 3.4; // Radius of the sphere (leaving some margin from boundaries)
+
+  let mut atoms: Vec<Particle> = Vec::new();
+
+  for _ in 0..num_particles {
+    // Generate random point in unit sphere using rejection sampling
+    let mut position;
+    loop {
+      // Generate random coordinates in [-1, 1] range
+      let x = rand::random::<f64>() * 2.0 - 1.0;
+      let y = rand::random::<f64>() * 2.0 - 1.0;
+      let z = rand::random::<f64>() * 2.0 - 1.0;
+
+      // Check if point is within unit sphere
+      if x * x + y * y + z * z <= 1.0 {
+        // Scale to sphere radius and translate to center
+        position = Vector3::new(
+          center.x + x * sphere_radius,
+          center.y + y * sphere_radius,
+          center.z + z * sphere_radius,
+        );
+        break;
+      }
+    }
+
+    let atom_type = match rand::random::<f64>() {
+      v if v < 0.5 => AtomType::Fe,
+      _ => AtomType::C,
+    };
+
+    let atom = atom_factory.get_atom(atom_type, position, Vector3::new(0., 0., 0.));
+    atoms.push(Particle::Atom(atom));
+  }
+
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
+
+  engine.run(save);
 }
 
 fn single_atom(save: bool, num_iterations: usize) {
@@ -80,12 +170,12 @@ fn triangle(save: bool, num_iterations: usize) {
   engine.run(save);
 }
 
-fn many_particles(save: bool, num_iterations: usize) {
+fn many_particles(save: bool, num_iterations: usize, num_particles: usize) {
   let simulation_size = Vector3::new(100., 100., 100.);
 
   let atom_factory = SafeAtomFactory::new();
 
-  let number_of_atoms = 10;
+  let number_of_atoms = num_particles;
   let lower_bound = 46.;
   let upper_bound = 52.;
 
@@ -100,20 +190,3 @@ fn many_particles(save: bool, num_iterations: usize) {
 
   engine.run(save);
 }
-
-// use macroquad::prelude::*;
-// 
-// #[macroquad::main("BasicShapes")]
-// async fn main() {
-//     loop {
-//         clear_background(RED);
-// 
-//         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-//         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-//         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-//         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
-// 
-//         next_frame().await
-//     }
-// }
-
