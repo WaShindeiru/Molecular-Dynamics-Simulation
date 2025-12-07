@@ -4,8 +4,8 @@ use crate::output::EngineDTO;
 use crate::sim_core::world::World;
 use crate::particle::{ParticleOperations};
 
-use std::fs;
-use std::time::Instant;
+use std::{fs, time};
+use std::time::{Duration, Instant};
 use chrono::prelude::*;
 use csv::Writer;
 use log::info;
@@ -16,6 +16,7 @@ pub struct Engine {
   current_time: f64,
   current_iteration: usize,
   num_of_iterations: usize,
+  simulation_time: time::Duration,
 }
 
 impl Engine {
@@ -26,6 +27,7 @@ impl Engine {
       current_time: 0.0,
       current_iteration: 0,
       num_of_iterations,
+      simulation_time: Duration::ZERO
     }
   }
 
@@ -38,6 +40,7 @@ impl Engine {
       current_time: 0.0,
       current_iteration: 0,
       num_of_iterations,
+      simulation_time: Duration::ZERO
     }
   }
   
@@ -50,9 +53,9 @@ impl Engine {
       self.current_time += self.time_step;
     }
 
-    let elapsed = start.elapsed();
+    self.simulation_time = start.elapsed();
 
-    info!("Simulation completed in {:.2?} seconds.", elapsed);
+    info!("Simulation completed in {:.2?} seconds.", self.simulation_time);
 
     if save {
       self.save_in_laamps_format("../output").unwrap();
@@ -162,6 +165,11 @@ impl Engine {
 
     let elapsed = start.elapsed();
     info!("Data saved in LAMMPS format in {:.2?} seconds.", elapsed);
+
+    let mut wtr = Writer::from_path(&format!("./{}/{}/info.txt", path, time_string))?;
+    wtr.write_record(&["Simulation Time", &format!("{:.2?} seconds", self.simulation_time)])?;
+    wtr.write_record(&["Data Saving Time", &format!("{:.2?} seconds", elapsed)])?;
+    wtr.flush()?;
 
     Ok(())
   }

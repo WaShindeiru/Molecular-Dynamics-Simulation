@@ -38,23 +38,39 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
 
   let mut gradients_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); particles.len()];
   let mut potential_energy_total: f64 = 0.;
+  let mut neighbours: Vec<usize>;
+  // let mut num_of_neighbours: i32;
+  // let mut num_of_neighbours_cache: Vec<i32> = vec![0; particles.len()];
 
   for (i, particle_i) in particles.iter().enumerate() {
-    let mut neigh: Vec<usize> = Vec::new();
-    for j in 0..particles.len() {
-      if j != i {
-        neigh.push(j);
+    assert_eq!(i, particle_i.get_id() as usize);
+    neighbours = Vec::with_capacity(particles.len() - 1);
+
+    for (j, particle_j) in particles.iter().enumerate() {
+      if j == i { continue }
+
+      let r_ij_vec = particle_j.get_position() - particle_i.get_position();
+      let r_ij_mag = r_ij_vec.magnitude();
+      let interaction_type_ij = get_interaction_type(particle_i.get_type(), particle_j.get_type());
+
+      let R_ij = get_constant(&interaction_type_ij, Constant::R);
+      let D_ij = get_constant(&interaction_type_ij, Constant::D);
+      let fc_ij = fc::fc(r_ij_mag, R_ij, D_ij);
+      if fc_ij < 1e-10 { continue }
+      else {
+        neighbours.push(j);
       }
     }
 
-    for j_ in neigh.iter() {
+
+    for j_ in neighbours.iter() {
       let j = *j_;
       assert_ne!(j, i);
 
       gradients_cache = vec![Vector3::new(0., 0., 0.); particles.len()];
 
-      let partile_j = particles.get(j).unwrap();
-      let interaction_type_ij = get_interaction_type(particle_i.get_type(), partile_j.get_type());
+      let particle_j = particles.get(j).unwrap();
+      let interaction_type_ij = get_interaction_type(particle_i.get_type(), particle_j.get_type());
 
       let mut bij_grad_i = Vector3::new(0., 0., 0.);
       let mut bij_grad_j = Vector3::new(0., 0., 0.);
@@ -66,7 +82,7 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
       let Beta_ij = get_constant(&interaction_type_ij, Constant::Beta);
       let r0_ij = get_constant(&interaction_type_ij, Constant::r0);
 
-      let r_ij_vec = partile_j.get_position() - particle_i.get_position();
+      let r_ij_vec = particle_j.get_position() - particle_i.get_position();
       let r_ij_mag = r_ij_vec.magnitude();
 
       let fc_ij = fc(r_ij_mag, R_ij, D_ij);
@@ -79,7 +95,7 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
 
       let mut chi_ij: f64 = 0.;
 
-      for _k in neigh.iter() {
+      for _k in neighbours.iter() {
         let k = *_k;
         if k == j {continue};
 
@@ -117,7 +133,7 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
       bij_grad_i = bij_grad_i * b_ij_grad_chi_ij;
       bij_grad_j = bij_grad_j * b_ij_grad_chi_ij;
 
-      for k_ in neigh.iter() {
+      for k_ in neighbours.iter() {
         let k = *k_;
         if k == j || k == i {continue};
         gradients_cache[k] = gradients_cache[k] * b_ij_grad_chi_ij;
@@ -131,7 +147,7 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
         + fc_ij * (-vr_ij_grad_i - bij_grad_i * va_ij - b_ij * (-va_ij_grad_i)));
       result[j].force += force_j;
 
-      for k_ in neigh.iter() {
+      for k_ in neighbours.iter() {
         let k = *k_;
         if k == j || k == i {continue};
         let force_k = -0.5 * ( -fc_ij * gradients_cache[k] * va_ij );
@@ -147,68 +163,3 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
     potential_energy: potential_energy_total,
   }
 }
-
-// pub fn compute_force_i(atom_cont: &dyn AtomCollection, atom_i: &dyn AtomMetadata) -> Vector3<f64> {
-//
-//   let mut result = Vector3::new(0., 0., 0.);
-//   let i_id = atom_i.get_id();
-//
-//   for (atom_j_id, atom_j) in atom_cont.get_all_atoms().iter() {
-//     assert_eq!(*atom_j_id, atom_j.get_id());
-//     if *atom_j_id == i_id {
-//       continue;
-//     }
-//
-//     // remove this
-//     assert_eq!(*atom_i.get_position(), *atom_cont.get_atom_by_id(i_id).unwrap().get_position());
-//     let r_ij_vec = atom_j.get_position() - atom_cont.get_atom_by_id(i_id).unwrap().get_position();
-//     let r_ij_mag = r_ij_vec.magnitude();
-//     let interaction_type_ij = get_interaction_type(atom_i.get_type(), atom_j.get_type());
-//
-//     let fc_ij_grad = fc::fc_gradient(&r_ij_vec, &interaction_type_ij);
-//
-//     let vr_ij = vr::vr(r_ij_mag, &interaction_type_ij);
-//     let b_ij = b::b(atom_cont, i_id, atom_j.get_id());
-//     let va_ij = va::va(r_ij_mag, &interaction_type_ij);
-//
-//     let fc_ij = fc::fc(r_ij_mag, &interaction_type_ij);
-//
-//     let vr_ij_grad = vr::vr_gradient(&r_ij_vec, &interaction_type_ij);
-//     let b_ij_grad = b::b_gradient(atom_cont, i_id, atom_j.get_id());
-//     let va_ij_grad = va::va_gradient(&r_ij_vec, &interaction_type_ij);
-//
-//     let force_ij = -0.5 * (fc_ij_grad * (vr_ij - b_ij * va_ij)
-//       + fc_ij * (vr_ij_grad - b_ij * va_ij_grad - va_ij * b_ij_grad));
-//     result += force_ij;
-//   }
-//
-//   result
-// }
-
-// pub fn compute_potential_energy_i(atom_cont: &dyn AtomCollection, atom_i: &dyn AtomMetadata) -> f64 {
-//   let mut result = 0.;
-//   let i_id = atom_i.get_id();
-//
-//   for (atom_j_id, atom_j) in atom_cont.get_all_atoms().iter() {
-//     assert_eq!(*atom_j_id, atom_j.get_id());
-//     if *atom_j_id == i_id {
-//       continue;
-//     }
-//
-//     // remove this assert later
-//     assert_eq!(*atom_i.get_position(), *atom_cont.get_atom_by_id(i_id).unwrap().get_position());
-//     let r_ij_vec = atom_j.get_position() - atom_cont.get_atom_by_id(i_id).unwrap().get_position();
-//     let r_ij_mag = r_ij_vec.magnitude();
-//     let interaction_type_ij = get_interaction_type(atom_i.get_type(), atom_j.get_type());
-//
-//     let fc_ij = fc::fc(r_ij_mag, &interaction_type_ij);
-//     let vr_ij = vr::vr(r_ij_mag, &interaction_type_ij);
-//     let b_ij = b::b(atom_cont, i_id, atom_j.get_id());
-//     let va_ij = va::va(r_ij_mag, &interaction_type_ij);
-//
-//     let potential_energy_ij = 0.5 * fc_ij * (vr_ij - b_ij * va_ij);
-//     result += potential_energy_ij;
-//   }
-//
-//   result
-// }

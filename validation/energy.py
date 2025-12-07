@@ -35,4 +35,4 @@ def show_energy_plot(path: str) -> None:
 
 
 if __name__ == "__main__":
-    show_energy_plot("../../output/2025-12-07_12-01-54_updated_verlet_e_17_10_atoms")
+    show_energy_plot("../../output/2025-12-07_12-38-34_updated_optimization_verlete_e_17_e_5_triangle")
