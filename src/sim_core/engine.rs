@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::output::EngineDTO;
 use crate::sim_core::world::World;
-use crate::particle::{Atom, ParticleOperations};
+use crate::particle::{ParticleOperations};
 
 use std::fs;
 use std::time::Instant;
@@ -45,7 +45,7 @@ impl Engine {
     let start = Instant::now();
 
     for _ in 0..self.num_of_iterations {
-      self.world.update_semi_implicit_euler(self.time_step, self.current_iteration + 1);
+      self.world.update_verlet(self.time_step, self.current_iteration + 1);
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
@@ -102,26 +102,28 @@ impl Engine {
     }
 
     let mut kinetic_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
-    let mut potential_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
+    // let mut potential_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
+    let potential_energy = engine_dto.world.potential_energy;
     let mut total_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
 
     let mut forces: Vec<HashMap<usize, Vector3<f64>>> = Vec::new();
 
-    for i in 0..engine_dto.num_of_iterations {
+    for i in 0..engine_dto.num_of_iterations + 1 {
       let atom_container = engine_dto.world.atoms.get(i).unwrap();
       let mut current_forces: HashMap<usize, Vector3<f64>> = HashMap::new();
       let mut kinetic_energy_i = 0.;
-      let mut potential_energy_i = 0.;
+      // let mut potential_energy_i = 0.;
 
       for atom_dto in atom_container.iter() {
         kinetic_energy_i += atom_dto.kinetic_energy;
-        potential_energy_i += atom_dto.potential_energy;
+        // potential_energy_i += atom_dto.potential_energy;
 
         current_forces.insert(atom_dto.id as usize, Vector3::new(atom_dto.force_x, atom_dto.force_y, atom_dto.force_z));
       }
 
       kinetic_energy.push(kinetic_energy_i);
-      potential_energy.push(potential_energy_i);
+      // potential_energy.push(potential_energy_i);
+      let potential_energy_i = *potential_energy.get(i).unwrap();
       total_energy.push(kinetic_energy_i + potential_energy_i);
       forces.push(current_forces);
     }

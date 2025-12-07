@@ -3,9 +3,7 @@ use std::f64::consts::PI;
 use crate::data::constants::get_constant;
 use crate::data::{Constant, InteractionType};
 
-pub fn fc(r_mag: f64, interaction_type: &InteractionType) -> f64 {
-  let D = get_constant(interaction_type, Constant::D);
-  let R = get_constant(interaction_type, Constant::R);
+pub fn fc(r_mag: f64, R: f64, D: f64) -> f64 {
 
   let R1 = (R-D).abs();
   let R2 = (R+D).abs();
@@ -17,14 +15,9 @@ pub fn fc(r_mag: f64, interaction_type: &InteractionType) -> f64 {
   }
 }
 
-pub fn fc_gradient(r_ij_vec: &Vector3<f64>, interaction_type: &InteractionType) -> Vector3<f64> {
-  let D = get_constant(interaction_type, Constant::D);
-  let R = get_constant(interaction_type, Constant::R);
-
+pub fn fc_gradient(r_ij_vec: &Vector3<f64>, r_ij_mag: f64, R: f64, D: f64) -> Vector3<f64> {
   let R1 = (R-D).abs();
   let R2 = (R+D).abs();
-
-  let r_ij_mag = r_ij_vec.magnitude();
 
   match r_ij_mag {
     rij_ if rij_ <= R1 => Vector3::new(0., 0., 0.),

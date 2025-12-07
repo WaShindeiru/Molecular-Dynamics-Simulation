@@ -11,15 +11,15 @@ mod utils;
 mod sim_core;
 mod output;
 
-const TIME_STEP: f64 = 10e-16 / TIME_U;
+const TIME_STEP: f64 = 1e-17 / TIME_U;
 
 fn main() {
   env_logger::init();
   info!("Starting simulation...");
 
-  let num_iterations = 100000;
-  let save = false;
-  triangle(save, num_iterations);
+  let num_iterations = 10000;
+  let save = true;
+  many_particles(save, num_iterations);
 }
 
 fn single_atom(save: bool, num_iterations: usize) {
@@ -80,28 +80,26 @@ fn triangle(save: bool, num_iterations: usize) {
   engine.run(save);
 }
 
-// fn many_particles() {
-//   let simulation_size = Vector3::new(100., 100., 100.);
-//
-//   let atom_factory = SafeAtomFactory::new();
-//
-//   let number_of_atoms = 10;
-//   let lower_bound = 46.;
-//   let upper_bound = 52.;
-//
-//   let mut atoms: Vec<Atom> = Vec::new();
-//
-//   for i in 0..number_of_atoms {
-//     let atom = atom_factory.get_atom_random(AtomType::Fe, lower_bound, upper_bound);
-//     atoms.push(atom);
-//   }
-//
-//   let num_of_iterations = 2000;
-//
-//   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_of_iterations);
-//
-//   engine.run();
-// }
+fn many_particles(save: bool, num_iterations: usize) {
+  let simulation_size = Vector3::new(100., 100., 100.);
+
+  let atom_factory = SafeAtomFactory::new();
+
+  let number_of_atoms = 10;
+  let lower_bound = 46.;
+  let upper_bound = 52.;
+
+  let mut atoms: Vec<Box<dyn ParticleOperations>> = Vec::new();
+
+  for i in 0..number_of_atoms {
+    let atom = atom_factory.get_atom_random(AtomType::Fe, lower_bound, upper_bound);
+    atoms.push(Box::new(atom));
+  }
+
+  let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
+
+  engine.run(save);
+}
 
 // use macroquad::prelude::*;
 // 

@@ -1,9 +1,9 @@
 pub mod atom;
 pub use atom::{Atom, SafeAtomFactory, ParticleOperations};
 
-mod potential;
-pub use potential::compute_force_i;
-pub use potential::compute_potential_energy_i;
+pub mod potential;
+// pub use potential::compute_force_i;
+// pub use potential::compute_potential_energy_i;
 
 pub use crate::sim_core::simple_atom_container::SimpleAtomContainer;
 

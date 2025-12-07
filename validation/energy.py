@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def show_energy_plot(path: str) -> None:
-    energy_data = pd.read_csv(path + '/energy.csv', header=None)
+    energy_data = pd.read_csv(path + '/energy.csv', header=1)
     iteration = energy_data.iloc[:, 0]
     kinetic_energy = energy_data.iloc[:, 1]
     potential_energy = energy_data.iloc[:, 2]
@@ -35,4 +35,4 @@ def show_energy_plot(path: str) -> None:
 
 
 if __name__ == "__main__":
-    show_energy_plot("../../output/2025-11-24_14-33-42")
+    show_energy_plot("../../output/2025-12-07_12-01-54_updated_verlet_e_17_10_atoms")

@@ -5,12 +5,14 @@ use crate::sim_core::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContai
 
 pub struct SimpleAtomContainer {
   atom_map: HashMap<u64, Box<dyn ParticleOperations>>,
+  potential_energy: f64,
 }
 
 impl SimpleAtomContainer {
   pub fn new() -> Self {
     SimpleAtomContainer {
       atom_map: HashMap::new(),
+      potential_energy: 0.,
     }
   }
 
@@ -24,18 +26,21 @@ impl SimpleAtomContainer {
 
     SimpleAtomContainer {
       atom_map,
+      potential_energy: 0.
     }
   }
 
   pub fn new_from_map(atom_map: HashMap<u64, Box<dyn ParticleOperations>>) -> Self {
     SimpleAtomContainer {
       atom_map,
+      potential_energy: 0.
     }
   }
 
   pub fn new_fixed_cap(capacity: usize) -> Self {
     SimpleAtomContainer {
       atom_map: HashMap::with_capacity(capacity),
+      potential_energy: 0.
     }
   }
 
@@ -66,6 +71,14 @@ impl SimpleAtomContainer {
     }
 
     (data_container, force_container)
+  }
+
+  pub fn set_potential_energy(&mut self, potential_energy: f64) {
+    self.potential_energy = potential_energy;
+  }
+  
+  pub fn get_potential_energy(&self) -> f64 {
+    self.potential_energy
   }
 }
 
