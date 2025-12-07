@@ -35,4 +35,4 @@ def show_energy_plot(path: str) -> None:
 
 
 if __name__ == "__main__":
-    show_energy_plot("../../output/2025-12-07_14-14-10")
+    show_energy_plot("../../output/2025-12-07_14-57-13_enum_verlet_e_17_e_4_triangle")

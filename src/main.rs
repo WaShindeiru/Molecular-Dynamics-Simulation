@@ -2,7 +2,7 @@ use log::info;
 use nalgebra::Vector3;
 use crate::data::types::AtomType;
 use crate::data::units::TIME_U;
-use crate::particle::{ParticleOperations, SafeAtomFactory};
+use crate::particle::{Particle, SafeAtomFactory};
 use crate::sim_core::Engine;
 
 mod data;
@@ -17,9 +17,9 @@ fn main() {
   env_logger::init();
   info!("Starting simulation...");
 
-  let num_iterations = 1000;
+  let num_iterations = 100000;
   let save = true;
-  many_particles(save, num_iterations);
+  triangle(save, num_iterations);
 }
 
 fn single_atom(save: bool, num_iterations: usize) {
@@ -28,9 +28,9 @@ fn single_atom(save: bool, num_iterations: usize) {
   let custom_path: Vec<Vector3<f64>> = vec![Vector3::new(10., 12.5, 10.)];
   
   let atom_factory = SafeAtomFactory::new();
-  let atom_0 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
-  let static_atom = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, custom_path));
-  let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, static_atom];
+  let atom_0 = Particle::Atom(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
+  let static_atom = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::Fe, custom_path));
+  let atoms: Vec<Particle> = vec![atom_0, static_atom];
 
   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
 
@@ -55,10 +55,10 @@ fn symmetric_triangle_test(save: bool, num_iterations: usize) {
     atom_2_path.push(Vector3::new(x, y, z));
   }
 
-  let atom_0 = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, atom_0_path));
-  let atom_1 = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, atom_1_path));
-  let atom_2 = Box::new(atom_factory.get_atom_custom_path(AtomType::Fe, atom_2_path));
-  let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, atom_1, atom_2];
+  let atom_0 = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::Fe, atom_0_path));
+  let atom_1 = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::Fe, atom_1_path));
+  let atom_2 = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::Fe, atom_2_path));
+  let atoms: Vec<Particle> = vec![atom_0, atom_1, atom_2];
 
   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
 
@@ -69,11 +69,11 @@ fn triangle(save: bool, num_iterations: usize) {
   let simulation_size = Vector3::new(50., 50., 50.);
 
   let atom_factory = SafeAtomFactory::new();
-  let atom_0 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
-  let atom_1 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 12.8, 10.), Vector3::new(0., 0., 0.)));
-  let atom_2 = Box::new(atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.)));
+  let atom_0 = Particle::Atom(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.)));
+  let atom_1 = Particle::Atom(atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 12.8, 10.), Vector3::new(0., 0., 0.)));
+  let atom_2 = Particle::Atom(atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.)));
   // let atom_3 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.8, 10., 12.8), Vector3::new(0., 0., 0.));
-  let atoms: Vec<Box<dyn ParticleOperations>> = vec![atom_0, atom_1, atom_2];
+  let atoms: Vec<Particle> = vec![atom_0, atom_1, atom_2];
 
   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);
 
@@ -89,11 +89,11 @@ fn many_particles(save: bool, num_iterations: usize) {
   let lower_bound = 46.;
   let upper_bound = 52.;
 
-  let mut atoms: Vec<Box<dyn ParticleOperations>> = Vec::new();
+  let mut atoms: Vec<Particle> = Vec::new();
 
   for i in 0..number_of_atoms {
     let atom = atom_factory.get_atom_random(AtomType::Fe, lower_bound, upper_bound);
-    atoms.push(Box::new(atom));
+    atoms.push(Particle::Atom(atom));
   }
 
   let mut engine = Engine::new_from_atoms(atoms, simulation_size, TIME_STEP, num_iterations);

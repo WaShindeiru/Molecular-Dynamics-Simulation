@@ -1,7 +1,6 @@
 use nalgebra::Vector3;
 use crate::output::{AtomDTO, WorldDTO};
-use crate::particle::{potential, SimpleAtomContainer};
-use crate::particle::atom::ParticleOperations;
+use crate::particle::{potential, Particle, SimpleAtomContainer};
 
 pub struct World {
   atoms: Vec<SimpleAtomContainer>,
@@ -20,7 +19,7 @@ impl World {
     }
   }
 
-  pub fn new_from_atoms(atoms: Vec<Box<dyn ParticleOperations>>, size: Vector3<f64>) -> Self {
+  pub fn new_from_atoms(atoms: Vec<Particle>, size: Vector3<f64>) -> Self {
     let atom_count = atoms.len();
     let atom_container = SimpleAtomContainer::new_from_atoms(atoms);
     World {
@@ -38,13 +37,12 @@ impl World {
     let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
 
     let mut half_velocity_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); self.atom_count];
-    let mut new_position_atoms: Vec<Box<dyn ParticleOperations>> = Vec::with_capacity(self.atom_count);
+    let mut new_position_atoms: Vec<Particle> = Vec::with_capacity(self.atom_count);
 
-    let max_key = previous_atom_container.get_map().keys().max().unwrap();
-    for i in 0..=*max_key {
-      let atom_i = previous_atom_container.get_atom_by_id(i).unwrap();
+    for (i, atom_i) in previous_atom_container.get_atoms().iter().enumerate() {
+      assert_eq!(i, atom_i.get_id() as usize);
       let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + atom_i.get_acceleration() * (time_step / 2.0);
-      half_velocity_cache[i as usize] = half_velocity_i;
+      half_velocity_cache[i] = half_velocity_i;
 
       let next_position: Vector3<f64> = atom_i.get_position() + half_velocity_i * time_step;
       let mut new_atom_data = atom_i.custom_clone();
@@ -87,22 +85,14 @@ impl World {
     assert_eq!(self.atoms.len() - 1, self.current_iteration);
     let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
 
-    let mut previous_atoms: Vec<Box<dyn ParticleOperations>> = Vec::with_capacity(self.atom_count);
-
-    let max_key = previous_atom_container.get_map().keys().max().unwrap();
-    for i in 0..=*max_key {
-      previous_atoms.push(previous_atom_container.get_atom_by_id(i).unwrap().custom_clone());
-    }
-
-    let fpinfo = potential::compute_forces_potential(&previous_atoms);
+    let fpinfo = potential::compute_forces_potential(&previous_atom_container.get_atoms());
     let potential_energy = fpinfo.potential_energy;
     let forces = fpinfo.fp;
 
-    for (i_, particle_i) in previous_atom_container.get_map().iter() {
-      let i = *i_;
-      assert_eq!(i, particle_i.get_id());
+    for (i, particle_i) in previous_atom_container.get_atoms().iter().enumerate() {
+      assert_eq!(i, particle_i.get_id() as usize);
 
-      let new_force = forces.get(i as usize).unwrap().force;
+      let new_force = forces.get(i).unwrap().force;
       let new_acceleration = new_force / particle_i.get_mass();
       let new_velocity = particle_i.get_velocity() + new_acceleration * time_step;
       let new_position = particle_i.get_position() + new_velocity * time_step;
@@ -134,7 +124,7 @@ impl World {
       let atom_container = self.atoms.get(iteration).unwrap();
       let mut atoms_dto: Vec<AtomDTO> = Vec::with_capacity(atom_container.len());
 
-      for (id, atom) in atom_container.get_map().iter() {
+      for atom in atom_container.get_atoms().iter() {
         atoms_dto.push(atom.to_transfer_struct());
       }
 

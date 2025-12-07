@@ -2,7 +2,7 @@ use nalgebra::Vector3;
 use crate::data::constants::get_constant;
 use crate::data::{Constant};
 use crate::data::types::get_interaction_type;
-use crate::particle::{ParticleOperations};
+use crate::particle::{Particle};
 use crate::particle::potential::b::g;
 use crate::particle::potential::fc::{fc, fc_gradient};
 use crate::particle::potential::va::{va, va_gradient};
@@ -27,7 +27,7 @@ pub struct FPInfo {
   pub potential_energy: f64,
 }
 
-pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) -> FPInfo {
+pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
   let mut result: Vec<FP> = vec![
     FP {
       force: Vector3::new(0., 0., 0.),

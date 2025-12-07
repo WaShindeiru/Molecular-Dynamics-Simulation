@@ -6,26 +6,6 @@ use crate::data::types::AtomType;
 use crate::output::{AtomDTO};
 use crate::particle::custom_path_atom::CustomPathAtom;
 
-pub trait ParticleOperations {
-  fn get_id(&self) -> u64;
-  fn get_type(&self) -> &AtomType;
-  fn get_position(&self) -> &Vector3<f64>;
-  fn get_velocity(&self) -> &Vector3<f64>;
-  fn get_acceleration(&self) -> &Vector3<f64>;
-  fn get_mass(&self) -> f64;
-  fn get_force(&self) -> &Vector3<f64>;
-  fn get_potential_energy(&self) -> f64;
-
-  fn set_velocity(&mut self, velocity_: Vector3<f64>);
-  fn set_potential_energy(&mut self, potential_energy_: f64);
-  fn set_force(&mut self, force_: Vector3<f64>);
-  fn set_acceleration(&mut self, acceleration_: Vector3<f64>);
-  fn update_position(&mut self, position_: Vector3<f64>);
-  fn to_transfer_struct(&self) -> AtomDTO;
-
-  fn custom_clone(&self) -> Box<dyn ParticleOperations>;
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Atom {
   id: u64,
@@ -42,61 +22,61 @@ pub struct Atom {
   potential_energy: f64,
 }
 
-impl ParticleOperations for Atom {
-  fn get_id(&self) -> u64 {
+impl Atom {
+  pub fn get_id(&self) -> u64 {
     self.id
   }
 
-  fn get_type(&self) -> &AtomType {
+  pub fn get_type(&self) -> &AtomType {
     &self.type_
   }
 
-  fn get_position(&self) -> &Vector3<f64> {
+  pub fn get_position(&self) -> &Vector3<f64> {
     &self.position
   }
 
-  fn get_velocity(&self) -> &Vector3<f64> {
+  pub fn get_velocity(&self) -> &Vector3<f64> {
     &self.velocity
   }
   
-  fn get_acceleration(&self) -> &Vector3<f64> {
+  pub fn get_acceleration(&self) -> &Vector3<f64> {
     &self.acceleration
   }
 
-  fn get_mass(&self) -> f64 {
+  pub fn get_mass(&self) -> f64 {
     self.mass
   }
 
-  fn get_force(&self) -> &Vector3<f64> {
+  pub fn get_force(&self) -> &Vector3<f64> {
     &self.force
   }
 
-  fn get_potential_energy(&self) -> f64 {
+  pub fn get_potential_energy(&self) -> f64 {
     self.potential_energy
   }
 
-  fn set_velocity(&mut self, velocity_: Vector3<f64>) {
+  pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     self.velocity = velocity_;
     self.kinetic_energy = self.mass * velocity_.magnitude_squared() / 2.0;
   }
 
-  fn set_potential_energy(&mut self, potential_energy_: f64) {
+  pub fn set_potential_energy(&mut self, potential_energy_: f64) {
     self.potential_energy = potential_energy_;
   }
 
-  fn set_force(&mut self, force_: Vector3<f64>) {
+  pub fn set_force(&mut self, force_: Vector3<f64>) {
     self.force = force_;
   }
 
-  fn set_acceleration(&mut self, acceleration_: Vector3<f64>) {
+  pub fn set_acceleration(&mut self, acceleration_: Vector3<f64>) {
     self.acceleration = acceleration_;
   }
 
-  fn update_position(&mut self, position_: Vector3<f64>) {
+  pub fn update_position(&mut self, position_: Vector3<f64>) {
     self.position = position_;
   }
 
-  fn to_transfer_struct(&self) -> AtomDTO {
+  pub fn to_transfer_struct(&self) -> AtomDTO {
     AtomDTO {
       id: self.id,
       atom_type: if self.type_ == AtomType::C { 0 } else { 1 },
@@ -109,10 +89,6 @@ impl ParticleOperations for Atom {
       force_y: self.force.y,
       force_z: self.force.z,
     }
-  }
-
-  fn custom_clone(&self) -> Box<dyn ParticleOperations> {
-    Box::new(self.clone())
   }
 }
 

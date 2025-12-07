@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::output::EngineDTO;
 use crate::sim_core::world::World;
-use crate::particle::{ParticleOperations};
 
 use std::{fs, time};
 use std::time::{Duration, Instant};
 use chrono::prelude::*;
 use csv::Writer;
 use log::info;
+use crate::particle::Particle;
 
 pub struct Engine {
   world: World,
@@ -31,7 +31,7 @@ impl Engine {
     }
   }
 
-  pub fn new_from_atoms(atoms: Vec<Box<dyn ParticleOperations>>, size: Vector3<f64>, time_step: f64, num_of_iterations: usize) -> Self {
+  pub fn new_from_atoms(atoms: Vec<Particle>, size: Vector3<f64>, time_step: f64, num_of_iterations: usize) -> Self {
     let world = World::new_from_atoms(atoms, size);
 
     Engine {
