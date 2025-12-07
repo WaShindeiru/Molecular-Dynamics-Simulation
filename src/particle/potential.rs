@@ -1,15 +1,15 @@
-use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::data::constants::get_constant;
-use crate::data::{Constant, InteractionType};
+use crate::data::{Constant};
 use crate::data::types::get_interaction_type;
-use crate::particle::{Atom, ParticleOperations};
-use crate::particle::atom_collection::{AtomCollection, AtomMetadata};
+use crate::particle::{ParticleOperations};
 use crate::particle::potential::b::g;
 use crate::particle::potential::fc::{fc, fc_gradient};
 use crate::particle::potential::va::{va, va_gradient};
 use crate::particle::potential::vr::{vr, vr_gradient};
 use crate::utils::math::cos_from_vec;
+
+const OPTIMIZATION: bool = false;
 
 pub mod fc;
 pub mod vr;
@@ -38,7 +38,8 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
 
   let mut gradients_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); particles.len()];
   let mut potential_energy_total: f64 = 0.;
-  let mut neighbours: Vec<usize>;
+  let mut neighbours: Vec<usize> = Vec::with_capacity(particles.len() - 1);
+
   // let mut num_of_neighbours: i32;
   // let mut num_of_neighbours_cache: Vec<i32> = vec![0; particles.len()];
 
@@ -46,18 +47,25 @@ pub fn compute_forces_potential(particles: &Vec<Box<dyn ParticleOperations>>) ->
     assert_eq!(i, particle_i.get_id() as usize);
     neighbours = Vec::with_capacity(particles.len() - 1);
 
-    for (j, particle_j) in particles.iter().enumerate() {
-      if j == i { continue }
+    if OPTIMIZATION {
+      for (j, particle_j) in particles.iter().enumerate() {
+        if j == i { continue }
 
-      let r_ij_vec = particle_j.get_position() - particle_i.get_position();
-      let r_ij_mag = r_ij_vec.magnitude();
-      let interaction_type_ij = get_interaction_type(particle_i.get_type(), particle_j.get_type());
+        let r_ij_vec = particle_j.get_position() - particle_i.get_position();
+        let r_ij_mag = r_ij_vec.magnitude();
+        let interaction_type_ij = get_interaction_type(particle_i.get_type(), particle_j.get_type());
 
-      let R_ij = get_constant(&interaction_type_ij, Constant::R);
-      let D_ij = get_constant(&interaction_type_ij, Constant::D);
-      let fc_ij = fc::fc(r_ij_mag, R_ij, D_ij);
-      if fc_ij < 1e-10 { continue }
-      else {
+        let R_ij = get_constant(&interaction_type_ij, Constant::R);
+        let D_ij = get_constant(&interaction_type_ij, Constant::D);
+        let fc_ij = fc::fc(r_ij_mag, R_ij, D_ij);
+        if fc_ij < 1e-10 { continue }
+        else {
+          neighbours.push(j);
+        }
+      }
+    } else {
+      for (j, _) in particles.iter().enumerate() {
+        if j == i { continue }
         neighbours.push(j);
       }
     }

@@ -11,9 +11,6 @@ def read_forces_csv(filename):
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file)
 
-        # Skip header if exists, otherwise remove this line
-        # next(csv_reader, None)
-
         for row in csv_reader:
             if len(row) < 5:
                 continue  # Skip incomplete rows

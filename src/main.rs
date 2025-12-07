@@ -17,9 +17,9 @@ fn main() {
   env_logger::init();
   info!("Starting simulation...");
 
-  let num_iterations = 100000;
+  let num_iterations = 1000;
   let save = true;
-  triangle(save, num_iterations);
+  many_particles(save, num_iterations);
 }
 
 fn single_atom(save: bool, num_iterations: usize) {
