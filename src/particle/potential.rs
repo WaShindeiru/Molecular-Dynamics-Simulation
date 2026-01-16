@@ -135,8 +135,10 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
         chi_ij += fc_ik * g_ik;
       }
 
-      let b_ij = (1. / (1. + chi_ij).sqrt());
-      let b_ij_grad_chi_ij = -0.5 * (1. + chi_ij).powf(-1.5);
+      // let b_ij = (1. / (1. + chi_ij).sqrt());
+      // let b_ij_grad_chi_ij = -0.5 * (1. + chi_ij).powf(-1.5);
+      let b_ij = 1.;
+      let b_ij_grad_chi_ij = 0.;
 
       bij_grad_i = bij_grad_i * b_ij_grad_chi_ij;
       bij_grad_j = bij_grad_j * b_ij_grad_chi_ij;

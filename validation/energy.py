@@ -35,4 +35,4 @@ def show_energy_plot(path: str) -> None:
 
 
 if __name__ == "__main__":
-    show_energy_plot("../../output/2025-12-07_18-21-25")
+    show_energy_plot("../../output/2026-01-11_22-58-13")
