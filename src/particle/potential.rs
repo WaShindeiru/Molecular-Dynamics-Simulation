@@ -27,6 +27,7 @@ pub struct FPInfo {
   pub potential_energy: f64,
 }
 
+// TODO: Optimize cos computation
 pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
   let mut result: Vec<FP> = vec![
     FP {
@@ -80,9 +81,6 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
       let particle_j = particles.get(j).unwrap();
       let interaction_type_ij = get_interaction_type(particle_i.get_type(), particle_j.get_type());
 
-      let mut bij_grad_i = Vector3::new(0., 0., 0.);
-      let mut bij_grad_j = Vector3::new(0., 0., 0.);
-
       let R_ij = get_constant(&interaction_type_ij, Constant::R);
       let D_ij = get_constant(&interaction_type_ij, Constant::D);
       let S_ij = get_constant(&interaction_type_ij, Constant::S);
@@ -101,11 +99,14 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
       let vr_ij_grad_i = vr_gradient(&r_ij_vec, r_ij_mag, D0_ij, S_ij, Beta_ij, r0_ij);
       let va_ij_grad_i = va_gradient(&r_ij_vec, r_ij_mag, D0_ij, S_ij, Beta_ij, r0_ij);
 
+      let mut bij_grad_i = Vector3::new(0., 0., 0.);
+      let mut bij_grad_j = Vector3::new(0., 0., 0.);
+
       let mut chi_ij: f64 = 0.;
 
       for _k in neighbours.iter() {
         let k = *_k;
-        if k == j {continue};
+        if (k == j || k == i) {continue};
 
         let particle_k = particles.get(k).unwrap();
         let r_ik_vec = particle_k.get_position() - particle_i.get_position();
@@ -135,10 +136,10 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
         chi_ij += fc_ik * g_ik;
       }
 
-      // let b_ij = (1. / (1. + chi_ij).sqrt());
-      // let b_ij_grad_chi_ij = -0.5 * (1. + chi_ij).powf(-1.5);
-      let b_ij = 1.;
-      let b_ij_grad_chi_ij = 0.;
+      let b_ij = (1. / (1. + chi_ij).sqrt());
+      let b_ij_grad_chi_ij = -0.5 * (1. + chi_ij).powf(-1.5);
+      // let b_ij = 1.;
+      // let b_ij_grad_chi_ij = 0.;
 
       bij_grad_i = bij_grad_i * b_ij_grad_chi_ij;
       bij_grad_j = bij_grad_j * b_ij_grad_chi_ij;
@@ -154,7 +155,7 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
       result[i].force += force_i;
 
       let force_j = -0.5 * (-fc_ij_grad_i * (vr_ij - b_ij * va_ij)
-        + fc_ij * (-vr_ij_grad_i - bij_grad_i * va_ij - b_ij * (-va_ij_grad_i)));
+        + fc_ij * (-vr_ij_grad_i - bij_grad_j * va_ij - b_ij * (-va_ij_grad_i)));
       result[j].force += force_j;
 
       for k_ in neighbours.iter() {
