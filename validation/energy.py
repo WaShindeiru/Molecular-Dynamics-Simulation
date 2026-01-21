@@ -73,4 +73,5 @@ def show_energy_plot_from_text(path: str) -> None:
 
 if __name__ == "__main__":
     # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check")
-    show_energy_plot("../../output/2026-01-18_23-58-52")
+    # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check_v2/prog_check")
+    show_energy_plot("../../output/2026-01-21_09-36-06_sphere_200_e_17")

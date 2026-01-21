@@ -11,16 +11,16 @@ mod utils;
 mod sim_core;
 mod output;
 
-const TIME_STEP: f64 = 1e-17 / TIME_U;
+const TIME_STEP: f64 = 1e-18 / TIME_U;
 
 
 fn main() {
   env_logger::init();
   info!("Starting simulation...");
 
-  let num_iterations = 10000;
+  let num_iterations = 100000;
   let save = true;
-  sphere_particles(save, num_iterations, 80);
+  sphere_particles(save, num_iterations, 200);
   // triangle(true, num_iterations);
 }
 
