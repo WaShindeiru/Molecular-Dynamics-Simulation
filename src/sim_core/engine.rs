@@ -3,7 +3,8 @@ use nalgebra::Vector3;
 use crate::output::EngineDTO;
 use crate::sim_core::world::World;
 
-use std::{fs, time};
+use std::{fs, io, time};
+use std::io::Write;
 use std::time::{Duration, Instant};
 use chrono::prelude::*;
 use csv::Writer;
@@ -46,12 +47,23 @@ impl Engine {
   
   pub fn run(&mut self, save: bool) {
     let start = Instant::now();
+    let spinner = ['|', '/', '-', '\\'];
+    let mut counter = 0;
 
-    for _ in 0..self.num_of_iterations {
+    for i in 0..self.num_of_iterations {
+      if i % 100 == 0 {
+        let frame = counter % spinner.len();
+        print!("\rProgress: {}/{} {}", i, self.num_of_iterations, spinner[frame]);
+        io::stdout().flush().unwrap();
+        counter += 1;
+      }
       self.world.update_verlet(self.time_step, self.current_iteration + 1);
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
+
+    print!("\n");
+    io::stdout().flush().unwrap();
 
     self.simulation_time = start.elapsed();
 

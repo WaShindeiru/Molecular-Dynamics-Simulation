@@ -18,9 +18,9 @@ fn main() {
   env_logger::init();
   info!("Starting simulation...");
 
-  let num_iterations = 100000;
+  let num_iterations = 10000;
   let save = true;
-  sphere_particles(save, num_iterations, 200);
+  sphere_particles(save, num_iterations, 40);
   // triangle(true, num_iterations);
 }
 
