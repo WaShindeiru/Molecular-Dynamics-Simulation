@@ -6,6 +6,7 @@ use crate::sim_core::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContai
 pub struct SimpleAtomContainer {
   atoms: Vec<Particle>,
   potential_energy: f64,
+  kinetic_energy: f64,
 }
 
 impl SimpleAtomContainer {
@@ -13,25 +14,27 @@ impl SimpleAtomContainer {
     SimpleAtomContainer {
       atoms: Vec::new(),
       potential_energy: 0.,
+      kinetic_energy: 0.,
     }
   }
 
   pub fn new_from_atoms(atoms: Vec<Particle>) -> Self {
     SimpleAtomContainer {
       atoms,
-      potential_energy: 0.
+      potential_energy: 0.,
+      kinetic_energy: 0.,
     }
   }
 
   pub fn new_fixed_cap(capacity: usize) -> Self {
     SimpleAtomContainer {
       atoms: Vec::with_capacity(capacity),
-      potential_energy: 0.
+      potential_energy: 0.,
+      kinetic_energy: 0.,
     }
   }
 
   pub fn add_atom(&mut self, atom: Particle) {
-    let id = atom.get_id();
     self.atoms.push(atom);
   }
 

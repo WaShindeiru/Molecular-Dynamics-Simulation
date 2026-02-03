@@ -20,6 +20,7 @@ pub struct Atom {
 
   kinetic_energy: f64,
   potential_energy: f64,
+  thermostat_work: f64,
 }
 
 impl Atom {
@@ -54,6 +55,8 @@ impl Atom {
   pub fn get_potential_energy(&self) -> f64 {
     self.potential_energy
   }
+  
+  pub fn get_thermostat_work(&self) -> f64 { self.thermostat_work }
 
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     self.velocity = velocity_;
@@ -71,6 +74,10 @@ impl Atom {
   pub fn set_acceleration(&mut self, acceleration_: Vector3<f64>) {
     self.acceleration = acceleration_;
   }
+  
+  pub fn set_thermostat_work(&mut self, thermostat_work: f64) {
+    self.thermostat_work = thermostat_work
+  }
 
   pub fn update_position(&mut self, position_: Vector3<f64>) {
     self.position = position_;
@@ -85,6 +92,7 @@ impl Atom {
       z: self.position.z,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
+      thermostat_work: self.thermostat_work,
       force_x: self.force.x,
       force_y: self.force.y,
       force_z: self.force.z,
@@ -113,6 +121,7 @@ impl Atom {
       acceleration,
       kinetic_energy: mass * velocity.magnitude_squared() / 2.0,
       potential_energy,
+      thermostat_work: 0.0,
     }
   }
 }
@@ -140,6 +149,7 @@ impl AtomFactory {
         acceleration: Vector3::new(0.0, 0.0, 0.0),
         kinetic_energy: ATOMIC_MASS_C * velocity_.magnitude_squared() / 2.0,
         potential_energy: 0.0,
+        thermostat_work: 0.0,
       },
       AtomType::Fe => Atom{
         type_: AtomType::Fe,
@@ -151,6 +161,7 @@ impl AtomFactory {
         acceleration: Vector3::new(0.0, 0.0, 0.0),
         kinetic_energy: ATOMIC_MASS_FE * velocity_.magnitude_squared() / 2.0,
         potential_energy: 0.0,
+        thermostat_work: 0.0,
       }
     };
     self.counter = self.counter + 1;

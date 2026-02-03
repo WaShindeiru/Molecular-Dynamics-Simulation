@@ -6,7 +6,7 @@ pub fn cos_from_vec(r_ij: &Vector3<f64>, r_ik: &Vector3<f64>) -> f64 {
 
     let result = r_ij.dot(r_ik) / (rij_length * rik_length);
 
-    assert!(result >= -1. && result <= 1.);
+    assert!(result >= -1. - 1e-12 && result <= 1. + 1e-12);
 
     result
 }

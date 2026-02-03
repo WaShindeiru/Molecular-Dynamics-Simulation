@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use nalgebra::Vector3;
-use crate::output::EngineDTO;
+use crate::output::{AtomDTO, EngineDTO};
 use crate::sim_core::world::World;
 
 use std::{fs, io, time};
@@ -45,7 +45,7 @@ impl Engine {
     }
   }
   
-  pub fn run(&mut self, save: bool) {
+  pub fn run(&mut self, save: bool, use_thermostat: bool, desired_temperature_kelvin: f64, q_effective_mass: f64, verbose: bool) {
     let start = Instant::now();
     let spinner = ['|', '/', '-', '\\'];
     let mut counter = 0;
@@ -57,7 +57,14 @@ impl Engine {
         io::stdout().flush().unwrap();
         counter += 1;
       }
-      self.world.update_verlet(self.time_step, self.current_iteration + 1);
+
+      if use_thermostat {
+        self.world.update_verlet_nose_hoover(self.time_step, self.current_iteration + 1,
+                                             desired_temperature_kelvin, q_effective_mass);
+      } else {
+        self.world.update_verlet(self.time_step, self.current_iteration + 1);
+      }
+
       self.current_iteration += 1;
       self.current_time += self.time_step;
     }
@@ -70,7 +77,7 @@ impl Engine {
     info!("Simulation completed in {:.2?} seconds.", self.simulation_time);
 
     if save {
-      self.save_in_laamps_format("../output").unwrap();
+      self.save_in_laamps_format("../output", use_thermostat, verbose).unwrap();
     }
   }
 
@@ -82,7 +89,7 @@ impl Engine {
     }
   }
 
-  pub fn save_in_laamps_format(&self, path: &str) -> std::io::Result<()> {
+  pub fn save_in_laamps_format(&self, path: &str, use_thermostat: bool, verbose: bool) -> std::io::Result<()> {
 
     let start = Instant::now();
     let now: DateTime<Local> = Local::now();
@@ -91,6 +98,7 @@ impl Engine {
     fs::create_dir(&format!("./{}/{}", path, time_string))?;
 
     let engine_dto = self.to_transfer_struct();
+    let atoms = &engine_dto.world.atoms;
 
     for i in 0..engine_dto.num_of_iterations {
       if i % 100 == 0 {
@@ -99,7 +107,7 @@ impl Engine {
         result_string.push_str(&format!("{}\n", i+1));
 
         result_string.push_str(&"ITEM: NUMBER OF ATOMS\n".to_string());
-        let atom_container = engine_dto.world.atoms.get(i).unwrap();
+        let atom_container = atoms.get(i).unwrap();
         let num_of_atoms = atom_container.len();
         result_string.push_str(&format!("{}\n", num_of_atoms));
 
@@ -122,27 +130,43 @@ impl Engine {
     // let mut potential_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
     let potential_energy = engine_dto.world.potential_energy;
     let mut total_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
+    let mut thermostat_work: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
 
-    let mut forces: Vec<HashMap<usize, Vector3<f64>>> = Vec::new();
+    let mut forces: Vec<Vec<Vector3<f64>>> = Vec::new();
+    let mut potential_energies: Vec<Vec<f64>> = Vec::new();
+
+    let mut thermostat_work_sum = 0.;
 
     for i in 0..engine_dto.num_of_iterations + 1 {
       let atom_container = engine_dto.world.atoms.get(i).unwrap();
-      let mut current_forces: HashMap<usize, Vector3<f64>> = HashMap::new();
+      let mut current_forces: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); engine_dto.world.num_of_atoms];
+      let mut current_potential_energies: Vec<f64> = vec![0.; engine_dto.world.num_of_atoms];
       let mut kinetic_energy_i = 0.;
+      let mut thermostat_work_i = 0.;
       // let mut potential_energy_i = 0.;
 
       for atom_dto in atom_container.iter() {
         kinetic_energy_i += atom_dto.kinetic_energy;
+        thermostat_work_i += atom_dto.thermostat_work;
         // potential_energy_i += atom_dto.potential_energy;
 
-        current_forces.insert(atom_dto.id as usize, Vector3::new(atom_dto.force_x, atom_dto.force_y, atom_dto.force_z));
+        let force_i = current_forces.get_mut(atom_dto.id as usize).unwrap();
+        force_i.x = atom_dto.force_x;
+        force_i.y = atom_dto.force_y;
+        force_i.z = atom_dto.force_z;
+
+        *current_potential_energies.get_mut(atom_dto.id as usize).unwrap() = atom_dto.potential_energy;
       }
+
+      thermostat_work_sum += thermostat_work_i;
 
       kinetic_energy.push(kinetic_energy_i);
       // potential_energy.push(potential_energy_i);
       let potential_energy_i = *potential_energy.get(i).unwrap();
       total_energy.push(kinetic_energy_i + potential_energy_i);
+      thermostat_work.push(thermostat_work_sum);
       forces.push(current_forces);
+      potential_energies.push(current_potential_energies);
     }
 
     let mut wtr = Writer::from_path(&format!("./{}/{}/energy.csv", path, time_string))?;
@@ -150,32 +174,34 @@ impl Engine {
     assert!(kinetic_energy.len() == potential_energy.len() && kinetic_energy.len() == total_energy.len());
 
     for i in 0..kinetic_energy.len() {
-      wtr.write_record(&[
-        format!("{}", i+1),
-        format!("{}", kinetic_energy.get(i).unwrap()),
-        format!("{}", potential_energy.get(i).unwrap()),
-        format!("{}", total_energy.get(i).unwrap()),
-      ])?;
-    }
-
-    wtr.flush()?;
-
-    let mut wtr = Writer::from_path(&format!("./{}/{}/forces.csv", path, time_string))?;
-    for i in 0..forces.len() {
-      let force_map = forces.get(i).unwrap();
-
-      for (id, force_vector) in force_map.iter() {
+      if use_thermostat {
         wtr.write_record(&[
           format!("{}", i+1),
-          format!("{}", id),
-          format!("{}", force_vector.x),
-          format!("{}", force_vector.y),
-          format!("{}", force_vector.z),
+          format!("{}", kinetic_energy.get(i).unwrap()),
+          format!("{}", potential_energy.get(i).unwrap()),
+          format!("{}", total_energy.get(i).unwrap()),
+          format!("{}", thermostat_work.get(i).unwrap()),
+          format!("{}", engine_dto.world.thermostat_epsilon.get(i).unwrap()),
+        ])?;
+      } else {
+        wtr.write_record(&[
+          format!("{}", i+1),
+          format!("{}", kinetic_energy.get(i).unwrap()),
+          format!("{}", potential_energy.get(i).unwrap()),
+          format!("{}", total_energy.get(i).unwrap()),
         ])?;
       }
+
     }
 
     wtr.flush()?;
+
+    if verbose {
+      save_forces(path, &time_string, &forces)?;
+      save_potential_energies(path, &time_string, &potential_energies)?;
+      save_positions_in_one_file(path, &time_string, &atoms)?;
+    }
+
 
     let elapsed = start.elapsed();
     info!("Data saved in LAMMPS format in {:.2?} seconds.", elapsed);
@@ -183,8 +209,70 @@ impl Engine {
     let mut wtr = Writer::from_path(&format!("./{}/{}/info.txt", path, time_string))?;
     wtr.write_record(&["Simulation Time", &format!("{:.2?} seconds", self.simulation_time)])?;
     wtr.write_record(&["Data Saving Time", &format!("{:.2?} seconds", elapsed)])?;
+    wtr.write_record(&["use thermostat: ", &format!("{}", use_thermostat)])?;
     wtr.flush()?;
 
     Ok(())
   }
+}
+
+fn save_forces(path: &str, time_string: &String, forces: &Vec<Vec<Vector3<f64>>>) -> std::io::Result<()> {
+  let mut wtr = Writer::from_path(&format!("./{}/{}/forces.csv", path, time_string))?;
+  for i in 0..forces.len() {
+    let force_map = forces.get(i).unwrap();
+
+    for (id, force_vector) in force_map.iter().enumerate() {
+      wtr.write_record(&[
+        format!("{}", i+1),
+        format!("{}", id),
+        format!("{}", force_vector.x),
+        format!("{}", force_vector.y),
+        format!("{}", force_vector.z),
+      ])?;
+    }
+  }
+
+  wtr.flush()?;
+
+  Ok(())
+}
+
+fn save_potential_energies(path: &str, time_string: &String, potential_energies: &Vec<Vec<f64>>) -> io::Result<()> {
+  let mut wtr = Writer::from_path(&format!("./{}/{}/potential_energies.csv", path, time_string))?;
+  for i in 0..potential_energies.len() {
+    let potential_energy_container = potential_energies.get(i).unwrap();
+
+    for (id, potential_energy) in potential_energy_container.iter().enumerate() {
+      wtr.write_record(&[
+        format!("{}", i+1),
+        format!("{}", id),
+        format!("{}", potential_energy),
+      ])?;
+    }
+  }
+
+  wtr.flush()?;
+
+  Ok(())
+}
+
+fn save_positions_in_one_file(path: &str, time_string: &String, atoms: &Vec<Vec<AtomDTO>>) -> io::Result<()> {
+  let mut wtr = Writer::from_path(&format!("./{}/{}/positions.csv", path, time_string))?;
+  for i in 0..atoms.len() {
+    let atom_container = atoms.get(i).unwrap();
+
+    for (id, atom) in atom_container.iter().enumerate() {
+      wtr.write_record(&[
+        format!("{}", i+1),
+        format!("{}", id),
+        format!("{}", atom.x),
+        format!("{}", atom.y),
+        format!("{}", atom.z),
+      ])?;
+    }
+  }
+
+  wtr.flush()?;
+
+  Ok(())
 }

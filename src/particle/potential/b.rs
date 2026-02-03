@@ -1,11 +1,4 @@
-use nalgebra::{Vector, Vector3};
-use crate::data::constants::get_constant;
-use crate::data::{Constant, InteractionType};
-use crate::data::types::get_interaction_type;
-use crate::particle::atom_collection::AtomCollection;
-use crate::sim_core::simple_atom_container::SimpleAtomContainer;
-use crate::particle::potential::fc::{fc, fc_gradient};
-use crate::utils::math::cos_from_vec;
+use nalgebra::{Vector3};
 
 pub struct GGradient {
   pub grad_i: Vector3<f64>,

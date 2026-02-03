@@ -1,7 +1,5 @@
 use nalgebra::{Vector3};
 use std::f64::consts::PI;
-use crate::data::constants::get_constant;
-use crate::data::{Constant, InteractionType};
 
 pub fn fc(r_mag: f64, R: f64, D: f64) -> f64 {
 

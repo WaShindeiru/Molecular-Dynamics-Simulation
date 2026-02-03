@@ -64,6 +64,13 @@ impl Particle {
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_potential_energy(),
     }
   }
+
+  pub fn get_thermostat_work(&self) -> f64 {
+    match self {
+      Particle::Atom(atom) => atom.get_thermostat_work(),
+      Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_thermostat_work(),
+    }
+  }
   
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     match self {
@@ -92,6 +99,13 @@ impl Particle {
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.set_acceleration(acceleration_),
     }
   }
+
+  pub fn set_thermostat_work(&mut self, thermostat_work: f64) {
+    match self {
+      Particle::Atom(atom) => atom.set_thermostat_work(thermostat_work),
+      Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.set_thermostat_work(thermostat_work),
+    }
+  }
   
   pub fn update_position(&mut self, position_: Vector3<f64>) {
     match self {
@@ -113,4 +127,14 @@ impl Particle {
       Particle::CustomPathAtom(custom_path_atom) => Particle::CustomPathAtom(custom_path_atom.clone()),
     }
   }
+}
+
+pub fn compute_kinetic_energy(particles: &Vec<Particle>) -> f64 {
+  let mut kinetic_energy = 0.;
+
+  for particle in particles {
+    kinetic_energy += particle.get_mass() * particle.get_velocity().magnitude().powi(2) / 2.0;
+  }
+
+  kinetic_energy
 }

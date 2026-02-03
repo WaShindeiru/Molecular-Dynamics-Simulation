@@ -165,7 +165,9 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
         result[k].force += force_k;
       }
 
-      potential_energy_total = potential_energy_total + 0.5 * fc_ij * (vr_ij - b_ij * va_ij);
+      let potential_energy_partial = 0.5 * fc_ij * (vr_ij - b_ij * va_ij);
+      potential_energy_total = potential_energy_total + potential_energy_partial;
+      result[j].potential_energy += potential_energy_partial;
     }
   }
 

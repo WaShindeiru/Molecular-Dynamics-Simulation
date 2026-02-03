@@ -35,6 +35,8 @@ impl CustomPathAtom {
     self.potential_energy
   }
 
+  pub fn get_thermostat_work(&self) -> f64 { self.thermostat_work }
+
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     self.velocity = velocity_;
     self.kinetic_energy = self.mass * velocity_.magnitude_squared() / 2.0;
@@ -52,6 +54,10 @@ impl CustomPathAtom {
     self.acceleration = acceleration_;
   }
 
+  pub fn set_thermostat_work(&mut self, thermostat_work: f64) {
+    self.thermostat_work = thermostat_work
+  }
+
   pub fn update_position(&mut self, position_: Vector3<f64>) {
     self.step += 1;
     if self.step < self.path.len() {
@@ -66,8 +72,9 @@ impl CustomPathAtom {
       x: self.position.x,
       y: self.position.y,
       z: self.position.z,
-      kinetic_energy: 0.,
-      potential_energy: 0.,
+      kinetic_energy: self.kinetic_energy,
+      potential_energy: self.potential_energy,
+      thermostat_work: self.thermostat_work,
       force_x: self.force.x,
       force_y: self.force.y,
       force_z: self.force.z,
@@ -89,6 +96,7 @@ pub struct CustomPathAtom {
 
   kinetic_energy: f64,
   potential_energy: f64,
+  thermostat_work: f64,
 
   path: Vec<Vector3<f64>>,
   step: usize,
@@ -111,6 +119,7 @@ impl CustomPathAtom {
       acceleration: Vector3::new(0., 0., 0.),
       kinetic_energy: 0.,
       potential_energy: 0.,
+      thermostat_work: 0.0,
       path,
       step: 0,
     }
