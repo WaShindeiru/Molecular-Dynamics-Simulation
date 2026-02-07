@@ -6,6 +6,10 @@ impl CustomPathAtom {
   pub fn get_id(&self) -> u64 {
     self.id
   }
+  
+  pub fn get_iteration(&self) -> usize {
+    self.iteration
+  }
 
   pub fn get_type(&self) -> &AtomType {
     &self.type_
@@ -68,6 +72,7 @@ impl CustomPathAtom {
   pub fn to_transfer_struct(&self) -> AtomDTO {
     AtomDTO {
       id: self.id,
+      iteration: self.iteration,
       atom_type: if self.type_ == AtomType::C { 0 } else { 1 },
       x: self.position.x,
       y: self.position.y,
@@ -85,6 +90,7 @@ impl CustomPathAtom {
 #[derive(Debug, PartialEq, Clone)]
 pub struct CustomPathAtom {
   id: u64,
+  iteration: usize,
   type_: AtomType,
   mass: f64,
 
@@ -111,6 +117,31 @@ impl CustomPathAtom {
   ) -> Self {
     CustomPathAtom {
       id,
+      iteration: 0,
+      type_,
+      mass,
+      position: path[0],
+      velocity: Vector3::new(0., 0., 0.),
+      force: Vector3::new(0., 0., 0.),
+      acceleration: Vector3::new(0., 0., 0.),
+      kinetic_energy: 0.,
+      potential_energy: 0.,
+      thermostat_work: 0.0,
+      path,
+      step: 0,
+    }
+  }
+
+  pub fn new_custom_iteration(
+    id: u64,
+    iteration: usize,
+    type_: AtomType,
+    mass: f64,
+    path: Vec<Vector3<f64>>,
+  ) -> Self {
+    CustomPathAtom {
+      id,
+      iteration,
       type_,
       mass,
       position: path[0],

@@ -9,6 +9,7 @@ use crate::particle::custom_path_atom::CustomPathAtom;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Atom {
   id: u64,
+  iteration: usize,
   type_: AtomType,
   mass: f64,
 
@@ -26,6 +27,10 @@ pub struct Atom {
 impl Atom {
   pub fn get_id(&self) -> u64 {
     self.id
+  }
+  
+  pub fn get_iteration(&self) -> usize {
+    self.iteration
   }
 
   pub fn get_type(&self) -> &AtomType {
@@ -86,6 +91,7 @@ impl Atom {
   pub fn to_transfer_struct(&self) -> AtomDTO {
     AtomDTO {
       id: self.id,
+      iteration: self.iteration,
       atom_type: if self.type_ == AtomType::C { 0 } else { 1 },
       x: self.position.x,
       y: self.position.y,
@@ -113,6 +119,33 @@ impl Atom {
   ) -> Self {
     Atom {
       id,
+      iteration: 0,
+      type_,
+      mass,
+      position,
+      velocity,
+      force,
+      acceleration,
+      kinetic_energy: mass * velocity.magnitude_squared() / 2.0,
+      potential_energy,
+      thermostat_work: 0.0,
+    }
+  }
+
+  pub fn new_custom_iteration(
+    id: u64,
+    iteration: usize,
+    type_: AtomType,
+    mass: f64,
+    position: Vector3<f64>,
+    velocity: Vector3<f64>,
+    force: Vector3<f64>,
+    acceleration: Vector3<f64>,
+    potential_energy: f64,
+  ) -> Self {
+    Atom {
+      id,
+      iteration,
       type_,
       mass,
       position,
@@ -141,6 +174,7 @@ impl AtomFactory {
     let result = match atom {
       AtomType::C => Atom{
         id: self.counter,
+        iteration: 0,
         type_: AtomType::C,
         mass: ATOMIC_MASS_C,
         position: position_,
@@ -153,6 +187,7 @@ impl AtomFactory {
       },
       AtomType::Fe => Atom{
         type_: AtomType::Fe,
+        iteration: 0,
         id: self.counter,
         mass: ATOMIC_MASS_FE,
         position: position_,

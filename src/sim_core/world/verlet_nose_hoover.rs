@@ -38,9 +38,9 @@ impl World {
                                    desired_temperature: f64, q_effective_mass: f64) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
 
-    assert_eq!(self.atoms.len() - 1, self.current_iteration);
-    let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
-    let previous_thermostat_epsilon = *self.thermostat_epsilon.get(self.current_iteration).unwrap();
+    assert_eq!(self.atoms.len() - 1, self.current_index);
+    let previous_atom_container = self.atoms.get(self.current_index).unwrap();
+    let previous_thermostat_epsilon = *self.thermostat_epsilon.get(self.current_index).unwrap();
 
     let mut half_velocity_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); self.atom_count];
     let mut new_position_atoms: Vec<Particle> = Vec::with_capacity(self.atom_count);
@@ -109,6 +109,7 @@ impl World {
 
     self.atoms.push(next_iteration_atom_container);
 
-    assert_eq!(self.atoms.len() - 1, self.current_iteration);
+    self.current_index += 1;
+    assert_eq!(self.atoms.len() - 1, self.current_index);
   }
 }

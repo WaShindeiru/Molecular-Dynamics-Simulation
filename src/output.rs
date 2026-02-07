@@ -2,6 +2,7 @@ use crate::data::units::R_U;
 
 pub struct AtomDTO {
   pub id: u64,
+  pub iteration: usize,
   pub atom_type: u64,
   pub x: f64,
   pub y: f64,

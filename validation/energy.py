@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+k_b = 8.617333e-5
+
 def show_energy_plot(path: str, thermostat: bool) -> None:
   energy_data = pd.read_csv(path + '/energy.csv', header=0)
   iteration = energy_data.iloc[:, 0]
@@ -91,12 +93,37 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   plt.show()
 
   if thermostat:
+    # Read output_1.dump file to get number of atoms
+    num_atoms = None
+    with open(path + '/output_1.dump', 'r') as f:
+      for line in f:
+        if line.strip() == 'ITEM: NUMBER OF ATOMS':
+          num_atoms = int(f.readline().strip())
+          break
+
+    # Compute mean kinetic energy per iteration
+    if num_atoms is not None:
+      mean_kinetic_energy = kinetic_energy / num_atoms
+    else:
+      mean_kinetic_energy = kinetic_energy  # Fallback if num_atoms not found
+
+    T = 2 / 3 * mean_kinetic_energy / k_b
+
     plt.figure()
     plt.plot(iteration, thermostat_epsilon, label="Thermostat epsilon")
     plt.xlabel("iteration")
     plt.ylabel("thermostat epsilon")
     plt.title("Thermostat epsilon")
     plt.savefig(path + "/thermostat_epsilon.png")
+    plt.show()
+
+    plt.figure()
+    plt.plot(iteration, T, label="Temperature")
+    plt.xlabel("iteration")
+    plt.ylabel("Temperature [K]")
+    plt.title(f"Temperature")
+    plt.legend()
+    plt.savefig(path + '/Temperature.png')
     plt.show()
 
 
@@ -143,5 +170,5 @@ if __name__ == "__main__":
   import os
   output_dir = "../../output"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
-  thermostat = False
+  thermostat = True
   show_energy_plot(newest_folder, thermostat)
