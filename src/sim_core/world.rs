@@ -17,6 +17,7 @@ pub struct World {
   current_iteration: usize,
   current_index: usize,
   thermostat_epsilon: Vec<f64>,
+  thermostat_work_total: f64,
 
   max_iteration_till_reset: usize,
   reset_counter: usize,
@@ -70,6 +71,7 @@ impl World {
       current_iteration: 0,
       current_index: 0,
       thermostat_epsilon,
+      thermostat_work_total: 0.,
 
       max_iteration_till_reset,
       reset_counter: 1,

@@ -15,7 +15,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     thermostat_epsilon = energy_data.iloc[:, 5]
 
   potential_energies_per_atom = pd.read_csv(path + '/potential_energies.csv', header=None)
-  potential_energies_per_atom = potential_energies_per_atom[potential_energies_per_atom.iloc[:, 0] != 1]
+  potential_energies_per_atom = potential_energies_per_atom[potential_energies_per_atom.iloc[:, 0] != 0]
   potential_energy_summed = potential_energies_per_atom.groupby(potential_energies_per_atom.iloc[:, 0])[potential_energies_per_atom.columns[2]].sum()
 
   potential_energy_difference = potential_energy.values - potential_energy_summed.values
@@ -58,7 +58,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   first_particle_energy = potential_energies_per_atom[potential_energies_per_atom.iloc[:, 1] == first_particle_id]
 
   positions = pd.read_csv(path + '/positions.csv', header=None, names=['iteration', 'particle_id', 'x', 'y', 'z'])
-  positions = positions[positions.iloc[:, 0] != 1]
+  positions = positions[positions.iloc[:, 0] != 0]
   first_particle_positions = positions[positions['particle_id'] == first_particle_id]
   initial_x = first_particle_positions['x'].iloc[0]
   x_displacement = first_particle_positions['x'] - initial_x
@@ -95,7 +95,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   if thermostat:
     # Read output_1.dump file to get number of atoms
     num_atoms = None
-    with open(path + '/output_1.dump', 'r') as f:
+    with open(path + '/output_0.dump', 'r') as f:
       for line in f:
         if line.strip() == 'ITEM: NUMBER OF ATOMS':
           num_atoms = int(f.readline().strip())

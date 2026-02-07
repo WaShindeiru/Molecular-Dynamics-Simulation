@@ -28,7 +28,7 @@ pub struct Engine {
   save: bool,
   save_path: String,
   save_laamps: bool,
-  save_verbose: bool
+  save_verbose: bool,
 }
 
 impl Engine {
