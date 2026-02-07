@@ -119,6 +119,8 @@ impl World {
   }
 
   fn save_laamps(&mut self, atoms: &Vec<Vec<AtomDTO>>) -> io::Result<()> {
+    let mut files_saved = 0;
+
     for i in 0..atoms.len() {
       if self.frame_iteration_count_current_iteration % self.frame_iteration_count == 0 {
         let mut result_string = String::new();
@@ -141,10 +143,13 @@ impl World {
           result_string.push_str(&format!("{} {} {} {} {}\n", atom_dto.id, atom_dto.atom_type, atom_dto.x, atom_dto.y, atom_dto.z));
         }
 
-        fs::write(&format!("./{}/output_{}.dump", self.save_path, i+1), result_string)?;
+        let file_number = i + self.number_of_resets * self.max_iteration_till_reset;
+        fs::write(&format!("./{}/output_{}.dump", self.save_path, file_number), result_string)?;
+        files_saved += 1;
       }
     }
 
+    info!("Saved {} laamps output files.", {files_saved});
     Ok(())
   }
 

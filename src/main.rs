@@ -40,9 +40,9 @@ fn sphere_runner() {
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
 
-  let num_iterations = (2e4 + 4.0) as usize;
+  let num_iterations = (2e4) as usize;
   let save = true;
-  sphere_particles(save, num_iterations, 5, temperature_kelvin_unitless,
+  sphere_particles(save, num_iterations, 40, temperature_kelvin_unitless,
                               Q_EFFECTIVE_MASS);
 }
 
