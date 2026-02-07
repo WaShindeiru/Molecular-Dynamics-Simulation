@@ -84,6 +84,10 @@ impl Atom {
     self.thermostat_work = thermostat_work
   }
 
+  pub fn set_iteration(&mut self, iteration_: usize) {
+    self.iteration = iteration_;
+  }
+
   pub fn update_position(&mut self, position_: Vector3<f64>) {
     self.position = position_;
   }

@@ -65,12 +65,12 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
 
   plt.figure()
   plt.plot(x_displacement, first_particle_energy.iloc[:, 2], label=f"Potential energy of particle {first_particle_id}")
-  plt.xlabel("iteration")
+  plt.xlabel("x_displacement")
   plt.ylabel("Potential energy [eV]")
   plt.title(f"Potential energy of particle {first_particle_id}")
   plt.legend()
-  plt.xlim([0, 4])
-  plt.ylim([-1, 4])
+  # plt.xlim([0, 4])
+  # plt.ylim([-1, 4])
   plt.savefig(path + '/first_particle_potential_energy.png')
   plt.show()
 

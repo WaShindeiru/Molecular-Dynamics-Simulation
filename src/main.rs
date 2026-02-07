@@ -15,7 +15,7 @@ mod output;
 
 const TIME_STEP: f64 = 1e-18 / TIME_U;
 const TEMPERATURE_CELCIUS: f64 = 1000.0;
-const Q_EFFECTIVE_MASS: f64 = 1000.0;
+const Q_EFFECTIVE_MASS: f64 = 4000.0;
 
 
 fn main() {
@@ -40,7 +40,7 @@ fn sphere_runner() {
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
 
-  let num_iterations = (2e4) as usize;
+  let num_iterations = (3e4) as usize;
   let save = true;
   sphere_particles(save, num_iterations, 40, temperature_kelvin_unitless,
                               Q_EFFECTIVE_MASS);

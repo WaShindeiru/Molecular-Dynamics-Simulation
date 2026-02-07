@@ -8,8 +8,8 @@ impl World {
   pub fn update_verlet(&mut self, time_step: f64, next_iteration: usize) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
 
-    assert_eq!(self.atoms.len() - 1, self.current_iteration);
-    let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
+    assert_eq!(self.atoms.len() - 1, self.current_index);
+    let previous_atom_container = self.atoms.get(self.current_index).unwrap();
 
     let mut half_velocity_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); self.atom_count];
     let mut new_position_atoms: Vec<Particle> = Vec::with_capacity(self.atom_count);
@@ -45,6 +45,7 @@ impl World {
       new_atom.set_potential_energy(new_potential_energy);
       new_atom.set_acceleration(new_acceleration);
       new_atom.set_velocity(new_velocity);
+      new_atom.set_iteration(next_iteration);
 
       new_atom = self.apply_boundary_constraint(new_atom);
 
@@ -57,7 +58,5 @@ impl World {
     assert_eq!(self.current_iteration, next_iteration);
 
     self.atoms.push(next_iteration_atom_container);
-
-    assert_eq!(self.atoms.len() - 1, self.current_iteration);
   }
 }

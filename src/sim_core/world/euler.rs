@@ -6,8 +6,8 @@ impl World {
   pub fn update_semi_implicit_euler(&mut self, time_step: f64, next_iteration: usize) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
 
-    assert_eq!(self.atoms.len() - 1, self.current_iteration);
-    let previous_atom_container = self.atoms.get(self.current_iteration).unwrap();
+    assert_eq!(self.atoms.len() - 1, self.current_index);
+    let previous_atom_container = self.atoms.get(self.current_index).unwrap();
 
     let fpinfo = potential::compute_forces_potential(&previous_atom_container.get_atoms());
     let potential_energy = fpinfo.potential_energy;
@@ -26,6 +26,7 @@ impl World {
       new_atom.set_acceleration(new_acceleration);
       new_atom.set_velocity(new_velocity);
       new_atom.update_position(new_position);
+      new_atom.set_iteration(next_iteration);
 
       next_iteration_atom_container.add_atom(new_atom);
     }
@@ -36,7 +37,5 @@ impl World {
     assert_eq!(self.current_iteration, next_iteration);
 
     self.atoms.push(next_iteration_atom_container);
-
-    assert_eq!(self.atoms.len() - 1, self.current_iteration);
   }
 }

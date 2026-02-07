@@ -106,6 +106,13 @@ impl Particle {
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.set_thermostat_work(thermostat_work),
     }
   }
+
+  pub fn set_iteration(&mut self, iteration_: usize) {
+    match self {
+      Particle::Atom(atom) => atom.set_iteration(iteration_),
+      Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.set_iteration(iteration_),
+    }
+  }
   
   pub fn update_position(&mut self, position_: Vector3<f64>) {
     match self {

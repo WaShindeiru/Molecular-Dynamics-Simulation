@@ -96,6 +96,7 @@ impl World {
       new_atom.set_potential_energy(new_potential_energy);
       new_atom.set_acceleration(new_acceleration);
       new_atom.set_velocity(new_velocity);
+      new_atom.set_iteration(next_iteration);
 
       new_atom = self.apply_boundary_constraint(new_atom);
 
@@ -108,8 +109,5 @@ impl World {
     assert_eq!(self.current_iteration, next_iteration);
 
     self.atoms.push(next_iteration_atom_container);
-
-    self.current_index += 1;
-    assert_eq!(self.atoms.len() - 1, self.current_index);
   }
 }

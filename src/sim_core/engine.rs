@@ -81,7 +81,43 @@ impl Engine {
       save_verbose,
     }
   }
-  
+
+  pub fn new_from_atoms_with_path(atoms: Vec<Particle>, size: Vector3<f64>, time_step: f64,
+                                   num_of_iterations: usize,
+                                   max_iteration_till_reset: usize,
+                                   save: bool,
+                                   save_laamps: bool,
+                                   save_verbose: bool,
+                                   save_all_iterations: bool,
+                                   one_frame_duration: f64,
+                                   save_path: String) -> Self {
+    let mut frame_iteration_count = 1;
+
+    if !save_all_iterations {
+      frame_iteration_count = (one_frame_duration / time_step) as usize;
+    }
+
+    let world = World::new_from_atoms(atoms, size, max_iteration_till_reset, frame_iteration_count,
+                                            save, save_path.clone(), save_laamps, save_verbose);
+
+    Engine {
+      world,
+      time_step,
+      current_time: 0.0,
+      current_iteration: 0,
+      num_of_iterations,
+      simulation_time: Duration::ZERO,
+      save_all_iterations,
+      one_frame_duration,
+      frame_iteration_count,
+      max_iteration_till_reset,
+      save,
+      save_path,
+      save_laamps,
+      save_verbose,
+    }
+  }
+
   pub fn run(&mut self, params: &IntegrationAlgorithm, time_step: f64) {
     let start = Instant::now();
     let spinner = ['|', '/', '-', '\\'];

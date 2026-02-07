@@ -122,6 +122,7 @@ impl World {
       }
     }
 
+    self.current_index += 1;
     self.reset_counter += 1;
   }
 
