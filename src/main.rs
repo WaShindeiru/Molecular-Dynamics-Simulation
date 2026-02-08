@@ -1,10 +1,12 @@
 use log::info;
 use nalgebra::Vector3;
+use crate::sim_core::world::saver::SaveOptions;
 use crate::data::types::AtomType;
 use crate::data::units::{TEMPERATURE_U, TIME_U};
 use crate::particle::{Particle, SafeAtomFactory};
 use crate::sim_core::Engine;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use crate::sim_core::world::WorldType;
 use crate::utils::units::celcius_to_kelvin;
 
 mod data;
@@ -122,18 +124,28 @@ fn sphere_particles(save: bool, num_iterations: usize, num_particles: usize, tem
   let save_all_iterations = false;
   let one_frame_duration = 1e-16 / TIME_U;
 
+  let save_options = SaveOptions {
+    save,
+    save_laamps,
+    save_verbose,
+    save_path: "".to_string(),
+  };
+
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
+  let world_type = WorldType::SimpleWorld;
+
   let mut engine = Engine::new_from_atoms(
     atoms, simulation_size, TIME_STEP,
     num_iterations,
     max_iteration_till_reset,
-    save,
-    save_laamps,
-    save_verbose,
     save_all_iterations,
     one_frame_duration,
+    save_options,
+    integration_algorithm,
+    world_type
   );
 
-  let params = IntegrationAlgorithm::NoseHooverVerlet {
+  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
     desired_temperature: temperature_kelvin,
     q_effective_mass: q_effective_mass,
   };

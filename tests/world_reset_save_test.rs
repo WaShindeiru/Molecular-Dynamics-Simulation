@@ -5,7 +5,9 @@ use std::path::Path;
 use carbon_nanotube::data::types::AtomType;
 use carbon_nanotube::particle::{Particle, SafeAtomFactory};
 use carbon_nanotube::sim_core::Engine;
-use carbon_nanotube::sim_core::world::integration::IntegrationAlgorithm;
+use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use carbon_nanotube::sim_core::world::saver::SaveOptions;
+use carbon_nanotube::sim_core::world::WorldType;
 
 const TIME_STEP: f64 = 1e-3;
 
@@ -29,20 +31,29 @@ fn test_reset_world_no_missing_iterations() {
     let max_iteration_till_reset = 100; // Large enough to avoid resets
     let one_frame_duration = 1e-2;
 
+    let save_options = SaveOptions {
+        save: false,
+        save_path: String::new(),
+        save_laamps: false,
+        save_verbose: false,
+    };
+
+    let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;
+
     let mut engine = Engine::new_from_atoms(
         atoms,
         simulation_size,
         TIME_STEP,
         num_iterations,
         max_iteration_till_reset,
-        false, // no saving for this test
-        false,
-        false,
         true, // save all iterations
         one_frame_duration,
+        save_options,
+        integration_algorithm.clone(),
+        WorldType::SimpleWorld,
     );
 
-    let params = IntegrationAlgorithm::VelocityVerlet;
+    let params = IntegrationAlgorithmParams::VelocityVerlet;
     engine.run(&params, TIME_STEP);
 
     // Get the transfer struct
@@ -133,21 +144,29 @@ fn test_reset_world_with_thermostat() {
     let max_iteration_till_reset = 8;
     let one_frame_duration = 1e-2;
 
+    let save_options = SaveOptions {
+        save: true,
+        save_path: test_dir.to_string(),
+        save_laamps: false,
+        save_verbose: true,
+    };
+
+    let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
+
     let mut engine = Engine::new_from_atoms_with_path(
         atoms,
         simulation_size,
         TIME_STEP,
         num_iterations,
         max_iteration_till_reset,
-        true, // enable saving
-        false, // no lammps
-        true, // save verbose
         false, // save all iterations, no I don't think so
         one_frame_duration,
-        test_dir.to_string(),
+        save_options,
+        integration_algorithm.clone(),
+        WorldType::SimpleWorld,
     );
 
-    let params = IntegrationAlgorithm::NoseHooverVerlet {
+    let params = IntegrationAlgorithmParams::NoseHooverVerlet {
         desired_temperature: 300.0,
         q_effective_mass: 1000.0,
     };
@@ -188,6 +207,15 @@ fn test_save_files_completeness() {
     let max_iteration_till_reset = 12; // Will have multiple save batches
     let one_frame_duration = 1e-2;
 
+    let save_options = SaveOptions {
+        save: true,
+        save_path: test_dir.to_string(),
+        save_laamps: true,
+        save_verbose: true,
+    };
+
+    let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;
+
     // Create engine with custom save path
     let mut engine = Engine::new_from_atoms_with_path(
         atoms,
@@ -195,15 +223,14 @@ fn test_save_files_completeness() {
         TIME_STEP,
         num_iterations,
         max_iteration_till_reset,
-        true, // enable saving
-        true, // save lammps
-        true, // save verbose
         true, // save all iterations
         one_frame_duration,
-        test_dir.to_string(),
+        save_options,
+        integration_algorithm.clone(),
+        WorldType::SimpleWorld,
     );
 
-    let params = IntegrationAlgorithm::VelocityVerlet;
+    let params = IntegrationAlgorithmParams::VelocityVerlet;
     engine.run(&params, TIME_STEP);
 
     // Verify files exist
@@ -401,20 +428,29 @@ fn test_single_reset() {
     let max_iteration_till_reset = 10;
     let one_frame_duration = 1e-2;
 
+    let save_options = SaveOptions {
+        save: false,
+        save_path: String::new(),
+        save_laamps: false,
+        save_verbose: false,
+    };
+
+    let integration_algorithm = IntegrationAlgorithm::SemiImplicitEuler;
+
     let mut engine = Engine::new_from_atoms(
         atoms,
         simulation_size,
         TIME_STEP,
         num_iterations,
         max_iteration_till_reset,
-        false,
-        false,
-        false,
-        true,
+        true, // save all iterations
         one_frame_duration,
+        save_options,
+        integration_algorithm.clone(),
+        WorldType::SimpleWorld,
     );
 
-    let params = IntegrationAlgorithm::SemiImplicitEuler;
+    let params = IntegrationAlgorithmParams::SemiImplicitEuler;
     engine.run(&params, TIME_STEP);
 
     let engine_dto = engine.to_transfer_struct();
@@ -470,20 +506,29 @@ fn test_no_reset() {
     let max_iteration_till_reset = 20; // Won't trigger reset
     let one_frame_duration = 1e-2;
 
+    let save_options = SaveOptions {
+        save: false,
+        save_path: String::new(),
+        save_laamps: false,
+        save_verbose: false,
+    };
+
+    let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;
+
     let mut engine = Engine::new_from_atoms(
         atoms,
         simulation_size,
         TIME_STEP,
         num_iterations,
         max_iteration_till_reset,
-        false,
-        false,
-        false,
-        true,
+        true, // save all iterations
         one_frame_duration,
+        save_options,
+        integration_algorithm.clone(),
+        WorldType::SimpleWorld,
     );
 
-    let params = IntegrationAlgorithm::VelocityVerlet;
+    let params = IntegrationAlgorithmParams::VelocityVerlet;
     engine.run(&params, TIME_STEP);
 
     let engine_dto = engine.to_transfer_struct();

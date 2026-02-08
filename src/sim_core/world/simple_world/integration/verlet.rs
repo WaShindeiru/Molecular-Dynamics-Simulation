@@ -1,9 +1,9 @@
 use nalgebra::Vector3;
 use crate::particle::{potential, Particle, SimpleAtomContainer};
-use super::World;
+use crate::sim_core::world::simple_world::SimpleWorld;
 
-impl World {
-  
+impl SimpleWorld {
+
   // TODO: Fix boundary conditions check, what's wrong about them?
   pub fn update_verlet(&mut self, time_step: f64, next_iteration: usize) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);

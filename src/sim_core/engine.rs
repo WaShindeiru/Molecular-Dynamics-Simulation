@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::output::{AtomDTO, EngineDTO};
-use crate::sim_core::world::World;
+use crate::sim_core::world::{World, WorldType};
 
 use std::{fs, io, time};
 use std::io::Write;
@@ -10,7 +10,8 @@ use chrono::prelude::*;
 use csv::Writer;
 use log::info;
 use crate::particle::Particle;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use crate::sim_core::world::saver::SaveOptions;
 
 pub struct Engine {
   world: World,
@@ -19,78 +20,47 @@ pub struct Engine {
   current_iteration: usize,
   num_of_iterations: usize,
   simulation_time: Duration,
+  integration_algorithm: IntegrationAlgorithm,
   
   save_all_iterations: bool,
   one_frame_duration: f64,
   frame_iteration_count: usize,
   max_iteration_till_reset: usize,
 
-  save: bool,
-  save_path: String,
-  save_laamps: bool,
-  save_verbose: bool,
+  save_options: SaveOptions,
 }
 
 impl Engine {
-  // pub fn new(world: World, time_step: f64, num_of_iterations: usize) -> Self {
-  //   Engine {
-  //     world,
-  //     time_step,
-  //     current_time: 0.0,
-  //     current_iteration: 0,
-  //     num_of_iterations,
-  //     simulation_time: Duration::ZERO
-  //   }
-  // }
-
   pub fn new_from_atoms(atoms: Vec<Particle>, size: Vector3<f64>, time_step: f64,
                         num_of_iterations: usize,
                         max_iteration_till_reset: usize,
-                        save: bool,
-                        save_laamps: bool,
-                        save_verbose: bool,
                         save_all_iterations: bool,
-                        one_frame_duration: f64, ) -> Self {
-    let mut frame_iteration_count = 1;
+                        one_frame_duration: f64,
+                        mut save_options: SaveOptions,
+                        integration_algorithm: IntegrationAlgorithm,
+                        world_type: WorldType,
+  ) -> Self {
     
-    if !save_all_iterations {
-      frame_iteration_count = (one_frame_duration / time_step) as usize;
-    }
-
     let now: DateTime<Local> = Local::now();
     let time_string = now.format("%Y-%m-%d_%H-%M-%S").to_string();
     let save_path = "../output/".to_string() + &*time_string;
+    save_options.save_path = save_path;
 
-    let world = World::new_from_atoms(atoms, size, max_iteration_till_reset, frame_iteration_count,
-                                            save, save_path.clone(), save_laamps, save_verbose);
-
-    Engine {
-      world,
-      time_step,
-      current_time: 0.0,
-      current_iteration: 0,
-      num_of_iterations,
-      simulation_time: Duration::ZERO,
-      save_all_iterations,
-      one_frame_duration,
-      frame_iteration_count,
-      max_iteration_till_reset,
-      save,
-      save_path,
-      save_laamps,
-      save_verbose,
-    }
+    Engine::new_from_atoms_with_path(atoms, size, time_step, num_of_iterations, max_iteration_till_reset, 
+                                     save_all_iterations, one_frame_duration, save_options, 
+                                     integration_algorithm, world_type
+    )
   }
 
   pub fn new_from_atoms_with_path(atoms: Vec<Particle>, size: Vector3<f64>, time_step: f64,
-                                   num_of_iterations: usize,
-                                   max_iteration_till_reset: usize,
-                                   save: bool,
-                                   save_laamps: bool,
-                                   save_verbose: bool,
-                                   save_all_iterations: bool,
-                                   one_frame_duration: f64,
-                                   save_path: String) -> Self {
+                        num_of_iterations: usize,
+                        max_iteration_till_reset: usize,
+                        save_all_iterations: bool,
+                        one_frame_duration: f64,
+                        save_options: SaveOptions,
+                        integration_algorithm: IntegrationAlgorithm,
+                        world_type: WorldType,
+  ) -> Self {
     let mut frame_iteration_count = 1;
 
     if !save_all_iterations {
@@ -98,7 +68,7 @@ impl Engine {
     }
 
     let world = World::new_from_atoms(atoms, size, max_iteration_till_reset, frame_iteration_count,
-                                            save, save_path.clone(), save_laamps, save_verbose);
+                                      integration_algorithm.clone(), save_options.clone(), world_type);
 
     Engine {
       world,
@@ -107,18 +77,18 @@ impl Engine {
       current_iteration: 0,
       num_of_iterations,
       simulation_time: Duration::ZERO,
+      integration_algorithm,
+
       save_all_iterations,
       one_frame_duration,
       frame_iteration_count,
       max_iteration_till_reset,
-      save,
-      save_path,
-      save_laamps,
-      save_verbose,
+
+      save_options,
     }
   }
 
-  pub fn run(&mut self, params: &IntegrationAlgorithm, time_step: f64) {
+  pub fn run(&mut self, params: &IntegrationAlgorithmParams, time_step: f64) {
     let start = Instant::now();
     let spinner = ['|', '/', '-', '\\'];
     let mut counter = 0;
@@ -144,18 +114,8 @@ impl Engine {
 
     info!("Simulation completed in {:.2?} seconds.", self.simulation_time);
 
-    if self.save {
-      let use_thermostat: bool;
-      match params {
-        IntegrationAlgorithm::NoseHooverVerlet {..} => {
-          use_thermostat = true;
-        }
-        _ => {
-          use_thermostat = false;
-        }
-      }
-
-      self.save(use_thermostat).unwrap()
+    if self.save_options.save {
+      self.save().unwrap()
     }
   }
 
@@ -167,18 +127,18 @@ impl Engine {
     }
   }
 
-  pub fn save(&mut self, use_thermostat: bool) -> io::Result<()> {
-    self.world.save(use_thermostat)?;
+  pub fn save(&mut self) -> io::Result<()> {
+    self.world.save()?;
 
     let now: DateTime<Local> = Local::now();
     let time_string = now.format("%Y-%m-%d_%H-%M-%S").to_string();
 
-    let mut wtr = Writer::from_path(&format!("./{}/info.txt", self.save_path))?;
+    let mut wtr = Writer::from_path(&format!("./{}/info.txt", self.save_options.save_path))?;
     wtr.write_record(&["Simulation date: ", &format!("{}", time_string)])?;
     wtr.write_record(&["Number of iterations : ", &format!("{:.2?}", self.num_of_iterations)])?;
     wtr.write_record(&["Time step: ", &format!("{:.2?} seconds", self.time_step)])?;
     wtr.write_record(&["Simulation Time: ", &format!("{:.2?} seconds", self.simulation_time)])?;
-    wtr.write_record(&["use thermostat: ", &format!("{}", use_thermostat)])?;
+    wtr.write_record(&["integration type: ", &format!("{}", self.integration_algorithm)])?;
     wtr.flush()?;
 
     Ok(())

@@ -1,4 +1,5 @@
 use crate::data::units::R_U;
+use crate::sim_core::world::integration::IntegrationAlgorithm;
 
 pub struct AtomDTO {
   pub id: u64,
@@ -25,6 +26,13 @@ pub struct WorldDTO {
   pub box_x: f64,
   pub box_y: f64,
   pub box_z: f64,
+  pub integration_algorithm: IntegrationAlgorithm,
+
+  pub num_of_world_iterations: usize,
+  pub number_of_resets: usize,
+  pub max_iteration_till_reset: usize,
+  
+  pub frame_iteration_count: usize,
 }
 
 pub struct EngineDTO {

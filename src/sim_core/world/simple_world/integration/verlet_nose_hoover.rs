@@ -1,8 +1,8 @@
 use nalgebra::Vector3;
 use crate::data::units::K_B;
 use crate::particle::{potential, Particle, SimpleAtomContainer};
+use crate::sim_core::world::simple_world::SimpleWorld;
 use crate::utils::math::cos_from_vec;
-use super::World;
 
 fn compute_half_velocity_kinetic_energy(half_velocity_cache: &Vec<Vector3<f64>>, new_position_atoms: &Vec<Particle>) -> f64 {
   let mut kinetic_energy = 0.;
@@ -31,7 +31,7 @@ fn compute_new_thermostat_epsilon(thermostat_epsilon: f64, half_velocity_cache: 
   new_thermostat_epsilon
 }
 
-impl World {
+impl SimpleWorld {
 
   // TODO: Fix boundary conditions check
   pub fn update_verlet_nose_hoover(&mut self, time_step: f64, next_iteration: usize,
@@ -76,7 +76,7 @@ impl World {
     let forces = fpinfo.fp;
 
     let new_thermostat_epsilon = compute_new_thermostat_epsilon(previous_thermostat_epsilon,
-    &half_velocity_cache, &new_position_atoms, time_step, q_effective_mass, desired_temperature);
+                                                                &half_velocity_cache, &new_position_atoms, time_step, q_effective_mass, desired_temperature);
     self.thermostat_epsilon.push(new_thermostat_epsilon);
 
     for (i, particle_i) in new_position_atoms.iter().enumerate() {
