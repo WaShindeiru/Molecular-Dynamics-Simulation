@@ -5,6 +5,7 @@ use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::output::{AtomDTO};
 use crate::particle::custom_path_atom::CustomPathAtom;
+use crate::particle::Particle;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Atom {
@@ -174,7 +175,7 @@ impl AtomFactory {
     }
   }
 
-  fn get_atom(&mut self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Atom {
+  fn get_atom(&mut self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Particle {
     let result = match atom {
       AtomType::C => Atom{
         id: self.counter,
@@ -205,10 +206,10 @@ impl AtomFactory {
     };
     self.counter = self.counter + 1;
 
-    result
+    Particle::Atom(result)
   }
 
-  fn get_atom_custom_path(&mut self, atom: AtomType, path: Vec<Vector3<f64>>) -> CustomPathAtom {
+  fn get_atom_custom_path(&mut self, atom: AtomType, path: Vec<Vector3<f64>>) -> Particle {
     let result = match atom {
       AtomType::C => CustomPathAtom::new(
         self.counter,
@@ -225,7 +226,7 @@ impl AtomFactory {
     };
     self.counter = self.counter + 1;
 
-    result
+    Particle::CustomPathAtom(result)
   }
 }
 
@@ -240,17 +241,17 @@ impl SafeAtomFactory {
     }
   }
 
-  pub fn get_atom(&self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Atom {
+  pub fn get_atom(&self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Particle {
     let mut factory = self.inner.lock().unwrap();
     factory.get_atom(atom, position_, velocity_)
   }
 
-  pub fn get_atom_custom_path(&self, atom: AtomType, path: Vec<Vector3<f64>>) -> CustomPathAtom {
+  pub fn get_atom_custom_path(&self, atom: AtomType, path: Vec<Vector3<f64>>) -> Particle {
     let mut factory = self.inner.lock().unwrap();
     factory.get_atom_custom_path(atom, path)
   }
 
-  pub fn get_atom_random(&self, atom: AtomType, lower_bound: f64, upper_bound: f64) -> Atom {
+  pub fn get_atom_random(&self, atom: AtomType, lower_bound: f64, upper_bound: f64) -> Particle {
     let mut factory = self.inner.lock().unwrap();
     let mut rng = rand::thread_rng();
     let range = Uniform::new(lower_bound, upper_bound);

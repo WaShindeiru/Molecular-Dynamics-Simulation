@@ -115,7 +115,7 @@ fn sphere_particles(save: bool, num_iterations: usize, num_particles: usize, tem
     };
 
     let atom = atom_factory.get_atom(atom_type, position, Vector3::new(0., 0., 0.));
-    atoms.push(Particle::Atom(atom));
+    atoms.push(atom);
   }
 
   let max_iteration_till_reset = 1e4 as usize;

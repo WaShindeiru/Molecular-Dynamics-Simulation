@@ -1,9 +1,14 @@
 use std::io;
 use nalgebra::Vector3;
 use crate::output::WorldDTO;
-use crate::particle::Particle;
+
 use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
 use crate::sim_core::world::saver::SaveOptions;
+use box_container::BoxContainer;
+use crate::particle::Particle;
+
+pub mod box_container;
+pub mod cube;
 
 pub struct BoxedWorld {
   
@@ -16,7 +21,7 @@ impl BoxedWorld {
     max_iteration_till_reset: usize,
     frame_iteration_count: usize,
     integration_algorithm: IntegrationAlgorithm,
-    save_options: SaveOptions
+    save_options: SaveOptions,
   ) -> Self {
     todo!("BoxedWorld::new_from_atoms not yet implemented")
   }

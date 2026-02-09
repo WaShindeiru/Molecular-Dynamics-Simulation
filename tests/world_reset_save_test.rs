@@ -23,7 +23,7 @@ fn test_reset_world_no_missing_iterations() {
         let position = Vector3::new(2.0 + i as f64 * 0.5, 5.0, 5.0);
         let velocity = Vector3::new(0.1, 0.0, 0.0);
         let atom = atom_factory.get_atom(AtomType::C, position, velocity);
-        atoms.push(Particle::Atom(atom));
+        atoms.push(atom);
     }
 
     // Run simulation without resets to test to_transfer_struct
@@ -137,7 +137,7 @@ fn test_reset_world_with_thermostat() {
         let position = Vector3::new(2.0 + i as f64 * 0.5, 5.0, 5.0);
         let velocity = Vector3::new(0.1, 0.0, 0.0);
         let atom = atom_factory.get_atom(AtomType::Fe, position, velocity);
-        atoms.push(Particle::Atom(atom));
+        atoms.push(atom);
     }
 
     let num_iterations = 100;
@@ -200,7 +200,7 @@ fn test_save_files_completeness() {
         let position = Vector3::new(3.0 + i as f64 * 0.3, 5.0, 5.0);
         let velocity = Vector3::new(0.05, 0.05, 0.0);
         let atom = atom_factory.get_atom(AtomType::C, position, velocity);
-        atoms.push(Particle::Atom(atom));
+        atoms.push(atom);
     }
 
     let num_iterations = 50;
@@ -422,7 +422,7 @@ fn test_single_reset() {
         Vector3::new(5.0, 5.0, 5.0),
         Vector3::new(0.1, 0.0, 0.0)
     );
-    atoms.push(Particle::Atom(atom));
+    atoms.push(atom);
 
     let num_iterations = 15;
     let max_iteration_till_reset = 10;
@@ -500,7 +500,7 @@ fn test_no_reset() {
         Vector3::new(5.0, 5.0, 5.0),
         Vector3::new(0.0, 0.1, 0.0)
     );
-    atoms.push(Particle::Atom(atom));
+    atoms.push(atom);
 
     let num_iterations = 8;
     let max_iteration_till_reset = 20; // Won't trigger reset
