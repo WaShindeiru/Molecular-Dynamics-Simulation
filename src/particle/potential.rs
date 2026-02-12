@@ -54,7 +54,8 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
 
         let r_ij_vec = particle_j.get_position() - particle_i.get_position();
         let r_ij_mag = r_ij_vec.magnitude();
-        let interaction_type_ij = get_interaction_type(particle_i.get_type(), particle_j.get_type());
+        let interaction_type_ij = get_interaction_type(&particle_i.get_type(),
+                                                       &particle_j.get_type());
 
         let R_ij = get_constant(&interaction_type_ij, Constant::R);
         let D_ij = get_constant(&interaction_type_ij, Constant::D);
@@ -79,7 +80,8 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
       gradients_cache = vec![Vector3::new(0., 0., 0.); particles.len()];
 
       let particle_j = particles.get(j).unwrap();
-      let interaction_type_ij = get_interaction_type(particle_i.get_type(), particle_j.get_type());
+      let interaction_type_ij = get_interaction_type(&particle_i.get_type(),
+                                                     &particle_j.get_type());
 
       let R_ij = get_constant(&interaction_type_ij, Constant::R);
       let D_ij = get_constant(&interaction_type_ij, Constant::D);
@@ -112,7 +114,8 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
         let r_ik_vec = particle_k.get_position() - particle_i.get_position();
         let r_ik_mag = r_ik_vec.magnitude();
 
-        let interaction_type_ik = get_interaction_type(particle_i.get_type(), particle_k.get_type());
+        let interaction_type_ik = get_interaction_type(&particle_i.get_type(),
+                                                       &particle_k.get_type());
         let R_ik = get_constant(&interaction_type_ik, Constant::R);
         let D_ik = get_constant(&interaction_type_ik, Constant::D);
         let gamma_ik = get_constant(&interaction_type_ik, Constant::Gamma);
@@ -150,7 +153,7 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
         gradients_cache[k] = gradients_cache[k] * b_ij_grad_chi_ij;
       }
 
-      let force_i = -0.5 * (fc_ij_grad_i * (vr_ij - b_ij * va_ij)
+      let force_i: Vector3<f64> = -0.5 * (fc_ij_grad_i * (vr_ij - b_ij * va_ij)
         + fc_ij * (vr_ij_grad_i - bij_grad_i * va_ij - b_ij * va_ij_grad_i));
       result[i].force += force_i;
 

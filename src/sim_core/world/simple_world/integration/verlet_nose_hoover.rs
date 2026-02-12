@@ -42,13 +42,16 @@ impl SimpleWorld {
     let previous_atom_container = self.atoms.get(self.current_index).unwrap();
     let previous_thermostat_epsilon = *self.thermostat_epsilon.get(self.current_index).unwrap();
 
-    let mut half_velocity_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); self.atom_count];
+    let mut half_velocity_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.);
+                                                          self.atom_count];
     let mut new_position_atoms: Vec<Particle> = Vec::with_capacity(self.atom_count);
 
     for (i, atom_i) in previous_atom_container.get_atoms().iter().enumerate() {
       assert_eq!(i, atom_i.get_id() as usize);
-      let thermostat_difference = atom_i.get_acceleration() - previous_thermostat_epsilon * atom_i.get_velocity();
-      let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + thermostat_difference * (time_step / 2.0);
+      let thermostat_difference = atom_i.get_acceleration() -
+        previous_thermostat_epsilon * atom_i.get_velocity();
+      let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + thermostat_difference *
+        (time_step / 2.0);
       half_velocity_cache[i] = half_velocity_i;
 
       let previous_position = atom_i.get_position();
@@ -58,7 +61,8 @@ impl SimpleWorld {
       if self.current_iteration == 0 {
         thermostat_work = 0.;
       } else {
-        let thermostat_force = previous_thermostat_epsilon * atom_i.get_mass() * atom_i.get_velocity();
+        let thermostat_force = previous_thermostat_epsilon * atom_i.get_mass() *
+          atom_i.get_velocity();
         let thermostat_path = next_position - previous_position;
         thermostat_work = thermostat_force.magnitude() * thermostat_path.magnitude()
           * cos_from_vec(&thermostat_force, &thermostat_path);
@@ -75,8 +79,10 @@ impl SimpleWorld {
     let potential_energy = fpinfo.potential_energy;
     let forces = fpinfo.fp;
 
-    let new_thermostat_epsilon = compute_new_thermostat_epsilon(previous_thermostat_epsilon,
-                                                                &half_velocity_cache, &new_position_atoms, time_step, q_effective_mass, desired_temperature);
+    let new_thermostat_epsilon =
+      compute_new_thermostat_epsilon(previous_thermostat_epsilon, &half_velocity_cache,
+                                     &new_position_atoms, time_step, q_effective_mass,
+                                     desired_temperature);
     self.thermostat_epsilon.push(new_thermostat_epsilon);
 
     for (i, particle_i) in new_position_atoms.iter().enumerate() {

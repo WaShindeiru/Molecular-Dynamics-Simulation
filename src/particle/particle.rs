@@ -3,6 +3,7 @@ use crate::data::types::AtomType;
 use crate::output::AtomDTO;
 use crate::particle::{Atom, CustomPathAtom};
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum Particle {
   Atom(Atom),
   CustomPathAtom(CustomPathAtom)
@@ -16,7 +17,7 @@ impl Particle {
     }
   }
 
-  pub fn get_type(&self) -> &AtomType {
+  pub fn get_type(&self) -> AtomType {
     match self {
       Particle::Atom(atom) => atom.get_type(),
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_type(),
@@ -133,6 +134,12 @@ impl Particle {
       Particle::Atom(atom) => Particle::Atom(atom.clone()),
       Particle::CustomPathAtom(custom_path_atom) => Particle::CustomPathAtom(custom_path_atom.clone()),
     }
+  }
+}
+
+impl AsRef<Particle> for Particle {
+  fn as_ref(&self) -> &Particle {
+    self
   }
 }
 

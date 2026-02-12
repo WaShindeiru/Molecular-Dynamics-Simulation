@@ -24,7 +24,7 @@ impl AtomData {
   pub fn new_from_atom(atom: &Particle) -> Self {
     AtomData {
       id: atom.get_id(),
-      type_: *atom.get_type(),
+      type_: atom.get_type(),
       mass: atom.get_mass(),
       position: *atom.get_position(),
     }

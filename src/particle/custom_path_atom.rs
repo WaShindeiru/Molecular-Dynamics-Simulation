@@ -11,8 +11,8 @@ impl CustomPathAtom {
     self.iteration
   }
 
-  pub fn get_type(&self) -> &AtomType {
-    &self.type_
+  pub fn get_type(&self) -> AtomType {
+    self.type_
   }
 
   pub fn get_position(&self) -> &Vector3<f64> {
