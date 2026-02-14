@@ -3,7 +3,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
-use crate::sim_core::world::boxed_world::box_task::handle_task::handle_half_velocity_position_task;
+use crate::sim_core::world::boxed_world::box_task::handle_task::{handle_force_task, handle_half_velocity_position_task};
 
 pub fn create_threads() -> (Sender<BoxTask>, Receiver<BoxResult>, Vec<JoinHandle<()>>) {
   let num_workers = thread::available_parallelism()
@@ -40,13 +40,16 @@ pub fn create_threads() -> (Sender<BoxTask>, Receiver<BoxResult>, Vec<JoinHandle
                                                                    previous_thermostat_epsilon, 
                                                                    current_iteration);
               
-                let box_result = BoxResult::VelocityResult {
-                  half_velocity_cache: velocity_result.half_velocity_cache,
-                  new_position_atoms: velocity_result.new_position_atoms,
-                };
+                let box_result = BoxResult::VelocityResult(velocity_result);
                 result_tx_clone.send(box_result).unwrap();
               },
-              BoxTask::ForceTask => unimplemented!("not yet")
+              BoxTask::ForceTask {
+                box_container, box_id,
+              } => {
+                let force_result = handle_force_task(box_container, box_id);
+                
+                result_tx_clone.send(BoxResult::ForceResult(force_result)).unwrap();
+              }
             }
           }
           Err(_) => {

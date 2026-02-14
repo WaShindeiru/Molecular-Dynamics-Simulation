@@ -78,19 +78,19 @@ impl BoxedWorld {
 
     // BoxedWorld {
     //   size,
-    // 
+    //
     //   max_iteration_till_reset,
     //   reset_counter: 1,
     //   number_of_resets: 0,
-    // 
+    //
     //   frame_iteration_count,
     //   integration_algorithm,
     //   save_options,
-    // 
+    //
     //   threads,
     //   tx_task,
     //   rx_result,
-    // 
+    //
     //   box_container,
     // }
     

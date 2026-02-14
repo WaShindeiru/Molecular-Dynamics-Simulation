@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use nalgebra::Vector3;
+use crate::particle::Particle;
 
 pub fn get_id_simulation_box(coordinates: &Vector3<usize>, box_count_dim: &Vector3<usize>) -> usize {
   coordinates.x + coordinates.y * box_count_dim.x + coordinates.z * box_count_dim.x * box_count_dim.y
@@ -21,7 +23,7 @@ pub struct SimulationBox {
   leftmost_point: Vector3<f64>,
   rightmost_point: Vector3<f64>,
   length: Vector3<f64>,
-  particle_indexes: Vec<usize>,
+  particles: HashMap<usize, Particle>,
 }
 
 impl Default for SimulationBox {
@@ -43,7 +45,24 @@ impl SimulationBox {
       leftmost_point,
       rightmost_point,
       length,
-      particle_indexes:  Vec::new(),
+      particles: HashMap::new(),
+    }
+  }
+
+  pub fn new_from_particles(id: usize, leftmost_point: Vector3<f64>, rightmost_point: Vector3<f64>,
+                            length: Vector3<f64>, particles_: Vec<Particle>) -> Self {
+    let mut particles: HashMap<usize, Particle> = HashMap::new();
+
+    for particle in particles_ {
+      particles.insert(particle.get_id() as usize, particle);
+    }
+
+    SimulationBox {
+      id,
+      leftmost_point,
+      rightmost_point,
+      length,
+      particles,
     }
   }
 
@@ -59,24 +78,36 @@ impl SimulationBox {
     &self.rightmost_point
   }
   
-  pub fn particle_indexes(&self) -> &Vec<usize> {
-    &self.particle_indexes
+  pub fn add_particle(&mut self, particle: Particle) {
+    self.particles.insert(particle.get_id() as usize, particle);
+  }
+
+  pub fn particles(&self) -> &HashMap<usize, Particle> {
+    &self.particles
   }
   
-  pub fn num_of_particles(&self) -> usize {
-    self.particle_indexes.len()
+  pub fn particles_mut(&mut self) -> &mut HashMap<usize, Particle> {
+    &mut self.particles
   }
   
-  pub fn add_particle_index(&mut self, index: usize) {
-    self.particle_indexes.push(index);
+  pub fn particle(&self, particle_id: usize) -> &Particle {
+    self.particles.get(&particle_id).unwrap()
+  }
+  
+  pub fn particle_mut(&mut self, particle_id: usize) -> &mut Particle {
+    self.particles.get_mut(&particle_id).unwrap()
   }
 
   pub fn len(&self) -> usize {
-    self.particle_indexes.len()
+    self.particles.len()
   }
 
   pub fn empty(&self) -> bool {
-    self.particle_indexes.len() == 0
+    self.particles.len() == 0
+  }
+
+  pub fn clear_box(&mut self) {
+    self.particles = HashMap::new();
   }
 }
 

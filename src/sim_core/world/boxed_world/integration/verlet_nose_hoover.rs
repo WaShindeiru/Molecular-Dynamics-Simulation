@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+mod thermostat;
+
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use nalgebra::Vector3;
 use crate::data::Constant;
 use crate::data::constants::get_constant;
@@ -8,11 +11,11 @@ use crate::particle::potential::{b, fc};
 use crate::particle::potential::fc::{fc, fc_gradient};
 use crate::particle::potential::va::{va, va_gradient};
 use crate::particle::potential::vr::{vr, vr_gradient};
-use crate::particle::SimpleAtomContainer;
 use crate::utils::math::cos_from_vec;
 use crate::particle::Particle;
-use crate::sim_core::world::boxed_world::box_task::BoxTask;
+use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::BoxedWorld;
+use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::thermostat::compute_new_thermostat_epsilon;
 
 const OPTIMIZATION: bool = true;
 
@@ -74,30 +77,29 @@ pub struct FPInfoBoxed {
   pub optimization_ignored: usize,
 }
 
-pub fn compute_forces_potential<I>(particles_i: &I, particles_j: &I, particles_j_count: usize)
+pub fn compute_forces_potential<'a, I>(particles_i: I, particles_j: I)
   -> FPInfoBoxed
 where
-  I: ?Sized,
-  for<'a> &'a I: IntoIterator,
-  for<'a> <&'a I as IntoIterator>::Item: AsRef<Particle>,
+  I: IntoIterator + Clone,
+  I::Item: AsRef<Particle>,
 {
   let mut fp: HashMap<usize, FP> = HashMap::new();
   let mut optimization_considered: usize = 0;
   let mut optimization_ignored: usize = 0;
 
-  let mut gradients_cache: HashMap<usize, Vector3<f64>> = HashMap::new();
+  let mut gradients_cache;
   let mut potential_energy_total: f64 = 0.;
-  let mut neighbours: Vec<usize> = Vec::with_capacity(particles_j_count);
+  let mut neighbours: Vec<usize>;
 
   let mut particles_j_cache: HashMap<usize, Particle> = HashMap::new();
 
   for temp_i in particles_i.into_iter() {
     let particle_i = temp_i.as_ref();
     let i_id = particle_i.get_id() as usize;
-    neighbours = Vec::with_capacity(particles_j_count);
+    neighbours = Vec::new();
 
     if OPTIMIZATION {
-      for temp_j in particles_j.into_iter() {
+      for temp_j in particles_j.clone().into_iter() {
         let particle_j = temp_j.as_ref();
         let j_id = particle_j.get_id() as usize;
         if i_id == j_id {
@@ -123,7 +125,7 @@ where
         }
       }
     } else {
-      for temp_j in particles_j.into_iter() {
+      for temp_j in particles_j.clone().into_iter() {
         optimization_considered += 1;
         let particle_j = temp_j.as_ref();
         let j_id = particle_j.get_id() as usize;
@@ -132,7 +134,7 @@ where
         particles_j_cache.insert(j_id, particle_j.clone());
       }
     }
-    
+
     for j_id_ in neighbours.iter() {
       let j_id = *j_id_;
       assert_ne!(i_id, j_id);
@@ -259,20 +261,107 @@ where
 impl BoxedWorld {
   pub fn update_verlet_nose_hoover(&mut self, time_step: f64, next_iteration: usize,
                                    desired_temperature: f64, q_effective_mass: f64) {
-    let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.num_of_atoms);
-    
+    let previous_thermostat_epsilon = self.box_container.read().unwrap().current_thermostat_epsilon();
+
     for sim_box in self.box_container.read().unwrap().current_boxes().iter() {
       let vel_task = BoxTask::VelocityTask {
         box_container: self.box_container.clone(),
         box_id: sim_box.id(),
         time_step,
-        previous_thermostat_epsilon: self.box_container.read().unwrap().current_thermostat_epsilon(),
+        previous_thermostat_epsilon,
         current_iteration: self.iteration,
       };
-      
+
       self.tx_task.send(vel_task).unwrap();
     }
-    
+
+    let mut half_velocity_cache_all: HashMap<usize, Vector3<f64>> = HashMap::new();
+    let mut particles_all: HashMap<usize, Particle> = HashMap::new();
+
+    while half_velocity_cache_all.len() < self.num_of_atoms {
+      let result = self.rx_result.recv().unwrap();
+
+      match result {
+        BoxResult::VelocityResult(task_result) => {
+          half_velocity_cache_all.extend(task_result.half_velocity_cache);
+          particles_all.extend(task_result.new_position_atoms);
+        },
+        _ => {
+          panic!("wrong result type");
+        }
+      }
+    }
+
+    assert_eq!(self.num_of_atoms, half_velocity_cache_all.len());
+    assert_eq!(self.num_of_atoms, particles_all.len());
+
+    {
+      let mut lock = self.box_container.write().unwrap();
+      lock.set_integration_half_velocity_cache(half_velocity_cache_all);
+      lock.set_integration_box_cache(particles_all);
+    }
+
+    // thermostat epsilon
+    let new_thermostat_epsilon;
+    {
+      let lock = self.box_container.read().unwrap();
+      new_thermostat_epsilon =
+        compute_new_thermostat_epsilon(previous_thermostat_epsilon, lock.integration_half_velocity_cache(),
+                                       lock.atoms_of_integration_box(), time_step, q_effective_mass,
+                                       desired_temperature);
+    }
+    self.box_container.write().unwrap().add_thermostat_epsilon(new_thermostat_epsilon);
+
+    // add forces computation
+    for sim_box in self.box_container.read().unwrap().current_boxes().iter() {
+      let force_task = BoxTask::ForceTask {
+        box_container: Arc::clone(&self.box_container),
+        box_id: sim_box.id(),
+      };
+
+      self.tx_task.send(force_task).unwrap();
+    }
+
+    let mut box_ids: HashSet<usize> = HashSet::new();
+    let box_count = self.box_container.read().unwrap().box_count();
+
+    while box_ids.len() < box_count {
+      let result = self.rx_result.recv().unwrap();
+
+      match result {
+        BoxResult::ForceResult(result) => {
+          let box_id = result.box_id;
+          assert!(!box_ids.contains(&box_id));
+          box_ids.insert(box_id);
+
+          self.update_integration_cache(&result.acceleration, &result.info_boxed.fp);
+        },
+        _ => panic!("wrong result type!"),
+      }
+    }
+
+    self.box_container.write().unwrap().integration_box_set_velocity(time_step, new_thermostat_epsilon,
+                                                                     self.iteration + 1);
+    // idk
+    self.box_container.write().unwrap().apply_integration_cache();
+
+    self.iteration += 1;
+    assert_eq!(self.iteration, next_iteration);
+
     unimplemented!("aha");
+  }
+
+  pub fn update_integration_cache(&mut self, acceleration: &HashMap<usize, Vector3<f64>>,
+                                  fp: &HashMap<usize, FP>) {
+    let mut lock = self.box_container.write().unwrap();
+
+    for (i_id_, i_acc) in acceleration {
+      let i_id = *i_id_;
+      let i_fp = fp.get(i_id_).unwrap();
+      let i_pot_energy = i_fp.potential_energy;
+      let i_force = i_fp.force;
+
+      lock.update_integration_box_force(i_id, &i_force, i_acc, i_pot_energy);
+    }
   }
 }

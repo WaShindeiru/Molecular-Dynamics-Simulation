@@ -1,5 +1,6 @@
 use nalgebra::Vector3;
 
+#[derive(Clone)]
 pub struct Cube<T> {
   data: Vec<Vec<Vec<T>>>,
   size: Vector3<usize>,
@@ -61,6 +62,14 @@ impl<T> Cube<T> {
   /// Gets a reference to the element at the specified coordinates
   pub fn get(&self, x: usize, y: usize, z: usize) -> Option<&T> {
     self.data.get(x)?.get(y)?.get(z)
+  }
+  
+  pub fn get_vec(&self, vec: &Vector3<usize>) -> Option<&T> {
+    self.data.get(vec.x)?.get(vec.y)?.get(vec.z)
+  }
+
+  pub fn get_vec_mut(&mut self, vec: &Vector3<usize>) -> Option<&mut T> {
+    self.data.get_mut(vec.x)?.get_mut(vec.y)?.get_mut(vec.z)
   }
 
   /// Gets a mutable reference to the element at the specified coordinates

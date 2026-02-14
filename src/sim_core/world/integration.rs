@@ -1,9 +1,5 @@
 use std::fmt;
 
-pub mod verlet;
-pub mod euler;
-pub mod verlet_nose_hoover;
-
 #[derive(Clone)]
 pub enum IntegrationAlgorithm {
   SemiImplicitEuler,
