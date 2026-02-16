@@ -1,6 +1,9 @@
+use nalgebra::Vector3;
+use crate::data::InteractionType;
 use crate::data::units::R_U;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 
+#[derive(Clone)]
 pub struct AtomDTO {
   pub id: u64,
   pub iteration: usize,
@@ -18,7 +21,7 @@ pub struct AtomDTO {
   pub force_z: f64,
 }
 
-pub struct WorldDTO {
+pub struct SimpleWorldDTO {
   pub num_of_atoms: usize,
   pub atoms: Vec<Vec<AtomDTO>>,
   pub potential_energy: Vec<f64>,
@@ -31,8 +34,36 @@ pub struct WorldDTO {
   pub num_of_world_iterations: usize,
   pub number_of_resets: usize,
   pub max_iteration_till_reset: usize,
-  
+
   pub frame_iteration_count: usize,
+}
+
+pub struct BoxContainerDTO {
+  pub box_type: InteractionType,
+  pub atoms: Vec<Vec<AtomDTO>>,
+  pub thermostat_epsilon: Vec<f64>,
+
+  pub box_length: Vector3<f64>,
+  pub box_count: usize,
+  pub box_count_dim: Vector3<usize>,
+}
+
+pub struct BoxedWorldDTO {
+  pub num_of_atoms: usize,
+  pub size: Vector3<f64>,
+  pub box_container: BoxContainerDTO,
+  pub integration_algorithm: IntegrationAlgorithm,
+
+  pub num_of_world_iterations: usize,
+  pub number_of_resets: usize,
+  pub max_iteration_till_reset: usize,
+
+  pub frame_iteration_count: usize,
+}
+
+pub enum WorldDTO {
+  SimpleWorldDTO(SimpleWorldDTO),
+  BoxedWorldDTO(BoxedWorldDTO),
 }
 
 pub struct EngineDTO {

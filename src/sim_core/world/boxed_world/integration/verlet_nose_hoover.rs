@@ -17,7 +17,7 @@ use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::thermostat::compute_new_thermostat_epsilon;
 
-const OPTIMIZATION: bool = true;
+const OPTIMIZATION: bool = false;
 
 pub fn verlet_noose_hoover_half_velocity_position<I>(previous_atom_container: I, time_step: f64,
                                                      previous_thermostat_epsilon: f64,
@@ -264,15 +264,17 @@ impl BoxedWorld {
     let previous_thermostat_epsilon = self.box_container.read().unwrap().current_thermostat_epsilon();
 
     for sim_box in self.box_container.read().unwrap().current_boxes().iter() {
-      let vel_task = BoxTask::VelocityTask {
-        box_container: self.box_container.clone(),
-        box_id: sim_box.id(),
-        time_step,
-        previous_thermostat_epsilon,
-        current_iteration: self.iteration,
-      };
+      if !sim_box.empty() {
+        let vel_task = BoxTask::VelocityTask {
+          box_container: self.box_container.clone(),
+          box_id: sim_box.id(),
+          time_step,
+          previous_thermostat_epsilon,
+          current_iteration: self.iteration,
+        };
 
-      self.tx_task.send(vel_task).unwrap();
+        self.tx_task.send(vel_task).unwrap();
+      }
     }
 
     let mut half_velocity_cache_all: HashMap<usize, Vector3<f64>> = HashMap::new();
@@ -312,20 +314,25 @@ impl BoxedWorld {
     }
     self.box_container.write().unwrap().add_thermostat_epsilon(new_thermostat_epsilon);
 
-    // add forces computation
-    for sim_box in self.box_container.read().unwrap().current_boxes().iter() {
-      let force_task = BoxTask::ForceTask {
-        box_container: Arc::clone(&self.box_container),
-        box_id: sim_box.id(),
-      };
+    let mut expected_boxes: HashSet<usize> = HashSet::new();
 
-      self.tx_task.send(force_task).unwrap();
+    // add forces computation
+    for sim_box in self.box_container.read().unwrap().integration_boxes_cache().iter() {
+      if !sim_box.empty() {
+        let force_task = BoxTask::ForceTask {
+          box_container: Arc::clone(&self.box_container),
+          box_id: sim_box.id(),
+        };
+
+        self.tx_task.send(force_task).unwrap();
+
+        expected_boxes.insert(sim_box.id());
+      }
     }
 
     let mut box_ids: HashSet<usize> = HashSet::new();
-    let box_count = self.box_container.read().unwrap().box_count();
 
-    while box_ids.len() < box_count {
+    while box_ids.len() < expected_boxes.len() {
       let result = self.rx_result.recv().unwrap();
 
       match result {
@@ -340,6 +347,8 @@ impl BoxedWorld {
       }
     }
 
+    assert_eq!(box_ids, expected_boxes);
+
     self.box_container.write().unwrap().integration_box_set_velocity(time_step, new_thermostat_epsilon,
                                                                      self.iteration + 1);
     // idk
@@ -347,8 +356,6 @@ impl BoxedWorld {
 
     self.iteration += 1;
     assert_eq!(self.iteration, next_iteration);
-
-    unimplemented!("aha");
   }
 
   pub fn update_integration_cache(&mut self, acceleration: &HashMap<usize, Vector3<f64>>,

@@ -4,7 +4,7 @@ pub enum AtomType {
   Fe,
 }
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
 pub enum InteractionType {
   FeFe,
   CC,

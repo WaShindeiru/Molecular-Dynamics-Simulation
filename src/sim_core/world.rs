@@ -21,6 +21,7 @@ fn get_index_for_iteration(current_iteration: usize, max_iteration_till_reset: u
   index
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum WorldType {
   SimpleWorld,
   BoxedWorld,
@@ -64,7 +65,7 @@ impl World {
       }
     }
   }
-
+  
   pub fn save(&mut self) -> io::Result<()> {
     match self {
       World::SimpleWorld(world) => world.save(),

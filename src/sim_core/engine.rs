@@ -4,13 +4,14 @@ use crate::output::{AtomDTO, EngineDTO};
 use crate::sim_core::world::{World, WorldType};
 
 use std::{fs, io, time};
+use std::error::Error;
 use std::io::Write;
 use std::time::{Duration, Instant};
 use chrono::prelude::*;
 use csv::Writer;
 use log::info;
 use crate::particle::Particle;
-use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams, validate_integration_params};
 use crate::sim_core::world::saver::SaveOptions;
 
 pub struct Engine {
@@ -89,10 +90,16 @@ impl Engine {
   }
 
   pub fn run(&mut self, params: &IntegrationAlgorithmParams, time_step: f64) {
+    assert!(
+      validate_integration_params(&self.integration_algorithm, params),
+      "IntegrationAlgorithmParams {:?} does not match IntegrationAlgorithm {}",
+      params, self.integration_algorithm
+    );
+
     let start = Instant::now();
     let spinner = ['|', '/', '-', '\\'];
     let mut counter = 0;
-
+    
     for i in 0..self.num_of_iterations {
       if i % 100 == 0 {
         let frame = counter % spinner.len();
@@ -139,6 +146,12 @@ impl Engine {
     wtr.write_record(&["Time step: ", &format!("{:.2?} seconds", self.time_step)])?;
     wtr.write_record(&["Simulation Time: ", &format!("{:.2?} seconds", self.simulation_time)])?;
     wtr.write_record(&["integration type: ", &format!("{}", self.integration_algorithm)])?;
+
+    match self.world {
+      World::SimpleWorld(_) => wtr.write_record(&["world type: Simple World", ""])?,
+      World::BoxedWorld(_) => wtr.write_record(&["world type: Boxed World", ""])?,
+    };
+
     wtr.flush()?;
 
     Ok(())

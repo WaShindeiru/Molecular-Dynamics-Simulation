@@ -1,7 +1,7 @@
 use std::io;
 use log::info;
 use nalgebra::Vector3;
-use crate::output::{AtomDTO, WorldDTO};
+use crate::output::{AtomDTO, SimpleWorldDTO, WorldDTO};
 use crate::sim_core::world::saver::PartialWorldSaver;
 use crate::particle::{Particle, SimpleAtomContainer};
 use crate::sim_core::world::get_index_for_iteration;
@@ -64,7 +64,7 @@ impl SimpleWorld {
       world_saver: PartialWorldSaver::new(save_options),
     }
   }
-
+  
   pub fn save(&mut self) -> io::Result<()> {
     if self.save_options.save {
       let world = self.to_transfer_struct();
@@ -201,21 +201,23 @@ impl SimpleWorld {
       potential_energies.push(atom_container.get_potential_energy());
     }
 
-    WorldDTO {
-      num_of_atoms: self.atom_count,
-      atoms: all_atoms_dto,
-      potential_energy: potential_energies,
-      thermostat_epsilon: self.thermostat_epsilon.clone(),
-      box_x: self.size.x,
-      box_y: self.size.y,
-      box_z: self.size.z,
-      integration_algorithm: self.integration_algorithm.clone(),
-
-      num_of_world_iterations: self.reset_counter,
-      number_of_resets: self.number_of_resets,
-      max_iteration_till_reset: self.max_iteration_till_reset,
-
-      frame_iteration_count: self.frame_iteration_count,
-    }
+    WorldDTO::SimpleWorldDTO(
+      SimpleWorldDTO {
+        num_of_atoms: self.atom_count,
+        atoms: all_atoms_dto,
+        potential_energy: potential_energies,
+        thermostat_epsilon: self.thermostat_epsilon.clone(),
+        box_x: self.size.x,
+        box_y: self.size.y,
+        box_z: self.size.z,
+        integration_algorithm: self.integration_algorithm,
+  
+        num_of_world_iterations: self.reset_counter,
+        number_of_resets: self.number_of_resets,
+        max_iteration_till_reset: self.max_iteration_till_reset,
+  
+        frame_iteration_count: self.frame_iteration_count,
+      }
+    )
   }
 }

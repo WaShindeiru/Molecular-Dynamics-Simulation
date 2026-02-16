@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum IntegrationAlgorithm {
   SemiImplicitEuler,
   VelocityVerlet,
@@ -17,6 +17,7 @@ impl fmt::Display for IntegrationAlgorithm {
   }
 }
 
+#[derive(Debug)]
 pub enum IntegrationAlgorithmParams {
   SemiImplicitEuler,
   VelocityVerlet,
@@ -26,3 +27,11 @@ pub enum IntegrationAlgorithmParams {
   },
 }
 
+pub fn validate_integration_params(algorithm: &IntegrationAlgorithm, params: &IntegrationAlgorithmParams) -> bool {
+  match (algorithm, params) {
+    (IntegrationAlgorithm::SemiImplicitEuler, IntegrationAlgorithmParams::SemiImplicitEuler) => true,
+    (IntegrationAlgorithm::VelocityVerlet, IntegrationAlgorithmParams::VelocityVerlet) => true,
+    (IntegrationAlgorithm::NoseHooverVerlet, IntegrationAlgorithmParams::NoseHooverVerlet { .. }) => true,
+    _ => false,
+  }
+}

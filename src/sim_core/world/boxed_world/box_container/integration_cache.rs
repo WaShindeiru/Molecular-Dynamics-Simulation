@@ -28,6 +28,10 @@ impl BoxContainer {
     &self.integration_box_id_cache
   }
 
+  pub fn integration_boxes_cache(&self) -> &Cube<SimulationBox> {
+    &self.integration_box_cache
+  }
+
   pub fn update_integration_box_force(&mut self, particle_id: usize, force: &Vector3<f64>,
                                       acceleration: &Vector3<f64>, pot_energy: f64) {
     let box_id = self.integration_box_id_cache.get(&particle_id).unwrap();

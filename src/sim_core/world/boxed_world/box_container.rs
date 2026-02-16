@@ -4,8 +4,8 @@ use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinate
 use crate::sim_core::world::boxed_world::cube::Cube;
 use crate::particle::Particle;
 use crate::data::constants::get_box_size;
-use crate::particle::SimpleAtomContainer;
 use crate::data::InteractionType;
+use crate::output::{AtomDTO, BoxContainerDTO};
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 
 pub mod sim_box;
@@ -256,5 +256,34 @@ impl BoxContainer {
     self.current_index = new_index;
     self.boxes = new_boxes;
     self.thermostat_epsilon = new_thermostat_epsilon;
+    self.box_id_caches = new_box_id_caches;
+  }
+
+  pub fn to_transfer_struct(&self, lower_index: usize) -> BoxContainerDTO {
+    let mut atoms: Vec<Vec<AtomDTO>> = Vec::new();
+
+    for iteration in lower_index..self.boxes.len() {
+      let cube_ = self.boxes.get(iteration).unwrap();
+
+      let mut particles_temp: Vec<AtomDTO> = Vec::new();
+
+      for sim_box in cube_.iter() {
+        for (_, particle) in sim_box.particles() {
+          particles_temp.push(particle.to_transfer_struct());
+        }
+      }
+
+      atoms.push(particles_temp);
+    }
+
+    BoxContainerDTO {
+      box_type: self.box_type,
+      atoms,
+      thermostat_epsilon: self.thermostat_epsilon.clone(),
+
+      box_length: self.box_length,
+      box_count: self.box_count,
+      box_count_dim: self.box_count_dim,
+    }
   }
 }
