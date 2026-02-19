@@ -73,6 +73,29 @@ impl CustomPathAtom {
     }
   }
 
+  // TODO: I don't know if this is correct btw
+  pub fn reset_clone(&self) -> CustomPathAtom {
+    CustomPathAtom {
+      id: self.id,
+      iteration: self.iteration,
+      type_: self.type_,
+      mass: self.mass,
+
+      position: Vector3::new(0., 0., 0.),
+      velocity: self.velocity, // TODO: reconsider this
+
+      acceleration: Vector3::new(0., 0., 0.),
+      force: Vector3::new(0., 0., 0.),
+
+      kinetic_energy: self.kinetic_energy,
+      potential_energy: 0.,
+      thermostat_work: 0.,
+      
+      path: self.path.clone(),
+      step: self.step,
+    }
+  }
+
   pub fn to_transfer_struct(&self) -> AtomDTO {
     AtomDTO {
       id: self.id,

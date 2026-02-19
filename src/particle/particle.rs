@@ -135,6 +135,13 @@ impl Particle {
       Particle::CustomPathAtom(custom_path_atom) => Particle::CustomPathAtom(custom_path_atom.clone()),
     }
   }
+  
+  pub fn reset_clone(&self) -> Particle {
+    match self {
+      Particle::Atom(atom) => Particle::Atom(atom.reset_clone()),
+      Particle::CustomPathAtom(custom_path_atom) => Particle::CustomPathAtom(custom_path_atom.reset_clone()),
+    }
+  }
 }
 
 impl AsRef<Particle> for Particle {

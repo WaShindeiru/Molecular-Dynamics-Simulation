@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::data::types::AtomType;
-use crate::particle::{Atom, AtomCollection, Particle, SimpleAtomContainer};
+use crate::particle::{AtomCollection, Particle};
 use crate::particle::atom_collection::AtomMetadata;
 
 pub struct AtomData {

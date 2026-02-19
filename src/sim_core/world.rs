@@ -11,6 +11,7 @@ pub mod integration;
 pub mod simple_world;
 pub mod boxed_world;
 pub mod saver;
+mod boundary_constraint;
 
 fn get_index_for_iteration(current_iteration: usize, max_iteration_till_reset: usize, reset_count: usize) -> usize {
   let mut index = current_iteration;

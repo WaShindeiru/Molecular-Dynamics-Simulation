@@ -27,7 +27,7 @@ def read_forces_csv(filename):
 
 
 if __name__ == "__main__":
-    forces_data = read_forces_csv("../../output/symmetric_triangle_test/forces.csv")
+    forces_data = read_forces_csv("../../output/2026-02-17_23-46-18/forces.csv")
 
     x_difference = []
     y_difference = []
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     third_atom_z_error = []
     third_atom_x_force = []
 
-    for i in range(1,100):
+    for i in range(1,200):
         x_diff = abs(forces_data[i][0][0] - forces_data[i][1][0])
         y_diff = abs(-forces_data[i][0][1] - forces_data[i][1][1])
         z_temp = abs(forces_data[i][0][2]) + abs( forces_data[i][1][2])

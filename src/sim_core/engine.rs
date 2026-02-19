@@ -1,15 +1,14 @@
-use std::collections::HashMap;
 use nalgebra::Vector3;
-use crate::output::{AtomDTO, EngineDTO};
+use crate::output::{EngineDTO};
 use crate::sim_core::world::{World, WorldType};
 
-use std::{fs, io, time};
-use std::error::Error;
+use std::{io, time};
 use std::io::Write;
 use std::time::{Duration, Instant};
 use chrono::prelude::*;
 use csv::Writer;
 use log::info;
+use crate::data::units::TIME_U;
 use crate::particle::Particle;
 use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams, validate_integration_params};
 use crate::sim_core::world::saver::SaveOptions;
@@ -143,7 +142,7 @@ impl Engine {
     let mut wtr = Writer::from_path(&format!("./{}/info.txt", self.save_options.save_path))?;
     wtr.write_record(&["Simulation date: ", &format!("{}", time_string)])?;
     wtr.write_record(&["Number of iterations : ", &format!("{:.2?}", self.num_of_iterations)])?;
-    wtr.write_record(&["Time step: ", &format!("{:.2?} seconds", self.time_step)])?;
+    wtr.write_record(&["Time step: ", &format!("{:.3e} seconds", self.time_step * TIME_U)])?;
     wtr.write_record(&["Simulation Time: ", &format!("{:.2?} seconds", self.simulation_time)])?;
     wtr.write_record(&["integration type: ", &format!("{}", self.integration_algorithm)])?;
 

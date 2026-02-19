@@ -5,10 +5,15 @@ use std::thread::JoinHandle;
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::box_task::handle_task::{handle_force_task, handle_half_velocity_position_task};
 
-pub fn create_threads() -> (Sender<BoxTask>, Receiver<BoxResult>, Vec<JoinHandle<()>>) {
-  let num_workers = thread::available_parallelism()
-    .map(|n| n.get() - 1)
-    .unwrap_or(1);
+pub fn create_threads(debug: bool) -> (Sender<BoxTask>, Receiver<BoxResult>, Vec<JoinHandle<()>>) {
+  let num_workers: usize;
+  if debug {
+    num_workers = 1;
+  } else  {
+    num_workers = thread::available_parallelism()
+      .map(|n| n.get() - 1)
+      .unwrap_or(1); 
+  }
 
   let (tx_task, rx_task) = mpsc::channel::<BoxTask>();
   let job_rx = Arc::new(Mutex::new(rx_task));
@@ -33,12 +38,12 @@ pub fn create_threads() -> (Sender<BoxTask>, Receiver<BoxResult>, Vec<JoinHandle
             match task {
               BoxTask::VelocityTask {
                 box_container, box_id, time_step,
-                previous_thermostat_epsilon, current_iteration
+                previous_thermostat_epsilon, current_iteration, container_size
               } => {
                 let velocity_result = handle_half_velocity_position_task(box_container, 
                                                                    box_id, time_step, 
                                                                    previous_thermostat_epsilon, 
-                                                                   current_iteration);
+                                                                   current_iteration, container_size);
               
                 let box_result = BoxResult::VelocityResult(velocity_result);
                 result_tx_clone.send(box_result).unwrap();

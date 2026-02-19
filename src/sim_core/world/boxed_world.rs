@@ -54,7 +54,7 @@ impl BoxedWorld {
   ) -> Self {
 
     let num_of_atoms = atoms.len();
-    let (tx_task, rx_result, threads) = create_threads();
+    let (tx_task, rx_result, threads) = create_threads(false);
 
     let box_type = {
       let mut fe = false;

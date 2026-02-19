@@ -1,6 +1,8 @@
 use std::sync::Mutex;
 use nalgebra::base::Vector3;
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::Uniform;
+use rand_distr::{Distribution};
+
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::output::{AtomDTO};
@@ -91,6 +93,25 @@ impl Atom {
 
   pub fn update_position(&mut self, position_: Vector3<f64>) {
     self.position = position_;
+  }
+
+  pub fn reset_clone(&self) -> Atom {
+    Atom {
+      id: self.id,
+      iteration: self.iteration,
+      type_: self.type_,
+      mass: self.mass,
+
+      position: Vector3::new(0., 0., 0.),
+      velocity: self.velocity, // TODO: reconsider this
+
+      acceleration: Vector3::new(0., 0., 0.),
+      force: Vector3::new(0., 0., 0.),
+
+      kinetic_energy: self.kinetic_energy,
+      potential_energy: 0.,
+      thermostat_work: 0.,
+    }
   }
 
   pub fn to_transfer_struct(&self) -> AtomDTO {
@@ -253,9 +274,10 @@ impl SafeAtomFactory {
 
   pub fn get_atom_random(&self, atom: AtomType, lower_bound: f64, upper_bound: f64) -> Particle {
     let mut factory = self.inner.lock().unwrap();
-    let mut rng = rand::thread_rng();
-    let range = Uniform::new(lower_bound, upper_bound);
-    let range_vel = Uniform::new(-1., 1.);
+
+    let range = Uniform::new(lower_bound, upper_bound).unwrap();
+    let range_vel = Uniform::new(-1., 1.).unwrap();
+    let mut rng = rand::rng();
 
     let position_ = Vector3::new(
       range.sample(&mut rng),

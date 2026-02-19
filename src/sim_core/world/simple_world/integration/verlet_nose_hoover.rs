@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::data::units::K_B;
 use crate::particle::{potential, Particle, SimpleAtomContainer};
+use crate::sim_core::world::boundary_constraint::{apply_velocity_constraint, check_position_constraint, ParticleCompliance};
 use crate::sim_core::world::simple_world::SimpleWorld;
 use crate::utils::math::cos_from_vec;
 
@@ -45,6 +47,7 @@ impl SimpleWorld {
     let mut half_velocity_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.);
                                                           self.atom_count];
     let mut new_position_atoms: Vec<Particle> = Vec::with_capacity(self.atom_count);
+    let mut compliance_cache: HashMap<usize, ParticleCompliance> = HashMap::new();
 
     for (i, atom_i) in previous_atom_container.get_atoms().iter().enumerate() {
       assert_eq!(i, atom_i.get_id() as usize);
@@ -70,6 +73,14 @@ impl SimpleWorld {
 
       let mut new_atom_data = atom_i.custom_clone();
       new_atom_data.update_position(next_position);
+      
+      let (validated_position, compliance) = 
+        check_position_constraint(new_atom_data.get_position().clone(), self.get_size());
+      if !compliance.compliant {
+        new_atom_data.update_position(validated_position);
+      }
+      compliance_cache.insert(new_atom_data.get_id() as usize, compliance);
+      
       new_atom_data.set_thermostat_work(thermostat_work);
 
       new_position_atoms.push(new_atom_data);
@@ -96,12 +107,14 @@ impl SimpleWorld {
       let denominator = 1.0 + 0.5 * time_step * new_thermostat_epsilon;
 
       let new_velocity = numerator / denominator;
+      let compliance_i = compliance_cache.get(&i).unwrap();
+      let validated_velocity = apply_velocity_constraint(&compliance_i, new_velocity);
 
       let mut new_atom = particle_i.custom_clone();
       new_atom.set_force(new_force);
       new_atom.set_potential_energy(new_potential_energy);
       new_atom.set_acceleration(new_acceleration);
-      new_atom.set_velocity(new_velocity);
+      new_atom.set_velocity(validated_velocity);
       new_atom.set_iteration(next_iteration);
 
       new_atom = self.apply_boundary_constraint(new_atom);

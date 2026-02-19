@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use crate::particle::atom_collection::{AtomCollection, AtomMetadata};
 use crate::particle::Particle;
 use crate::sim_core::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
 

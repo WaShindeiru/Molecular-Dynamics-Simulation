@@ -493,7 +493,8 @@ fn test_single_reset_runner(world_type: WorldType) {
     save_verbose: false,
   };
 
-  let integration_algorithm = IntegrationAlgorithm::SemiImplicitEuler;
+  // TODO: go back to verlet
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
 
   let mut engine = Engine::new_from_atoms(
     atoms,
@@ -508,7 +509,10 @@ fn test_single_reset_runner(world_type: WorldType) {
     world_type.clone(),
   );
 
-  let params = IntegrationAlgorithmParams::SemiImplicitEuler;
+  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
+    desired_temperature: 100.,
+    q_effective_mass: 100.,
+  };
   engine.run(&params, TIME_STEP);
 
   let engine_dto = engine.to_transfer_struct();
@@ -587,7 +591,7 @@ fn test_no_reset_runner(world_type: WorldType) {
     save_verbose: false,
   };
 
-  let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
 
   let mut engine = Engine::new_from_atoms(
     atoms,
@@ -602,7 +606,10 @@ fn test_no_reset_runner(world_type: WorldType) {
     world_type.clone(),
   );
 
-  let params = IntegrationAlgorithmParams::VelocityVerlet;
+  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
+    desired_temperature: 100.,
+    q_effective_mass: 100.,
+  };
   engine.run(&params, TIME_STEP);
 
   let engine_dto = engine.to_transfer_struct();

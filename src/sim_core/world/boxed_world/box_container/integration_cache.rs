@@ -2,9 +2,58 @@ use std::collections::{HashMap, HashSet};
 use nalgebra::Vector3;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::particle::Particle;
+use crate::sim_core::world::boundary_constraint::{apply_velocity_constraint, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, get_id_simulation_box};
 use crate::sim_core::world::boxed_world::cube::Cube;
+
+struct ConstraintResult {
+  compliant: bool,
+  position: Vector3<f64>,
+  velocity: Vector3<f64>,
+}
+
+fn apply_boundary_constraint(atom: &Particle, container_size: &Vector3<f64>) -> ConstraintResult {
+  let mut position = atom.get_position().clone();
+  let mut velocity = atom.get_velocity().clone();
+  let mut compliant = true;
+
+  if position.x < 0.0 {
+    compliant = false;
+    velocity.x = - velocity.x;
+    position.x = - position.x;
+  } else if position.x > container_size.x {
+    compliant = false;
+    velocity.x = - velocity.x;
+    position.x = 2. * container_size.x - position.x;
+  }
+
+  if position.y < 0.0 {
+    compliant = false;
+    velocity.y = - velocity.y;
+    position.y = - position.y;
+  } else if position.y > container_size.y {
+    compliant = false;
+    velocity.y = - velocity.y;
+    position.y = 2. * container_size.y - position.y;
+  }
+
+  if position.z < 0. {
+    compliant = false;
+    velocity.z = - velocity.z;
+    position.z = - position.z;
+  } else if position.z > container_size.z {
+    compliant = false;
+    velocity.z = - velocity.z;
+    position.z = 2. * container_size.z - position.z;
+  }
+
+  ConstraintResult {
+    compliant,
+    position,
+    velocity,
+  }
+}
 
 impl BoxContainer {
   pub fn set_integration_half_velocity_cache(&mut self, cache: HashMap<usize, Vector3<f64>>) {
@@ -43,29 +92,7 @@ impl BoxContainer {
     particle.set_potential_energy(particle.get_potential_energy() + pot_energy);
   }
 
-  pub fn neighbours_of_box(&self, box_id: usize) -> Vec<usize> {
-    let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
-    let mut neighbours: Vec<usize> = Vec::new();
-    let box_count_dim = self.box_count_dim();
-
-    for x_ in coordinates.x - 1..coordinates.x+2 {
-      for y_ in coordinates.y - 1..coordinates.y+2 {
-        for z_ in coordinates.z-1 .. coordinates.z+2 {
-          if x_ == coordinates.x && y_ == coordinates.y && z_ == coordinates.z {
-            continue;
-          }
-          if x_ >= 0 && x_ < box_count_dim.x && y_ >= 0 && y_ < box_count_dim.y && z_ > 0 &&
-            z_ < box_count_dim.z {
-            neighbours.push(get_id_simulation_box(&Vector3::new(x_, y_, z_), box_count_dim));
-          }
-        }
-      }
-    }
-
-    neighbours
-  }
-
-  pub fn integration_particles_of_neighbour_boxes(&self, box_id: usize) -> impl Iterator<Item = &Particle> {    let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
+  pub fn integration_particles_of_neighbour_boxes(&self, box_id: usize) -> impl Iterator<Item = &Particle> {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
     let box_count_dim = self.box_count_dim();
 
@@ -96,7 +123,8 @@ impl BoxContainer {
     })
   }
 
-  pub fn integration_box_set_velocity(&mut self, time_step: f64, thermostat_epsilon: f64, next_iteration: usize) {
+  pub fn integration_box_set_velocity(&mut self, time_step: f64, thermostat_epsilon: f64,
+                                      next_iteration: usize, compliance_cache: &HashMap<usize, ParticleCompliance>) {
     for sim_box in self.integration_box_cache.iter_mut() {
       for (i_id_, particle_i) in sim_box.particles_mut().iter_mut() {
         let numerator: Vector3<f64> = self.integration_half_velocity_cache.get(i_id_).unwrap() +
@@ -105,8 +133,12 @@ impl BoxContainer {
         let denominator = 1.0 + 0.5 * time_step * thermostat_epsilon;
 
         let new_velocity: Vector3<f64> = numerator / denominator;
+        // assert!(!new_velocity.x.is_nan() && !new_velocity.y.is_nan() && !new_velocity.z.is_nan());
 
-        particle_i.set_velocity(new_velocity);
+        let compliance = compliance_cache.get(i_id_).unwrap();
+        let validated_velocity = apply_velocity_constraint(&compliance, new_velocity);
+
+        particle_i.set_velocity(validated_velocity);
         particle_i.set_iteration(next_iteration);
       }
     }
