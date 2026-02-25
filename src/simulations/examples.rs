@@ -215,6 +215,9 @@ pub fn dense_particles(time_step: f64, save: bool, num_iterations: usize, partic
   let range = Uniform::new(0., 1.).unwrap();
   let mut rng_2 = rand::rng();
 
+  let velocity_normal = Normal::new(0.0, 1e-2).unwrap();
+  let mut rng_3 = rand::rng();
+
   let mut z = offset.z;
   while z + offset.z <= world_size.z {
     let mut y = offset.y;
@@ -258,7 +261,10 @@ pub fn dense_particles(time_step: f64, save: bool, num_iterations: usize, partic
           _ => panic!("what's that?"),
         };
 
-        let particle = atom_factory.get_atom(atom_type, position, Vector3::new(0., 0., 0.));
+        let v_x = velocity_normal.sample(&mut rng_3);
+        let v_y = velocity_normal.sample(&mut rng_3);
+        let v_z = velocity_normal.sample(&mut rng_3);
+        let particle = atom_factory.get_atom(atom_type, position, Vector3::new(v_x, v_y, v_z));
         atoms.push(particle);
         count += 1;
 

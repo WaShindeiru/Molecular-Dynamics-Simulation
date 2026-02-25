@@ -14,11 +14,11 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     thermostat_work = energy_data.iloc[:, 4]
     thermostat_epsilon = energy_data.iloc[:, 5]
 
-  potential_energies_per_atom = pd.read_csv(path + '/potential_energies.csv', header=None)
-  potential_energies_per_atom = potential_energies_per_atom[potential_energies_per_atom.iloc[:, 0] != 0]
-  potential_energy_summed = potential_energies_per_atom.groupby(potential_energies_per_atom.iloc[:, 0])[potential_energies_per_atom.columns[2]].sum()
+  # potential_energies_per_atom = pd.read_csv(path + '/potential_energies.csv', header=None)
+  # potential_energies_per_atom = potential_energies_per_atom[potential_energies_per_atom.iloc[:, 0] != 0]
+  # potential_energy_summed = potential_energies_per_atom.groupby(potential_energies_per_atom.iloc[:, 0])[potential_energies_per_atom.columns[2]].sum()
 
-  potential_energy_difference = potential_energy.values - potential_energy_summed.values
+  # potential_energy_difference = potential_energy.values - potential_energy_summed.values
 
   plt.plot(iteration, kinetic_energy, label="kinetic energy")
   plt.plot(iteration, potential_energy, label="potential energy")
@@ -35,44 +35,44 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   plt.savefig(path + '/energy.png')
   plt.show()
 
-  plt.figure()
-  plt.plot(iteration, potential_energy_summed, label="potential energy summed")
-  plt.xlabel("iteration")
-  plt.ylabel("potential energy")
-  plt.title("potential energy summed")
-  plt.legend()
-  plt.show()
+  # plt.figure()
+  # plt.plot(iteration, potential_energy_summed, label="potential energy summed")
+  # plt.xlabel("iteration")
+  # plt.ylabel("potential energy")
+  # plt.title("potential energy summed")
+  # plt.legend()
+  # plt.show()
 
   # Plot potential energy difference
-  plt.figure()
-  plt.plot(iteration, potential_energy_difference, label="Potential energy difference")
-  plt.xlabel("iteration")
-  plt.ylabel("Energy difference [eV]")
-  plt.title("Potential energy difference (energy.csv vs summed per-atom)")
-  plt.legend()
-  plt.savefig(path + '/potential_energy_difference.png')
-  plt.show()
+  # plt.figure()
+  # plt.plot(iteration, potential_energy_difference, label="Potential energy difference")
+  # plt.xlabel("iteration")
+  # plt.ylabel("Energy difference [eV]")
+  # plt.title("Potential energy difference (energy.csv vs summed per-atom)")
+  # plt.legend()
+  # plt.savefig(path + '/potential_energy_difference.png')
+  # plt.show()
 
-  # Plot potential energy of the first particle in every iteration
-  first_particle_id = 0
-  first_particle_energy = potential_energies_per_atom[potential_energies_per_atom.iloc[:, 1] == first_particle_id]
-
-  positions = pd.read_csv(path + '/positions.csv', header=None, names=['iteration', 'particle_id', 'x', 'y', 'z'])
-  positions = positions[positions.iloc[:, 0] != 0]
-  first_particle_positions = positions[positions['particle_id'] == first_particle_id]
-  initial_x = first_particle_positions['x'].iloc[0]
-  x_displacement = first_particle_positions['x'] - initial_x
-
-  plt.figure()
-  plt.plot(x_displacement, first_particle_energy.iloc[:, 2], label=f"Potential energy of particle {first_particle_id}")
-  plt.xlabel("x_displacement")
-  plt.ylabel("Potential energy [eV]")
-  plt.title(f"Potential energy of particle {first_particle_id}")
-  plt.legend()
-  # plt.xlim([0, 4])
-  # plt.ylim([-1, 4])
-  plt.savefig(path + '/first_particle_potential_energy.png')
-  plt.show()
+  # # Plot potential energy of the first particle in every iteration
+  # first_particle_id = 0
+  # first_particle_energy = potential_energies_per_atom[potential_energies_per_atom.iloc[:, 1] == first_particle_id]
+  #
+  # positions = pd.read_csv(path + '/positions.csv', header=None, names=['iteration', 'particle_id', 'x', 'y', 'z'])
+  # positions = positions[positions.iloc[:, 0] != 0]
+  # first_particle_positions = positions[positions['particle_id'] == first_particle_id]
+  # initial_x = first_particle_positions['x'].iloc[0]
+  # x_displacement = first_particle_positions['x'] - initial_x
+  #
+  # plt.figure()
+  # plt.plot(x_displacement, first_particle_energy.iloc[:, 2], label=f"Potential energy of particle {first_particle_id}")
+  # plt.xlabel("x_displacement")
+  # plt.ylabel("Potential energy [eV]")
+  # plt.title(f"Potential energy of particle {first_particle_id}")
+  # plt.legend()
+  # # plt.xlim([0, 4])
+  # # plt.ylim([-1, 4])
+  # plt.savefig(path + '/first_particle_potential_energy.png')
+  # plt.show()
 
   # Read positions and calculate x displacement of first particle
 
