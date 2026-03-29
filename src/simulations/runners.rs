@@ -1,10 +1,10 @@
-use log::info;
 use nalgebra::Vector3;
-use rand::distr::Uniform;
 use carbon_nanotube::data::units::{TEMPERATURE_U, TIME_U};
 use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
 use carbon_nanotube::sim_core::world::WorldType;
 use carbon_nanotube::utils::units::celcius_to_kelvin;
+use carbon_nanotube::utils::logging;
+use carbon_nanotube::utils::logging::get_save_path;
 use crate::simulations::examples::{dense_particles, sphere_particles, symmetric_triangle_test, triangle};
 
 const TIME_STEP: f64 = 1e-18 / TIME_U;
@@ -14,8 +14,8 @@ const TEMPERATURE_KELVIN: f64 = 1600.0;
 const Q_EFFECTIVE_MASS: f64 = 0.1;
 
 pub fn dense_runner() {
-  env_logger::init();
-  info!("Starting simulation...");
+  let save_path = get_save_path();
+  logging::init_logging(save_path.clone());
 
   // let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
   let temperature_kelvin_unitless = TEMPERATURE_KELVIN / TEMPERATURE_U;
@@ -34,13 +34,13 @@ pub fn dense_runner() {
   let world_size = Vector3::new(27., 27., 27.);
   let offset = Vector3::new(3., 3., 3.);
 
-  dense_particles(TIME_STEP, save, num_iterations, 3.1, world_size, offset,
+  dense_particles(TIME_STEP, save, save_path, num_iterations, 3.1, world_size, offset,
                   integration_algorithm, params, world_type);
 }
 
 pub fn sphere_runner() {
-  env_logger::init();
-  info!("Starting simulation...");
+  let save_path = get_save_path();
+  logging::init_logging(save_path.clone());
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
 
@@ -55,12 +55,12 @@ pub fn sphere_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
   let world_type = WorldType::BoxedWorld;
 
-  sphere_particles(TIME_STEP, save, num_iterations, 30, integration_algorithm, params, world_type);
+  sphere_particles(TIME_STEP, save, save_path, num_iterations, 30, integration_algorithm, params, world_type);
 }
 
 pub fn triangle_runner() {
-  env_logger::init();
-  info!("Starting simulation...");
+  let save_path = get_save_path();
+  logging::init_logging(save_path.clone());
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
 
@@ -75,12 +75,12 @@ pub fn triangle_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
   let world_type = WorldType::BoxedWorld;
 
-  triangle(TIME_STEP, save, num_iterations, integration_algorithm, params, world_type);
+  triangle(TIME_STEP, save, save_path, num_iterations, integration_algorithm, params, world_type);
 }
 
 pub fn symmetric_triangle_test_runner() {
-  env_logger::init();
-  info!("Starting simulation...");
+  let save_path = get_save_path();
+  logging::init_logging(save_path.clone());
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
 
@@ -99,12 +99,12 @@ pub fn symmetric_triangle_test_runner() {
 
   let world_type = WorldType::BoxedWorld;
 
-  symmetric_triangle_test(TIME_STEP, save, num_iterations, integration_algorithm, params, world_type);
+  symmetric_triangle_test(TIME_STEP, save, save_path, num_iterations, integration_algorithm, params, world_type);
 }
 
 // fn two_particles_runner() {
-//   env_logger::init();
-//   info!("Starting simulation...");
+//   logging::init_logging("two_particles_runner");
+//   ting simulation...");
 //
 //   let num_iterations = 1e4 as usize;
 //   let save = true;

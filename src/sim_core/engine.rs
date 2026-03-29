@@ -6,7 +6,7 @@ use std::{io, time};
 use std::io::Write;
 use std::time::{Duration, Instant};
 use chrono::prelude::*;
-use csv::Writer;
+use std::fs::File;
 use log::info;
 use crate::data::units::TIME_U;
 use crate::particle::Particle;
@@ -40,11 +40,6 @@ impl Engine {
                         integration_algorithm: IntegrationAlgorithm,
                         world_type: WorldType,
   ) -> Self {
-    
-    let now: DateTime<Local> = Local::now();
-    let time_string = now.format("%Y-%m-%d_%H-%M-%S").to_string();
-    let save_path = "../output/".to_string() + &*time_string;
-    save_options.save_path = save_path;
 
     Engine::new_from_atoms_with_path(atoms, size, time_step, num_of_iterations, max_iteration_till_reset, 
                                      save_all_iterations, one_frame_duration, save_options, 
@@ -95,6 +90,9 @@ impl Engine {
       params, self.integration_algorithm
     );
 
+    info!("Starting simulation...");
+    info!("Will save output to {}", self.save_options.save_path);
+
     let start = Instant::now();
     let spinner = ['|', '/', '-', '\\'];
     let mut counter = 0;
@@ -139,19 +137,17 @@ impl Engine {
     let now: DateTime<Local> = Local::now();
     let time_string = now.format("%Y-%m-%d_%H-%M-%S").to_string();
 
-    let mut wtr = Writer::from_path(&format!("./{}/info.txt", self.save_options.save_path))?;
-    wtr.write_record(&["Simulation date: ", &format!("{}", time_string)])?;
-    wtr.write_record(&["Number of iterations : ", &format!("{:.2?}", self.num_of_iterations)])?;
-    wtr.write_record(&["Time step: ", &format!("{:.3e} seconds", self.time_step * TIME_U)])?;
-    wtr.write_record(&["Simulation Time: ", &format!("{:.2?} seconds", self.simulation_time)])?;
-    wtr.write_record(&["integration type: ", &format!("{}", self.integration_algorithm)])?;
+    let mut file = File::create(&format!("./{}/info.txt", self.save_options.save_path))?;
+    writeln!(file, "Simulation date: {}", time_string)?;
+    writeln!(file, "Number of iterations : {:?}", self.num_of_iterations)?;
+    writeln!(file, "Time step: {:.3e} seconds", self.time_step * TIME_U)?;
+    writeln!(file, "Simulation Time: {:?} seconds", self.simulation_time)?;
+    writeln!(file, "integration type: {}", self.integration_algorithm)?;
 
     match self.world {
-      World::SimpleWorld(_) => wtr.write_record(&["world type: Simple World", ""])?,
-      World::BoxedWorld(_) => wtr.write_record(&["world type: Boxed World", ""])?,
+      World::SimpleWorld(_) => writeln!(file, "world type: Simple World")?,
+      World::BoxedWorld(_) => writeln!(file, "world type: Boxed World")?,
     };
-
-    wtr.flush()?;
 
     Ok(())
   }

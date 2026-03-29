@@ -2,6 +2,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::thread::JoinHandle;
+use log::info;
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::box_task::handle_task::{handle_force_task, handle_half_velocity_position_task};
 
@@ -14,6 +15,7 @@ pub fn create_threads(debug: bool) -> (Sender<BoxTask>, Receiver<BoxResult>, Vec
       .map(|n| n.get() - 1)
       .unwrap_or(1); 
   }
+  info!("Using {num_workers} threads.");
 
   let (tx_task, rx_task) = mpsc::channel::<BoxTask>();
   let job_rx = Arc::new(Mutex::new(rx_task));

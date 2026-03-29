@@ -13,7 +13,8 @@ use rand::prelude::*;
 use rand_distr::Normal;
 use carbon_nanotube::data::types::AtomType::{Fe, C};
 
-pub fn symmetric_triangle_test(time_step: f64, save: bool, num_iterations: usize, integration_algorithm: IntegrationAlgorithm,
+pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, num_iterations: usize,
+                               integration_algorithm: IntegrationAlgorithm,
                                integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
   let simulation_size = Vector3::new(50., 50., 50.);
   let atom_factory = SafeAtomFactory::new();
@@ -47,7 +48,7 @@ pub fn symmetric_triangle_test(time_step: f64, save: bool, num_iterations: usize
     save,
     save_laamps,
     save_verbose,
-    save_path: "".to_string(),
+    save_path,
   };
 
   let mut engine = Engine::new_from_atoms(
@@ -64,8 +65,9 @@ pub fn symmetric_triangle_test(time_step: f64, save: bool, num_iterations: usize
   engine.run(&integration_algorithm_params, time_step);
 }
 
-pub fn triangle(time_step: f64, save: bool, num_iterations: usize, integration_algorithm: IntegrationAlgorithm,
-            integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
+pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: usize,
+                integration_algorithm: IntegrationAlgorithm,
+                integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
   let simulation_size = Vector3::new(50., 50., 50.);
 
   let atom_factory = SafeAtomFactory::new();
@@ -85,7 +87,7 @@ pub fn triangle(time_step: f64, save: bool, num_iterations: usize, integration_a
     save,
     save_laamps,
     save_verbose,
-    save_path: "".to_string(),
+    save_path,
   };
 
   let mut engine = Engine::new_from_atoms(
@@ -131,7 +133,8 @@ pub fn triangle(time_step: f64, save: bool, num_iterations: usize, integration_a
 //   engine.run(save, use_thermostat, TEMPERATURE_CELCIUS, Q_EFFECTIVE_MASS, verbose);
 // }
 
-pub fn sphere_particles(time_step: f64, save: bool, num_iterations: usize, num_particles: usize, integration_algorithm: IntegrationAlgorithm,
+pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
+                        num_particles: usize, integration_algorithm: IntegrationAlgorithm,
                     integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
   let simulation_size = Vector3::new(16., 16., 16.);
 
@@ -182,7 +185,7 @@ pub fn sphere_particles(time_step: f64, save: bool, num_iterations: usize, num_p
     save,
     save_laamps,
     save_verbose,
-    save_path: "".to_string(),
+    save_path,
   };
 
   let mut engine = Engine::new_from_atoms(
@@ -199,8 +202,9 @@ pub fn sphere_particles(time_step: f64, save: bool, num_iterations: usize, num_p
   engine.run(&integration_algorithm_params, time_step);
 }
 
-pub fn dense_particles(time_step: f64, save: bool, num_iterations: usize, particle_distance: f64, world_size: Vector3<f64>,
-                       offset: Vector3<f64>, integration_algorithm: IntegrationAlgorithm,
+pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
+                       particle_distance: f64, world_size: Vector3<f64>,  offset: Vector3<f64>,
+                       integration_algorithm: IntegrationAlgorithm,
                        integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
   let atom_factory = SafeAtomFactory::new();
 
@@ -287,7 +291,7 @@ pub fn dense_particles(time_step: f64, save: bool, num_iterations: usize, partic
     save,
     save_laamps,
     save_verbose,
-    save_path: "".to_string(),
+    save_path,
   };
 
   let mut engine = Engine::new_from_atoms(
