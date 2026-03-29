@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use nalgebra::Vector3;
+use crate::sim_core::world::integration::IntegrationAlgorithm;
 use crate::data::units::K_B;
 use crate::particle::{potential, Particle, SimpleAtomContainer};
 use crate::sim_core::world::boundary_constraint::{apply_velocity_constraint, check_position_constraint, ParticleCompliance};
@@ -36,8 +37,12 @@ fn compute_new_thermostat_epsilon(thermostat_epsilon: f64, half_velocity_cache: 
 impl SimpleWorld {
 
   // TODO: Fix boundary conditions check
-  pub fn update_verlet_nose_hoover(&mut self, time_step: f64, next_iteration: usize,
-                                   desired_temperature: f64, q_effective_mass: f64) {
+  pub fn update_verlet_nose_hoover(&mut self, time_step: f64, next_iteration: usize) {
+    unimplemented!("implement temperature history");
+
+    let desired_temperature = 0.;
+    let q_effective_mass = 0.;
+    
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
 
     assert_eq!(self.atoms.len() - 1, self.current_index);

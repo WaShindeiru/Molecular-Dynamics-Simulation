@@ -3,18 +3,44 @@ pub mod computation;
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::sync::mpsc::RecvTimeoutError;
+use std::thread::current;
+use std::time::Duration;
+use log::info;
 use nalgebra::Vector3;
+use crate::sim_core::world::integration::IntegrationStateUpdateResponse;
+use crate::data::units::TEMPERATURE_U;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::FP;
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::{check_position_constraint, ParticleCompliance};
+use crate::sim_core::world::boundary_constraint::{ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::thermostat::compute_new_thermostat_epsilon;
+use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmState};
+
 
 impl BoxedWorld {
-  pub fn update_verlet_nose_hoover(&mut self, time_step: f64, next_iteration: usize,
-                                   desired_temperature: f64, q_effective_mass: f64) {
+  pub fn update_verlet_nose_hoover(&mut self, time_step: f64, next_iteration: usize) {
     let previous_thermostat_epsilon = self.box_container.read().unwrap().current_thermostat_epsilon();
+    let current_desired_temperature: f64;
+    let q_effective_mass: f64;
+
+    let temperature_index = if let IntegrationAlgorithmState::NoseHooverVerlet { temperature_index, .. } = self.integration_algorithm_state {
+      temperature_index
+    } else {
+      panic!("Expected NoseHooverVerlet integration state!")
+    };
+
+    if let IntegrationAlgorithm::NoseHooverVerlet {
+      desired_temperature,
+      q_effective_mass: q
+    } = &self.integration_algorithm {
+      let temp_info = desired_temperature.get(temperature_index).unwrap();
+      current_desired_temperature = temp_info.desired_temperature;
+      q_effective_mass = *q;
+    } else {
+      panic!("Expected NoseHooverVerlet integration!")
+    }
 
     for sim_box in self.box_container.read().unwrap().current_boxes().iter() {
       if !sim_box.empty() {
@@ -69,13 +95,13 @@ impl BoxedWorld {
       new_thermostat_epsilon =
         compute_new_thermostat_epsilon(previous_thermostat_epsilon, lock.integration_half_velocity_cache(),
                                        lock.atoms_of_integration_box(), time_step, q_effective_mass,
-                                       desired_temperature)
+                                       current_desired_temperature)
     }
     self.box_container.write().unwrap().add_thermostat_epsilon(new_thermostat_epsilon);
 
     let mut expected_boxes: HashSet<usize> = HashSet::new();
 
-    // add forces computation
+    // forces computation
     for sim_box in self.box_container.read().unwrap().integration_boxes_cache().iter() {
       if !sim_box.empty() {
         let force_task = BoxTask::ForceTask {
@@ -92,7 +118,15 @@ impl BoxedWorld {
     let mut box_ids: HashSet<usize> = HashSet::new();
 
     while box_ids.len() < expected_boxes.len() {
-      let result = self.rx_result.recv().unwrap();
+      let result = match self.rx_result.recv_timeout(Duration::from_secs(5)) {
+        Ok(msg) => msg,
+        Err(RecvTimeoutError::Timeout) => {
+          panic!("Receiving from queue took too long!");
+        }
+        Err(RecvTimeoutError::Disconnected) => {
+          panic!("Channel disconnected!");
+        }
+      };
 
       match result {
         BoxResult::ForceResult(result) => {
@@ -109,9 +143,24 @@ impl BoxedWorld {
     assert_eq!(box_ids, expected_boxes);
 
     // TODO: move setting iteration for a particle into earlier step
-    self.box_container.write().unwrap().integration_box_set_velocity(time_step, new_thermostat_epsilon,
-                                                                     self.iteration + 1,
-                                                                     &compliance_cache);
+    self.box_container.write().unwrap().integration_box_cache_set_velocity(time_step, new_thermostat_epsilon,
+                                                                           self.iteration + 1,
+                                                                           &compliance_cache);
+
+    let simulation_temperature = self.box_container.read().unwrap().integration_box_cache_get_mean_temperature();
+
+    let result = self.integration_algorithm_state.update_state(time_step, &self.integration_algorithm, simulation_temperature);
+    match result {
+      IntegrationStateUpdateResponse::NoseHooverVerlet { updated, temperature, .. } => {
+        if updated {
+          info!("Simulation temperature: {}, Temperature: {} achieved, switching to temperature: {}",
+                simulation_temperature * TEMPERATURE_U, current_desired_temperature * TEMPERATURE_U,
+                  temperature * TEMPERATURE_U);
+        }
+      }
+      _ => panic!("Wrong result type")
+    }
+
     // idk
     self.box_container.write().unwrap().apply_integration_cache();
 

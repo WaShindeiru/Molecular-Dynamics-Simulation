@@ -5,7 +5,7 @@ use carbon_nanotube::data::types::AtomType;
 use carbon_nanotube::data::units::TIME_U;
 use carbon_nanotube::particle::{Particle, SafeAtomFactory};
 use carbon_nanotube::sim_core::Engine;
-use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm};
 use carbon_nanotube::sim_core::world::saver::SaveOptions;
 use carbon_nanotube::sim_core::world::WorldType;
 
@@ -14,8 +14,7 @@ use rand_distr::Normal;
 use carbon_nanotube::data::types::AtomType::{Fe, C};
 
 pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                               integration_algorithm: IntegrationAlgorithm,
-                               integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
+                               integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
   let simulation_size = Vector3::new(50., 50., 50.);
   let atom_factory = SafeAtomFactory::new();
 
@@ -62,12 +61,11 @@ pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, nu
     world_type
   );
 
-  engine.run(&integration_algorithm_params, time_step);
+  engine.run(time_step);
 }
 
 pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                integration_algorithm: IntegrationAlgorithm,
-                integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
+                integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
   let simulation_size = Vector3::new(50., 50., 50.);
 
   let atom_factory = SafeAtomFactory::new();
@@ -101,7 +99,7 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
     world_type
   );
 
-  engine.run(&integration_algorithm_params, time_step);
+  engine.run(time_step);
 }
 
 // fn two_particles(save: bool, num_iterations: usize, use_thermostat: bool, verbose: bool) {
@@ -135,7 +133,7 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
 
 pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
                         num_particles: usize, integration_algorithm: IntegrationAlgorithm,
-                    integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
+                    world_type: WorldType) {
   let simulation_size = Vector3::new(16., 16., 16.);
 
   let atom_factory = SafeAtomFactory::new();
@@ -199,13 +197,12 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
     world_type
   );
 
-  engine.run(&integration_algorithm_params, time_step);
+  engine.run(time_step);
 }
 
 pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
                        particle_distance: f64, world_size: Vector3<f64>,  offset: Vector3<f64>,
-                       integration_algorithm: IntegrationAlgorithm,
-                       integration_algorithm_params: IntegrationAlgorithmParams, world_type: WorldType) {
+                       integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
   let atom_factory = SafeAtomFactory::new();
 
   let mut atoms: Vec<Particle> = Vec::new();
@@ -311,7 +308,7 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
   info!("Fe particles, count: {fe_count}, frac: {fe_frac}");
   info!("C particles, count: {c_count}, frac: {c_frac}");
 
-  engine.run(&integration_algorithm_params, time_step);
+  engine.run(time_step);
 }
 
 // fn small_box_one_particle(save: bool, num_iterations: usize) {

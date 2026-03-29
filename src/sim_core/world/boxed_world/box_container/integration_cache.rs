@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use nalgebra::Vector3;
+use crate::data::units::K_B;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::{apply_velocity_constraint, ParticleCompliance};
@@ -123,8 +124,8 @@ impl BoxContainer {
     })
   }
 
-  pub fn integration_box_set_velocity(&mut self, time_step: f64, thermostat_epsilon: f64,
-                                      next_iteration: usize, compliance_cache: &HashMap<usize, ParticleCompliance>) {
+  pub fn integration_box_cache_set_velocity(&mut self, time_step: f64, thermostat_epsilon: f64,
+                                            next_iteration: usize, compliance_cache: &HashMap<usize, ParticleCompliance>) {
     for sim_box in self.integration_box_cache.iter_mut() {
       for (i_id_, particle_i) in sim_box.particles_mut().iter_mut() {
         let numerator: Vector3<f64> = self.integration_half_velocity_cache.get(i_id_).unwrap() +
@@ -142,6 +143,22 @@ impl BoxContainer {
         particle_i.set_iteration(next_iteration);
       }
     }
+  }
+
+  pub fn integration_box_cache_get_mean_temperature(&self) -> f64 {
+    let mut temperature: f64 = 0.;
+    let mut count: usize = 0;
+    
+    for sim_box in self.integration_box_cache.iter() {
+      for (_, particle_i) in sim_box.particles().iter() {
+        temperature = temperature + 
+          (particle_i.get_mass() * particle_i.get_velocity().magnitude().powi(2))
+        / (3. * K_B);
+        count = count + 1;
+      }
+    }
+    
+    temperature / count as f64
   }
 
   pub fn apply_integration_cache(&mut self) {

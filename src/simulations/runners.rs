@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
 use carbon_nanotube::data::units::{TEMPERATURE_U, TIME_U};
-use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
 use carbon_nanotube::sim_core::world::WorldType;
 use carbon_nanotube::utils::units::celcius_to_kelvin;
 use carbon_nanotube::utils::logging;
@@ -17,25 +17,30 @@ pub fn dense_runner() {
   let save_path = get_save_path();
   logging::init_logging(save_path.clone());
 
-  // let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
-  let temperature_kelvin_unitless = TEMPERATURE_KELVIN / TEMPERATURE_U;
+  let desired_temperatures = vec![
+    TemperatureInfo{desired_temperature: 1700., distance: TimeIterationDistance::Iteration(500)},
+    TemperatureInfo{desired_temperature: 1000., distance: TimeIterationDistance::Iteration(500)},
+    TemperatureInfo{desired_temperature: 2500., distance: TimeIterationDistance::Iteration(500)}
+    ].into_iter().map(
+      |i| TemperatureInfo{
+        desired_temperature: i.desired_temperature / TEMPERATURE_U,
+        distance: i.distance}).collect();
 
-  let num_iterations = (3.2e4) as usize;
+  let num_iterations = (4e4) as usize;
   let save = true;
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: temperature_kelvin_unitless,
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: desired_temperatures,
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
   let world_type = WorldType::BoxedWorld;
 
   let world_size = Vector3::new(27., 27., 27.);
   let offset = Vector3::new(3., 3., 3.);
 
   dense_particles(TIME_STEP, save, save_path, num_iterations, 3.1, world_size, offset,
-                  integration_algorithm, params, world_type);
+                  integration_algorithm, world_type);
 }
 
 pub fn sphere_runner() {
@@ -47,15 +52,16 @@ pub fn sphere_runner() {
   let num_iterations = (2e4) as usize;
   let save = true;
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: temperature_kelvin_unitless,
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: temperature_kelvin_unitless,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
-
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
   let world_type = WorldType::BoxedWorld;
 
-  sphere_particles(TIME_STEP, save, save_path, num_iterations, 30, integration_algorithm, params, world_type);
+  sphere_particles(TIME_STEP, save, save_path, num_iterations, 30, integration_algorithm, world_type);
 }
 
 pub fn triangle_runner() {
@@ -67,15 +73,16 @@ pub fn triangle_runner() {
   let num_iterations = (3e4) as usize;
   let save = true;
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: temperature_kelvin_unitless,
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: temperature_kelvin_unitless,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
-
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
   let world_type = WorldType::BoxedWorld;
 
-  triangle(TIME_STEP, save, save_path, num_iterations, integration_algorithm, params, world_type);
+  triangle(TIME_STEP, save, save_path, num_iterations, integration_algorithm, world_type);
 }
 
 pub fn symmetric_triangle_test_runner() {
@@ -87,19 +94,19 @@ pub fn symmetric_triangle_test_runner() {
   let num_iterations = (1e3) as usize;
   let save = true;
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: temperature_kelvin_unitless,
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: temperature_kelvin_unitless,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
-
-  // let params = IntegrationAlgorithmParams::VelocityVerlet;
   // let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;
 
   let world_type = WorldType::BoxedWorld;
 
-  symmetric_triangle_test(TIME_STEP, save, save_path, num_iterations, integration_algorithm, params, world_type);
+  symmetric_triangle_test(TIME_STEP, save, save_path, num_iterations, integration_algorithm, world_type);
 }
 
 // fn two_particles_runner() {

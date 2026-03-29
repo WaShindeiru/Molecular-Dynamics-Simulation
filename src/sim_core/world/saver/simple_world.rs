@@ -99,7 +99,7 @@ impl PartialWorldSaver {
       let iteration = world.number_of_resets * world.max_iteration_till_reset + i;
 
       match world.integration_algorithm {
-        IntegrationAlgorithm::NoseHooverVerlet => {
+        IntegrationAlgorithm::NoseHooverVerlet {..} => {
           wtr.write_record(&[
             format!("{}", iteration),
             format!("{}", kinetic_energy.get(i).unwrap()),

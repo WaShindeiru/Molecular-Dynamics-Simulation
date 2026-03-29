@@ -126,6 +126,14 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     plt.savefig(path + '/Temperature.png')
     plt.show()
 
+    # print((T[15000:16000] - 2000).abs().max())
+    # print((T[15000:16000] - 2000).abs().min())
+    #
+    # temp = T[15500:15800]
+    # print(((temp - 2000).abs() < 15.0).sum())
+    #
+    # print((T - 1600).abs().min())
+
 
 def show_energy_plot_from_text(path: str) -> None:
   # Read fixed-width file with 5 columns, each 20 characters wide

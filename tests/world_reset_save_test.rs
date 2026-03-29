@@ -6,7 +6,7 @@ use carbon_nanotube::output::WorldDTO;
 use carbon_nanotube::data::types::AtomType;
 use carbon_nanotube::particle::{Particle, SafeAtomFactory};
 use carbon_nanotube::sim_core::Engine;
-use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
 use carbon_nanotube::sim_core::world::saver::SaveOptions;
 use carbon_nanotube::sim_core::world::WorldType;
 
@@ -46,7 +46,13 @@ fn test_reset_world_no_missing_iterations_runner(world_type: WorldType) {
     save_verbose: false,
   };
 
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: 100.,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
+    q_effective_mass: 100.,
+  };
 
   let mut engine = Engine::new_from_atoms(
     atoms,
@@ -62,11 +68,7 @@ fn test_reset_world_no_missing_iterations_runner(world_type: WorldType) {
   );
 
   // TODO: change it back to verlet
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: 100.,
-    q_effective_mass: 100.,
-  };
-  engine.run(&params, TIME_STEP);
+  engine.run(TIME_STEP);
 
   // Get the transfer struct
   let engine_dto = engine.to_transfer_struct();
@@ -183,7 +185,13 @@ fn test_reset_world_with_thermostat_runner(world_type: WorldType) {
     save_verbose: true,
   };
 
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: 300.,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
+    q_effective_mass: 1000.,
+  };
 
   let mut engine = Engine::new_from_atoms_with_path(
     atoms,
@@ -198,12 +206,7 @@ fn test_reset_world_with_thermostat_runner(world_type: WorldType) {
     world_type,
   );
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: 300.0,
-    q_effective_mass: 1000.0,
-  };
-
-  engine.run(&params, TIME_STEP);
+  engine.run(TIME_STEP);
 
   // Verify saved files contain all iterations despite resets
   let energy_iterations = parse_csv_iterations(&format!("{}/energy.csv", test_dir), 0);
@@ -260,7 +263,13 @@ fn test_save_files_completeness_runner(world_type: WorldType) {
   };
 
   // TODO: change back to verlet
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: 100.,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
+    q_effective_mass: 100.,
+  };
 
   // Create engine with custom save path
   let mut engine = Engine::new_from_atoms_with_path(
@@ -276,11 +285,7 @@ fn test_save_files_completeness_runner(world_type: WorldType) {
     world_type,
   );
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: 100.,
-    q_effective_mass: 100.,
-  };
-  engine.run(&params, TIME_STEP);
+  engine.run(TIME_STEP);
 
   // Verify files exist
   assert!(Path::new(&format!("{}/energy.csv", test_dir)).exists(), "energy.csv not found");
@@ -494,7 +499,13 @@ fn test_single_reset_runner(world_type: WorldType) {
   };
 
   // TODO: go back to verlet
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: 100.,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
+    q_effective_mass: 100.,
+  };
 
   let mut engine = Engine::new_from_atoms(
     atoms,
@@ -509,11 +520,7 @@ fn test_single_reset_runner(world_type: WorldType) {
     world_type.clone(),
   );
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: 100.,
-    q_effective_mass: 100.,
-  };
-  engine.run(&params, TIME_STEP);
+  engine.run(TIME_STEP);
 
   let engine_dto = engine.to_transfer_struct();
   let world_dto = &engine_dto.world;
@@ -591,7 +598,13 @@ fn test_no_reset_runner(world_type: WorldType) {
     save_verbose: false,
   };
 
-  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet;
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo {
+      desired_temperature: 100.,
+      distance: TimeIterationDistance::Iteration(num_iterations),
+    }],
+    q_effective_mass: 100.,
+  };
 
   let mut engine = Engine::new_from_atoms(
     atoms,
@@ -606,11 +619,7 @@ fn test_no_reset_runner(world_type: WorldType) {
     world_type.clone(),
   );
 
-  let params = IntegrationAlgorithmParams::NoseHooverVerlet {
-    desired_temperature: 100.,
-    q_effective_mass: 100.,
-  };
-  engine.run(&params, TIME_STEP);
+  engine.run(TIME_STEP);
 
   let engine_dto = engine.to_transfer_struct();
   let world_dto = &engine_dto.world;

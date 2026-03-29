@@ -9,7 +9,7 @@ use crate::data::InteractionType;
 use crate::data::types::AtomType;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::output::{BoxedWorldDTO, WorldDTO};
-use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use crate::sim_core::world::integration::{new_integration_algorithm_state, IntegrationAlgorithm, IntegrationAlgorithmState};
 use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
 use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
@@ -34,6 +34,7 @@ pub struct BoxedWorld {
 
   frame_iteration_count: usize,
   integration_algorithm: IntegrationAlgorithm,
+  integration_algorithm_state: IntegrationAlgorithmState,
 
   save_options: SaveOptions,
   world_saver: PartialWorldSaver,
@@ -89,6 +90,7 @@ impl BoxedWorld {
       number_of_resets: 0,
 
       frame_iteration_count,
+      integration_algorithm_state: new_integration_algorithm_state(&integration_algorithm),
       integration_algorithm,
 
       save_options: save_options.clone(),
@@ -109,7 +111,7 @@ impl BoxedWorld {
     Ok(())
   }
 
-  pub fn update(&mut self, params: &IntegrationAlgorithmParams, time_step: f64, next_iteration: usize) {
+  pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) {
     assert!(self.reset_counter <= self.max_iteration_till_reset);
 
     if self.reset_counter == self.max_iteration_till_reset {
@@ -117,14 +119,11 @@ impl BoxedWorld {
       self.reset_world();
     }
 
-    match params {
-      IntegrationAlgorithmParams::SemiImplicitEuler => unimplemented!("semi implicit euler for boxed world"),
-      IntegrationAlgorithmParams::VelocityVerlet => unimplemented!("velocity verlet for boxed world!"),
-      IntegrationAlgorithmParams::NoseHooverVerlet {
-        desired_temperature,
-        q_effective_mass } => {
-          self.update_verlet_nose_hoover(time_step, next_iteration,
-                                         *desired_temperature, *q_effective_mass);
+    match algorithm {
+      IntegrationAlgorithm::SemiImplicitEuler => unimplemented!("semi implicit euler for boxed world"),
+      IntegrationAlgorithm::VelocityVerlet => unimplemented!("velocity verlet for boxed world!"),
+      IntegrationAlgorithm::NoseHooverVerlet { .. } => {
+          self.update_verlet_nose_hoover(time_step, next_iteration);
       }
     }
 
@@ -159,7 +158,7 @@ impl BoxedWorld {
         num_of_atoms: self.num_of_atoms,
         size: self.size,
         box_container: self.box_container.read().unwrap().to_transfer_struct(lower_index),
-        integration_algorithm: self.integration_algorithm,
+        integration_algorithm: self.integration_algorithm.clone(),
 
         num_of_world_iterations: self.iteration,
         number_of_resets: self.number_of_resets,

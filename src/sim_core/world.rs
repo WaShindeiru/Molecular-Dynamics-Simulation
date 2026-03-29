@@ -4,7 +4,7 @@ use crate::output::WorldDTO;
 use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::simple_world::SimpleWorld;
-use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use crate::sim_core::world::integration::{IntegrationAlgorithm};
 use crate::sim_core::world::saver::SaveOptions;
 
 pub mod integration;
@@ -74,10 +74,10 @@ impl World {
     }
   }
 
-  pub fn update(&mut self, params: &IntegrationAlgorithmParams, time_step: f64, next_iteration: usize) {
+  pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) {
     match self {
-      World::SimpleWorld(world) => world.update(params, time_step, next_iteration),
-      World::BoxedWorld(world) => world.update(params, time_step, next_iteration),
+      World::SimpleWorld(world) => world.update(algorithm, time_step, next_iteration),
+      World::BoxedWorld(world) => world.update(algorithm, time_step, next_iteration),
     }
   }
 

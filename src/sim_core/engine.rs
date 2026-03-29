@@ -10,7 +10,7 @@ use std::fs::File;
 use log::info;
 use crate::data::units::TIME_U;
 use crate::particle::Particle;
-use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams, validate_integration_params};
+use crate::sim_core::world::integration::{IntegrationAlgorithm};
 use crate::sim_core::world::saver::SaveOptions;
 
 pub struct Engine {
@@ -83,13 +83,7 @@ impl Engine {
     }
   }
 
-  pub fn run(&mut self, params: &IntegrationAlgorithmParams, time_step: f64) {
-    assert!(
-      validate_integration_params(&self.integration_algorithm, params),
-      "IntegrationAlgorithmParams {:?} does not match IntegrationAlgorithm {}",
-      params, self.integration_algorithm
-    );
-
+  pub fn run(&mut self, time_step: f64) {
     info!("Starting simulation...");
     info!("Will save output to {}", self.save_options.save_path);
 
@@ -105,7 +99,7 @@ impl Engine {
         counter += 1;
       }
 
-      self.world.update(params, time_step, self.current_iteration + 1);
+      self.world.update(&self.integration_algorithm, time_step, self.current_iteration + 1);
 
       self.current_iteration += 1;
       self.current_time += self.time_step;

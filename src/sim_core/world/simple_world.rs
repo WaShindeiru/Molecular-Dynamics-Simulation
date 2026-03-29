@@ -5,7 +5,7 @@ use crate::output::{AtomDTO, SimpleWorldDTO, WorldDTO};
 use crate::sim_core::world::saver::PartialWorldSaver;
 use crate::particle::{Particle, SimpleAtomContainer};
 use crate::sim_core::world::get_index_for_iteration;
-use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgorithmParams};
+use crate::sim_core::world::integration::{IntegrationAlgorithm};
 use crate::sim_core::world::saver::SaveOptions;
 
 pub mod integration;
@@ -73,7 +73,7 @@ impl SimpleWorld {
     Ok(())
   }
 
-  pub fn update(&mut self, params: &IntegrationAlgorithmParams, time_step: f64, next_iteration: usize) {
+  pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) {
     assert!(self.reset_counter <= self.max_iteration_till_reset);
     assert_eq!(self.atoms.len() - 1, self.current_index);
 
@@ -82,17 +82,15 @@ impl SimpleWorld {
       self.reset_world();
     }
 
-    match params {
-      IntegrationAlgorithmParams::SemiImplicitEuler => {
+    match algorithm {
+      IntegrationAlgorithm::SemiImplicitEuler => {
         self.update_semi_implicit_euler(time_step, next_iteration);
       }
-      IntegrationAlgorithmParams::VelocityVerlet => {
+      IntegrationAlgorithm::VelocityVerlet => {
         self.update_verlet(time_step, next_iteration);
       }
-      IntegrationAlgorithmParams::NoseHooverVerlet {
-        desired_temperature,
-        q_effective_mass } => {
-        self.update_verlet_nose_hoover(time_step, next_iteration, *desired_temperature, *q_effective_mass);
+      IntegrationAlgorithm::NoseHooverVerlet { .. } => {
+        self.update_verlet_nose_hoover(time_step, next_iteration);
       }
     }
 
@@ -210,7 +208,7 @@ impl SimpleWorld {
         box_x: self.size.x,
         box_y: self.size.y,
         box_z: self.size.z,
-        integration_algorithm: self.integration_algorithm,
+        integration_algorithm: self.integration_algorithm.clone(),
   
         num_of_world_iterations: self.reset_counter,
         number_of_resets: self.number_of_resets,
