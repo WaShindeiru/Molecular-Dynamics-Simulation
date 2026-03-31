@@ -25,6 +25,8 @@ pub struct Atom {
   kinetic_energy: f64,
   potential_energy: f64,
   thermostat_work: f64,
+
+  potential_gravity_energy: f64,
 }
 
 impl Atom {
@@ -63,6 +65,8 @@ impl Atom {
   pub fn get_potential_energy(&self) -> f64 {
     self.potential_energy
   }
+
+  pub fn get_potential_gravity_energy(&self) -> f64 { self.potential_gravity_energy }
   
   pub fn get_thermostat_work(&self) -> f64 { self.thermostat_work }
 
@@ -73,6 +77,10 @@ impl Atom {
 
   pub fn set_potential_energy(&mut self, potential_energy_: f64) {
     self.potential_energy = potential_energy_;
+  }
+
+  pub fn set_potential_gravity_energy(&mut self, potential_gravity_energy: f64) {
+    self.potential_gravity_energy = potential_gravity_energy;
   }
 
   pub fn set_force(&mut self, force_: Vector3<f64>) {
@@ -111,6 +119,7 @@ impl Atom {
       kinetic_energy: self.kinetic_energy,
       potential_energy: 0.,
       thermostat_work: 0.,
+      potential_gravity_energy: 0.,
     }
   }
 
@@ -125,6 +134,7 @@ impl Atom {
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
       thermostat_work: self.thermostat_work,
+      potential_gravity_energy: self.potential_gravity_energy,
       force_x: self.force.x,
       force_y: self.force.y,
       force_z: self.force.z,
@@ -154,6 +164,7 @@ impl Atom {
       acceleration,
       kinetic_energy: mass * velocity.magnitude_squared() / 2.0,
       potential_energy,
+      potential_gravity_energy: 0.,
       thermostat_work: 0.0,
     }
   }
@@ -180,19 +191,24 @@ impl Atom {
       acceleration,
       kinetic_energy: mass * velocity.magnitude_squared() / 2.0,
       potential_energy,
+      potential_gravity_energy: 0.,
       thermostat_work: 0.0,
     }
   }
 }
 
 struct AtomFactory {
-  counter: u64
+  counter: u64,
+  potential_gravity_max: f64,
+  z_max: f64,
 }
 
 impl AtomFactory {
-  fn new() -> Self {
+  fn new(potential_gravity_max: f64, z_max: f64) -> Self {
     AtomFactory{
       counter: 0,
+      potential_gravity_max,
+      z_max,
     }
   }
 
@@ -210,6 +226,7 @@ impl AtomFactory {
         kinetic_energy: ATOMIC_MASS_C * velocity_.magnitude_squared() / 2.0,
         potential_energy: 0.0,
         thermostat_work: 0.0,
+        potential_gravity_energy: self.potential_gravity_max * position_.z * ATOMIC_MASS_C / self.z_max
       },
       AtomType::Fe => Atom{
         type_: AtomType::Fe,
@@ -223,6 +240,7 @@ impl AtomFactory {
         kinetic_energy: ATOMIC_MASS_FE * velocity_.magnitude_squared() / 2.0,
         potential_energy: 0.0,
         thermostat_work: 0.0,
+        potential_gravity_energy: self.potential_gravity_max * position_.z * ATOMIC_MASS_FE / self.z_max
       }
     };
     self.counter = self.counter + 1;
@@ -237,12 +255,16 @@ impl AtomFactory {
         AtomType::C,
         ATOMIC_MASS_C,
         path,
+        self.potential_gravity_max,
+        self.z_max,
       ),
       AtomType::Fe => CustomPathAtom::new(
         self.counter,
         AtomType::Fe,
         ATOMIC_MASS_FE,
         path,
+        self.potential_gravity_max,
+        self.z_max,
       ),
     };
     self.counter = self.counter + 1;
@@ -256,9 +278,9 @@ pub struct SafeAtomFactory {
 }
 
 impl SafeAtomFactory {
-  pub fn new() -> Self {
+  pub fn new(potential_gravity_max: f64, z_max: f64) -> Self {
     Self {
-      inner: Mutex::new(AtomFactory::new()),
+      inner: Mutex::new(AtomFactory::new(potential_gravity_max, z_max)),
     }
   }
 

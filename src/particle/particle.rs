@@ -65,7 +65,14 @@ impl Particle {
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_potential_energy(),
     }
   }
-
+  
+  pub fn get_potential_gravity_energy(&self) -> f64 {
+    match self {
+      Particle::Atom(atom) => atom.get_potential_gravity_energy(),
+      Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_potential_gravity_energy(),
+    }
+  }
+  
   pub fn get_thermostat_work(&self) -> f64 {
     match self {
       Particle::Atom(atom) => atom.get_thermostat_work(),
@@ -86,6 +93,13 @@ impl Particle {
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.set_potential_energy(potential_energy_),
     }
   }
+  
+ pub fn set_potential_gravity_energy(&mut self, potential_gravity_energy: f64) {
+   match self {
+     Particle::Atom(atom) => atom.set_potential_gravity_energy(potential_gravity_energy),
+     Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.set_potential_gravity_energy(potential_gravity_energy),
+   }
+ } 
   
   pub fn set_force(&mut self, force_: Vector3<f64>) {
     match self {

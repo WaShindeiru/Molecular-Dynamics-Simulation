@@ -1,4 +1,4 @@
-use crate::simulations::runners::{dense_runner};
+use crate::simulations::runners::{dense_runner, triangle_runner};
 
 mod data;
 mod particle;

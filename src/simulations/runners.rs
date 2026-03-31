@@ -18,15 +18,21 @@ pub fn dense_runner() {
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 1700., distance: TimeIterationDistance::Iteration(500)},
-    TemperatureInfo{desired_temperature: 1000., distance: TimeIterationDistance::Iteration(500)},
-    TemperatureInfo{desired_temperature: 2500., distance: TimeIterationDistance::Iteration(500)}
+    TemperatureInfo{desired_temperature: 200., distance: TimeIterationDistance::Iteration(30000)},
+    TemperatureInfo{desired_temperature: 2400., distance: TimeIterationDistance::Iteration(30000)},
     ].into_iter().map(
       |i| TemperatureInfo{
         desired_temperature: i.desired_temperature / TEMPERATURE_U,
         distance: i.distance}).collect();
 
-  let num_iterations = (4e4) as usize;
+  // let desired_temperatures = vec![
+  //   TemperatureInfo{desired_temperature: 1000., distance: TimeIterationDistance::Iteration(500)}
+  // ].into_iter().map(
+  //   |i| TemperatureInfo{
+  //     desired_temperature: i.desired_temperature / TEMPERATURE_U,
+  //     distance: i.distance}).collect();
+
+  let num_iterations = (8e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -36,8 +42,8 @@ pub fn dense_runner() {
 
   let world_type = WorldType::BoxedWorld;
 
-  let world_size = Vector3::new(27., 27., 27.);
-  let offset = Vector3::new(3., 3., 3.);
+  let world_size = Vector3::new(30., 30., 30.);
+  let offset = Vector3::new(3.4, 3.4, 3.4);
 
   dense_particles(TIME_STEP, save, save_path, num_iterations, 3.1, world_size, offset,
                   integration_algorithm, world_type);
@@ -70,7 +76,7 @@ pub fn triangle_runner() {
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
 
-  let num_iterations = (3e4) as usize;
+  let num_iterations = (6e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {

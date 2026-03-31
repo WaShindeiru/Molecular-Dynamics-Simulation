@@ -2,6 +2,7 @@ use nalgebra::Vector3;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
+use carbon_nanotube::data::parameters::POTENTIAL_GRAVITY_MAX;
 use carbon_nanotube::output::WorldDTO;
 use carbon_nanotube::data::types::AtomType;
 use carbon_nanotube::particle::{Particle, SafeAtomFactory};
@@ -24,7 +25,7 @@ fn validate_dto_type(world_type: &WorldType, world_dto: &WorldDTO) -> bool {
 fn test_reset_world_no_missing_iterations_runner(world_type: WorldType) {
   // Setup: Create a small simulation
   let simulation_size = Vector3::new(10., 10., 10.);
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
 
   let mut atoms: Vec<Particle> = Vec::new();
   for i in 0..5 {
@@ -164,7 +165,7 @@ fn test_reset_world_with_thermostat_runner(world_type: WorldType) {
   fs::create_dir_all(&test_dir).expect("Failed to create test directory");
 
   let simulation_size = Vector3::new(10., 10., 10.);
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
 
   let mut atoms: Vec<Particle> = Vec::new();
   for i in 0..3 {
@@ -240,7 +241,7 @@ fn test_save_files_completeness_runner(world_type: WorldType) {
   fs::create_dir_all(&test_dir).expect("Failed to create test directory");
 
   let simulation_size = Vector3::new(10., 10., 10.);
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
 
   let atoms_count = 4;
   let mut atoms: Vec<Particle> = Vec::new();
@@ -477,7 +478,7 @@ fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: u
 /// Test 4: Test edge case with single reset - verifies to_transfer_struct returns only last batch
 fn test_single_reset_runner(world_type: WorldType) {
   let simulation_size = Vector3::new(10., 10., 10.);
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
 
   let mut atoms: Vec<Particle> = Vec::new();
   let atom = atom_factory.get_atom(
@@ -577,8 +578,8 @@ fn test_single_reset_boxed_world() {
 /// Test 5: Test no reset scenario
 fn test_no_reset_runner(world_type: WorldType) {
   let simulation_size = Vector3::new(10., 10., 10.);
-  let atom_factory = SafeAtomFactory::new();
-
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
+  
   let mut atoms: Vec<Particle> = Vec::new();
   let atom = atom_factory.get_atom(
     AtomType::Fe,

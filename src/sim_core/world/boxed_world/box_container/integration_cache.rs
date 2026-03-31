@@ -161,6 +161,20 @@ impl BoxContainer {
     temperature / count as f64
   }
 
+  pub fn integration_box_cache_apply_gravity(&mut self, potential_gravity_max: f64, z_max: f64) {
+    for sim_box in self.integration_box_cache.iter_mut() {
+      for (_, particle_i) in sim_box.particles_mut().iter_mut() {
+        let new_force = particle_i.get_force() - Vector3::new(0., 0., 1.) *
+          potential_gravity_max * particle_i.get_mass() / self.container_size.z;
+        particle_i.set_force(new_force);
+
+        particle_i.set_acceleration(new_force / particle_i.get_mass());
+
+        particle_i.set_potential_gravity_energy(potential_gravity_max * particle_i.get_mass() * particle_i.get_position().z / self.container_size.z);
+      }
+    }
+  }
+
   pub fn apply_integration_cache(&mut self) {
     let empty_cube: Cube<SimulationBox> = Cube::new(1, 1, 1);
     let cache = std::mem::replace(&mut self.integration_box_cache, empty_cube);

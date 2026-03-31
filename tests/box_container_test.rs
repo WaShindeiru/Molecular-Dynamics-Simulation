@@ -3,6 +3,7 @@ use carbon_nanotube::sim_core::world::boxed_world::box_container::BoxContainer;
 use carbon_nanotube::particle::{Particle, Atom, SafeAtomFactory};
 use carbon_nanotube::data::types::{AtomType, InteractionType};
 use nalgebra::Vector3;
+use carbon_nanotube::data::parameters::POTENTIAL_GRAVITY_MAX;
 use carbon_nanotube::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
 
 #[test]
@@ -37,7 +38,7 @@ fn test_box_container_non_uniform_partition() {
   let size = Vector3::new(100.0, 60.0, 80.0);
   let box_type = InteractionType::FeFe;
 
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, size.z);
   let atom0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(1.0, 1.0, 1.0), Vector3::new(0., 0., 0.));
   let atom1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(5.0, 3.0, 4.0), Vector3::new(0., 0., 0.));
   let atom2 = atom_factory.get_atom(AtomType::Fe, Vector3::new(9.0, 5.5, 7.5), Vector3::new(0., 0., 0.));

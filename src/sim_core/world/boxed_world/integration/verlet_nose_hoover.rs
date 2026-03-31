@@ -4,10 +4,10 @@ pub mod computation;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::mpsc::RecvTimeoutError;
-use std::thread::current;
 use std::time::Duration;
 use log::info;
 use nalgebra::Vector3;
+use crate::data::parameters::POTENTIAL_GRAVITY_MAX;
 use crate::sim_core::world::integration::IntegrationStateUpdateResponse;
 use crate::data::units::TEMPERATURE_U;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::FP;
@@ -118,7 +118,7 @@ impl BoxedWorld {
     let mut box_ids: HashSet<usize> = HashSet::new();
 
     while box_ids.len() < expected_boxes.len() {
-      let result = match self.rx_result.recv_timeout(Duration::from_secs(5)) {
+      let result = match self.rx_result.recv_timeout(Duration::from_secs(20)) {
         Ok(msg) => msg,
         Err(RecvTimeoutError::Timeout) => {
           panic!("Receiving from queue took too long!");
@@ -142,6 +142,8 @@ impl BoxedWorld {
 
     assert_eq!(box_ids, expected_boxes);
 
+    self.box_container.write().unwrap().integration_box_cache_apply_gravity(POTENTIAL_GRAVITY_MAX, self.size.z);
+
     // TODO: move setting iteration for a particle into earlier step
     self.box_container.write().unwrap().integration_box_cache_set_velocity(time_step, new_thermostat_epsilon,
                                                                            self.iteration + 1,
@@ -153,9 +155,9 @@ impl BoxedWorld {
     match result {
       IntegrationStateUpdateResponse::NoseHooverVerlet { updated, temperature, .. } => {
         if updated {
-          info!("Simulation temperature: {}, Temperature: {} achieved, switching to temperature: {}",
-                simulation_temperature * TEMPERATURE_U, current_desired_temperature * TEMPERATURE_U,
-                  temperature * TEMPERATURE_U);
+          info!("Iteration: {}, Simulation temperature: {}, Temperature: {} achieved, switching to temperature: {}",
+            self.iteration, simulation_temperature * TEMPERATURE_U, current_desired_temperature * TEMPERATURE_U,
+            temperature * TEMPERATURE_U);
         }
       }
       _ => panic!("Wrong result type")

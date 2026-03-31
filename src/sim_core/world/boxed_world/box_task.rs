@@ -16,7 +16,7 @@ pub enum BoxTask {
     time_step: f64,
     previous_thermostat_epsilon: f64,
     current_iteration: usize,
-    container_size: Vector3<f64>,
+    container_size: Vector3<f64>
   },
   ForceTask {
     box_container: Arc<RwLock<BoxContainer>>,

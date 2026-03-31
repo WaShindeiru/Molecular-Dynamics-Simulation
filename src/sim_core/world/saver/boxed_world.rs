@@ -38,6 +38,7 @@ impl PartialWorldSaver {
 
     let mut kinetic_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut potential_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
+    let mut potential_gravity_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut total_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut thermostat_work: Vec<f64> = Vec::with_capacity(num_of_iterations);
 
@@ -45,11 +46,13 @@ impl PartialWorldSaver {
       let mut kinetic_energy_i = 0.;
       let mut thermostat_work_i = 0.;
       let mut potential_energy_i = 0.;
+      let mut potential_gravity_energy_i = 0.;
 
       for atom_dto in atom_container.iter() {
         kinetic_energy_i += atom_dto.kinetic_energy;
         thermostat_work_i += atom_dto.thermostat_work;
         potential_energy_i += atom_dto.potential_energy;
+        potential_gravity_energy_i += atom_dto.potential_gravity_energy;
       }
 
       self.thermostat_work_total += thermostat_work_i;
@@ -57,7 +60,8 @@ impl PartialWorldSaver {
       kinetic_energy.push(kinetic_energy_i);
       potential_energy.push(potential_energy_i);
       let potential_energy_i = *potential_energy.get(i).unwrap();
-      total_energy.push(kinetic_energy_i + potential_energy_i);
+      potential_gravity_energy.push(potential_gravity_energy_i);
+      total_energy.push(kinetic_energy_i + potential_energy_i + potential_gravity_energy_i);
       thermostat_work.push(self.thermostat_work_total);
     }
 
@@ -79,6 +83,7 @@ impl PartialWorldSaver {
             format!("{}", iteration),
             format!("{}", kinetic_energy.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
+            format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
             format!("{}", thermostat_work.get(i).unwrap()),
             format!("{}", world.box_container.thermostat_epsilon.get(i).unwrap()),
@@ -89,6 +94,7 @@ impl PartialWorldSaver {
             format!("{}", iteration),
             format!("{}", kinetic_energy.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
+            format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
           ])?;
         }
@@ -106,9 +112,11 @@ impl PartialWorldSaver {
 
     for i in 0..atoms.len() {
       if self.frame_iteration_count_current_iteration % world.frame_iteration_count == 0 {
+        let iteration_number = i + world.number_of_resets * world.max_iteration_till_reset;
+
         let mut result_string = String::new();
         result_string.push_str(&"ITEM: TIMESTEP\n".to_string());
-        result_string.push_str(&format!("{}\n", i));
+        result_string.push_str(&format!("{}\n", iteration_number));
 
         result_string.push_str(&"ITEM: NUMBER OF ATOMS\n".to_string());
         let atom_container = atoms.get(i).unwrap();
@@ -126,8 +134,7 @@ impl PartialWorldSaver {
           result_string.push_str(&format!("{} {} {} {} {}\n", atom_dto.id, atom_dto.atom_type, atom_dto.x, atom_dto.y, atom_dto.z));
         }
 
-        let file_number = i + world.number_of_resets * world.max_iteration_till_reset;
-        fs::write(&format!("./{}/output_{}.dump", self.save_options.save_path, file_number), result_string)?;
+        fs::write(&format!("./{}/output_{}.dump", self.save_options.save_path, iteration_number), result_string)?;
         files_saved += 1;
       }
 

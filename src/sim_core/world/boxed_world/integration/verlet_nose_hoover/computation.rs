@@ -18,7 +18,7 @@ pub struct HalfVelocityResult {
   pub half_velocity: HashMap<usize, Vector3<f64>>,
   pub new_position: HashMap<usize, Vector3<f64>>,
   pub thermostat_work: HashMap<usize, f64>,
-  pub compliance: HashMap<usize, ParticleCompliance>
+  pub compliance: HashMap<usize, ParticleCompliance>,
 }
 
 pub fn verlet_noose_hoover_half_velocity_position<I>(previous_atom_container: I, time_step: f64,

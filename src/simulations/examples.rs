@@ -11,12 +11,13 @@ use carbon_nanotube::sim_core::world::WorldType;
 
 use rand::prelude::*;
 use rand_distr::Normal;
+use carbon_nanotube::data::parameters::POTENTIAL_GRAVITY_MAX;
 use carbon_nanotube::data::types::AtomType::{Fe, C};
 
 pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, num_iterations: usize,
                                integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
   let simulation_size = Vector3::new(50., 50., 50.);
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
 
   let atom_0_path = vec![Vector3::new(10., 10., 10.)];
   let atom_1_path = vec![Vector3::new(10., 12., 10.)];
@@ -68,7 +69,7 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
                 integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
   let simulation_size = Vector3::new(50., 50., 50.);
 
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
   let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.));
   let atom_1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 12.8, 10.), Vector3::new(0., 0., 0.));
   let atom_2 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.));
@@ -136,7 +137,7 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
                     world_type: WorldType) {
   let simulation_size = Vector3::new(16., 16., 16.);
 
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
 
   let center = Vector3::new(8., 8., 8.); // Center of the simulation space
   let sphere_radius = 3.4; // Radius of the sphere (leaving some margin from boundaries)
@@ -203,7 +204,7 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
 pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
                        particle_distance: f64, world_size: Vector3<f64>,  offset: Vector3<f64>,
                        integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
-  let atom_factory = SafeAtomFactory::new();
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, world_size.z);
 
   let mut atoms: Vec<Particle> = Vec::new();
   let mut count = 0;

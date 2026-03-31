@@ -39,6 +39,8 @@ impl CustomPathAtom {
     self.potential_energy
   }
 
+  pub fn get_potential_gravity_energy(&self) -> f64 { self.potential_gravity_energy}
+
   pub fn get_thermostat_work(&self) -> f64 { self.thermostat_work }
 
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
@@ -48,6 +50,10 @@ impl CustomPathAtom {
 
   pub fn set_potential_energy(&mut self, potential_energy_: f64) {
     self.potential_energy = potential_energy_;
+  }
+  
+  pub fn set_potential_gravity_energy(&mut self, potential_gravity_energy: f64) {
+    self.potential_gravity_energy = potential_gravity_energy
   }
 
   pub fn set_force(&mut self, force_: Vector3<f64>) {
@@ -89,6 +95,7 @@ impl CustomPathAtom {
 
       kinetic_energy: self.kinetic_energy,
       potential_energy: 0.,
+      potential_gravity_energy: self.potential_gravity_energy,
       thermostat_work: 0.,
       
       path: self.path.clone(),
@@ -106,6 +113,7 @@ impl CustomPathAtom {
       z: self.position.z,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
+      potential_gravity_energy: self.potential_gravity_energy,
       thermostat_work: self.thermostat_work,
       force_x: self.force.x,
       force_y: self.force.y,
@@ -129,6 +137,7 @@ pub struct CustomPathAtom {
 
   kinetic_energy: f64,
   potential_energy: f64,
+  potential_gravity_energy: f64,
   thermostat_work: f64,
 
   path: Vec<Vector3<f64>>,
@@ -141,6 +150,8 @@ impl CustomPathAtom {
     type_: AtomType,
     mass: f64,
     path: Vec<Vector3<f64>>,
+    potential_gravity_max: f64,
+    z_max: f64,
   ) -> Self {
     CustomPathAtom {
       id,
@@ -153,30 +164,7 @@ impl CustomPathAtom {
       acceleration: Vector3::new(0., 0., 0.),
       kinetic_energy: 0.,
       potential_energy: 0.,
-      thermostat_work: 0.0,
-      path,
-      step: 0,
-    }
-  }
-
-  pub fn new_custom_iteration(
-    id: u64,
-    iteration: usize,
-    type_: AtomType,
-    mass: f64,
-    path: Vec<Vector3<f64>>,
-  ) -> Self {
-    CustomPathAtom {
-      id,
-      iteration,
-      type_,
-      mass,
-      position: path[0],
-      velocity: Vector3::new(0., 0., 0.),
-      force: Vector3::new(0., 0., 0.),
-      acceleration: Vector3::new(0., 0., 0.),
-      kinetic_energy: 0.,
-      potential_energy: 0.,
+      potential_gravity_energy: path[0].z * potential_gravity_max * z_max,
       thermostat_work: 0.0,
       path,
       step: 0,

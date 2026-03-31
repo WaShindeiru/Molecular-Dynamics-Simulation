@@ -2,9 +2,9 @@ use std::fmt;
 use crate::data::units::TIME_U;
 use crate::data::units::TEMPERATURE_U;
 
-const TEMP_THRESHOLD: f64 = 15.;
+const TEMP_THRESHOLD: f64 = 30.;
 const TEMP_THRESHOLD_UNITLESS: f64 = TEMP_THRESHOLD / TEMPERATURE_U;
-const ACCEPTANCE_TIME_UNITLESS: f64 = 80. * 1e-18 / TIME_U;
+const ACCEPTANCE_TIME_UNITLESS: f64 = 200. * 1e-18 / TIME_U;
 
 #[derive(Debug, Clone, Copy)]
 pub enum TimeIterationDistance {
@@ -62,6 +62,8 @@ pub enum IntegrationStateUpdateResponse {
 }
 
 impl IntegrationAlgorithmState {
+
+  //TODO: simplify this maybe??
   pub fn update_state(&mut self, time_step: f64, integration_algorithm: &IntegrationAlgorithm,
                       simulation_temperature_unitless: f64) -> IntegrationStateUpdateResponse {
     match (self, integration_algorithm) {
