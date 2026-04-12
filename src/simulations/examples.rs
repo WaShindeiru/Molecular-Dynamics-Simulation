@@ -13,6 +13,7 @@ use rand::prelude::*;
 use rand_distr::Normal;
 use carbon_nanotube::data::parameters::POTENTIAL_GRAVITY_MAX;
 use carbon_nanotube::data::types::AtomType::{Fe, C};
+use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 
 pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, num_iterations: usize,
                                integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
@@ -51,6 +52,8 @@ pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, nu
     save_path,
   };
 
+  let edge_condition = EdgeCondition::Simple;
+
   let mut engine = Engine::new_from_atoms(
     atoms, simulation_size, time_step,
     num_iterations,
@@ -59,7 +62,8 @@ pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, nu
     one_frame_duration,
     save_options,
     integration_algorithm,
-    world_type
+    world_type,
+    edge_condition
   );
 
   engine.run(time_step);
@@ -89,6 +93,8 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
     save_path,
   };
 
+  let edge_condition = EdgeCondition::Simple;
+
   let mut engine = Engine::new_from_atoms(
     atoms, simulation_size, time_step,
     num_iterations,
@@ -97,7 +103,8 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
     one_frame_duration,
     save_options,
     integration_algorithm,
-    world_type
+    world_type,
+    edge_condition,
   );
 
   engine.run(time_step);
@@ -187,6 +194,8 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
     save_path,
   };
 
+  let edge_condition = EdgeCondition::Simple;
+
   let mut engine = Engine::new_from_atoms(
     atoms, simulation_size, time_step,
     num_iterations,
@@ -195,7 +204,8 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
     one_frame_duration,
     save_options,
     integration_algorithm,
-    world_type
+    world_type,
+    edge_condition
   );
 
   engine.run(time_step);
@@ -292,6 +302,8 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
     save_path,
   };
 
+  let edge_condition = EdgeCondition::Simple;
+
   let mut engine = Engine::new_from_atoms(
     atoms, world_size, time_step,
     num_iterations,
@@ -300,7 +312,8 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
     one_frame_duration,
     save_options,
     integration_algorithm,
-    world_type
+    world_type,
+    edge_condition,
   );
 
   info!("Starting simulation with {count} particles.");

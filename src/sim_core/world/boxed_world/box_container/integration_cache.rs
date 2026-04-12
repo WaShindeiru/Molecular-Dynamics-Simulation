@@ -1,60 +1,64 @@
-use std::collections::{HashMap, HashSet};
+mod neighbour_boxes;
+
+use std::collections::{HashMap};
 use nalgebra::Vector3;
 use crate::data::units::K_B;
-use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::{apply_velocity_constraint, ParticleCompliance};
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
+use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
+use crate::sim_core::world::boundary_constraint::simple::apply_velocity_constraint_simple;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, get_id_simulation_box};
+use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, SimulationBox};
 use crate::sim_core::world::boxed_world::cube::Cube;
+use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 
-struct ConstraintResult {
-  compliant: bool,
-  position: Vector3<f64>,
-  velocity: Vector3<f64>,
-}
-
-fn apply_boundary_constraint(atom: &Particle, container_size: &Vector3<f64>) -> ConstraintResult {
-  let mut position = atom.get_position().clone();
-  let mut velocity = atom.get_velocity().clone();
-  let mut compliant = true;
-
-  if position.x < 0.0 {
-    compliant = false;
-    velocity.x = - velocity.x;
-    position.x = - position.x;
-  } else if position.x > container_size.x {
-    compliant = false;
-    velocity.x = - velocity.x;
-    position.x = 2. * container_size.x - position.x;
-  }
-
-  if position.y < 0.0 {
-    compliant = false;
-    velocity.y = - velocity.y;
-    position.y = - position.y;
-  } else if position.y > container_size.y {
-    compliant = false;
-    velocity.y = - velocity.y;
-    position.y = 2. * container_size.y - position.y;
-  }
-
-  if position.z < 0. {
-    compliant = false;
-    velocity.z = - velocity.z;
-    position.z = - position.z;
-  } else if position.z > container_size.z {
-    compliant = false;
-    velocity.z = - velocity.z;
-    position.z = 2. * container_size.z - position.z;
-  }
-
-  ConstraintResult {
-    compliant,
-    position,
-    velocity,
-  }
-}
+// struct ConstraintResult {
+//   compliant: bool,
+//   position: Vector3<f64>,
+//   velocity: Vector3<f64>,
+// }
+//
+// fn apply_boundary_constraint(atom: &Particle, container_size: &Vector3<f64>) -> ConstraintResult {
+//   let mut position = atom.get_position().clone();
+//   let mut velocity = atom.get_velocity().clone();
+//   let mut compliant = true;
+//
+//   if position.x < 0.0 {
+//     compliant = false;
+//     velocity.x = - velocity.x;
+//     position.x = - position.x;
+//   } else if position.x > container_size.x {
+//     compliant = false;
+//     velocity.x = - velocity.x;
+//     position.x = 2. * container_size.x - position.x;
+//   }
+//
+//   if position.y < 0.0 {
+//     compliant = false;
+//     velocity.y = - velocity.y;
+//     position.y = - position.y;
+//   } else if position.y > container_size.y {
+//     compliant = false;
+//     velocity.y = - velocity.y;
+//     position.y = 2. * container_size.y - position.y;
+//   }
+//
+//   if position.z < 0. {
+//     compliant = false;
+//     velocity.z = - velocity.z;
+//     position.z = - position.z;
+//   } else if position.z > container_size.z {
+//     compliant = false;
+//     velocity.z = - velocity.z;
+//     position.z = 2. * container_size.z - position.z;
+//   }
+//
+//   ConstraintResult {
+//     compliant,
+//     position,
+//     velocity,
+//   }
+// }
 
 impl BoxContainer {
   pub fn set_integration_half_velocity_cache(&mut self, cache: HashMap<usize, Vector3<f64>>) {
@@ -93,39 +97,9 @@ impl BoxContainer {
     particle.set_potential_energy(particle.get_potential_energy() + pot_energy);
   }
 
-  pub fn integration_particles_of_neighbour_boxes(&self, box_id: usize) -> impl Iterator<Item = &Particle> {
-    let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
-    let box_count_dim = self.box_count_dim();
-
-    let x = coordinates.x as isize;
-    let y = coordinates.y as isize;
-    let z = coordinates.z as isize;
-
-    (-1..=1).flat_map(move |x_offset| {
-      (-1..=1).flat_map(move |y_offset| {
-        (-1..=1).filter_map(move |z_offset| {
-          if x_offset == 0 && y_offset == 0 && z_offset == 0 {
-            return None;
-          }
-          let x_ = x + x_offset;
-          let y_ = y + y_offset;
-          let z_ = z + z_offset;
-
-          if x_ >= 0 && x_ < box_count_dim.x as isize &&
-            y_ >= 0 && y_ < box_count_dim.y as isize &&
-            z_ >= 0 && z_ < box_count_dim.z as isize {
-            self.integration_box_cache.get(x_ as usize, y_ as usize, z_ as usize)
-              .map(|sim_box| sim_box.particles().values())
-          } else {
-            None
-          }
-        }).flatten()
-      })
-    })
-  }
-
   pub fn integration_box_cache_set_velocity(&mut self, time_step: f64, thermostat_epsilon: f64,
-                                            next_iteration: usize, compliance_cache: &HashMap<usize, ParticleCompliance>) {
+    next_iteration: usize, compliance_cache: &HashMap<usize, ParticleCompliance>, edge_condition: EdgeCondition) {
+
     for sim_box in self.integration_box_cache.iter_mut() {
       for (i_id_, particle_i) in sim_box.particles_mut().iter_mut() {
         let numerator: Vector3<f64> = self.integration_half_velocity_cache.get(i_id_).unwrap() +
@@ -137,7 +111,11 @@ impl BoxContainer {
         // assert!(!new_velocity.x.is_nan() && !new_velocity.y.is_nan() && !new_velocity.z.is_nan());
 
         let compliance = compliance_cache.get(i_id_).unwrap();
-        let validated_velocity = apply_velocity_constraint(&compliance, new_velocity);
+
+        let validated_velocity = match edge_condition {
+          EdgeCondition::Simple => apply_velocity_constraint_simple(&compliance, new_velocity),
+          EdgeCondition::Periodic => apply_velocity_constraint_periodic(&compliance, new_velocity),
+        };
 
         particle_i.set_velocity(validated_velocity);
         particle_i.set_iteration(next_iteration);

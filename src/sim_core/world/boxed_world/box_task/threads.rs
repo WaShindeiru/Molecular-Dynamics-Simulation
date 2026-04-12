@@ -40,12 +40,12 @@ pub fn create_threads(debug: bool) -> (Sender<BoxTask>, Receiver<BoxResult>, Vec
             match task {
               BoxTask::VelocityTask {
                 box_container, box_id, time_step,
-                previous_thermostat_epsilon, current_iteration, container_size
+                previous_thermostat_epsilon, current_iteration, container_size, edge_condition
               } => {
-                let velocity_result = handle_half_velocity_position_task(box_container, 
-                                                                   box_id, time_step, 
-                                                                   previous_thermostat_epsilon, 
-                                                                   current_iteration, container_size);
+                let velocity_result = handle_half_velocity_position_task(
+                  box_container, box_id, time_step, previous_thermostat_epsilon, current_iteration, 
+                  container_size, edge_condition
+                );
               
                 let box_result = BoxResult::VelocityResult(velocity_result);
                 result_tx_clone.send(box_result).unwrap();

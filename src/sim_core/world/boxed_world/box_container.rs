@@ -1,11 +1,14 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use nalgebra::Vector3;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, get_id_simulation_box};
+use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, get_id_simulation_box, SimBoxEdge, SimBoxPlacement};
 use crate::sim_core::world::boxed_world::cube::Cube;
 use crate::particle::Particle;
 use crate::data::constants::get_box_size;
 use crate::data::InteractionType;
 use crate::output::{AtomDTO, BoxContainerDTO};
+use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::{LeftEdge, Normal, RightEdge};
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 
 pub mod sim_box;
@@ -29,11 +32,13 @@ pub struct BoxContainer {
   integration_box_cache: Cube<SimulationBox>,
   integration_box_id_cache: HashMap<usize, usize>,
   integration_half_velocity_cache: HashMap<usize, Vector3<f64>>,
+
+  edge_condition: EdgeCondition,
 }
 
 impl BoxContainer {
   pub fn new(atoms: Vec<Particle>, size: Vector3<f64>, box_type: InteractionType,
-             max_iteration_till_reset: usize) -> Self {
+             max_iteration_till_reset: usize, edge_condition: EdgeCondition) -> Self {
     let box_length_ = get_box_size(&box_type);
     let box_count_x = (size.x / box_length_).floor();
     let box_count_y = (size.y / box_length_).floor();
@@ -66,8 +71,33 @@ impl BoxContainer {
             (y_i + 1) as f64 * box_length_y,
             (z_i + 1) as f64 * box_length_z,
           );
+          
+          let x_edge: SimBoxEdge;
+          let y_edge: SimBoxEdge;
+          
+          if x_i == 0 {
+            x_edge = LeftEdge;
+          } else if x_i == box_count_x as usize - 1 {
+            x_edge = RightEdge;
+          } else {
+            x_edge = Normal;
+          }
+          
+          if y_i == 0 {
+            y_edge = LeftEdge;
+          } else if y_i == box_count_y as usize - 1 {
+            y_edge = RightEdge;
+          } else {
+            y_edge = Normal;
+          }
+          
+          let sim_box_placement = SimBoxPlacement {
+            x: x_edge,
+            y: y_edge,
+          };
 
-          let sim_box = SimulationBox::new(box_id, leftmost_point, rightmost_point, box_length);
+          let sim_box = SimulationBox::new(box_id, leftmost_point, rightmost_point, 
+                                           box_length, sim_box_placement);
 
           boxes_1.set(x_i, y_i, z_i, sim_box).unwrap();
         }
@@ -95,6 +125,8 @@ impl BoxContainer {
       integration_box_cache: Cube::new(1, 1, 1),
       integration_box_id_cache: HashMap::new(),
       integration_half_velocity_cache: HashMap::new(),
+
+      edge_condition,
     };
 
     let box_id_cache = result.assign_particles_to_boxes(atoms);
@@ -138,13 +170,12 @@ impl BoxContainer {
     let mut box_id_cache: HashMap<usize, usize> = HashMap::with_capacity(atoms.len());
 
     for particle_i in atoms {
-
       let box_id = self.assign_box_for_particle(&particle_i);
       box_id_cache.insert(particle_i.get_id() as usize, box_id);
       let coordinates = get_coordinates_from_simulation_box_id(box_id,
                                                                &self.box_count_dim);
       self.boxes.last_mut().unwrap().get_mut(coordinates.x, coordinates.y, coordinates.z)
-        .unwrap().add_particle(particle_i);
+        .unwrap().add_particle(Arc::new(particle_i));
     }
 
     box_id_cache
@@ -165,7 +196,7 @@ impl BoxContainer {
       let coordinates = get_coordinates_from_simulation_box_id(box_id,
                                                                &self.box_count_dim);
       new_boxes.get_mut(coordinates.x, coordinates.y, coordinates.z).unwrap()
-        .add_particle(particle_i);
+        .add_particle(Arc::new(particle_i));
     }
     
     self.integration_box_cache = new_boxes;
@@ -184,6 +215,10 @@ impl BoxContainer {
     &self.container_size
   }
 
+  pub fn edge_condition(&self) -> EdgeCondition {
+    self.edge_condition
+  }
+
   pub fn box_count(&self) -> usize {
     self.box_count
   }
@@ -199,7 +234,7 @@ impl BoxContainer {
     self.boxes.last().unwrap().get(coordinates.x, coordinates.y, coordinates.z).unwrap()
   }
 
-  pub fn current_atoms_of_box(&self, box_id: usize) -> &HashMap<usize, Particle> {
+  pub fn current_atoms_of_box(&self, box_id: usize) -> &HashMap<usize, Arc<Particle>> {
     self.current_box_of_id(box_id).particles()
   }
 

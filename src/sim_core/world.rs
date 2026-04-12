@@ -2,6 +2,7 @@ use std::io;
 use nalgebra::Vector3;
 use crate::output::WorldDTO;
 use crate::particle::Particle;
+use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::simple_world::SimpleWorld;
 use crate::sim_core::world::integration::{IntegrationAlgorithm};
@@ -11,7 +12,7 @@ pub mod integration;
 pub mod simple_world;
 pub mod boxed_world;
 pub mod saver;
-mod boundary_constraint;
+pub mod boundary_constraint;
 
 fn get_index_for_iteration(current_iteration: usize, max_iteration_till_reset: usize, reset_count: usize) -> usize {
   let mut index = current_iteration;
@@ -41,7 +42,8 @@ impl World {
     frame_iteration_count: usize,
     integration_algorithm: IntegrationAlgorithm,
     save_options: SaveOptions,
-    world_type: WorldType
+    world_type: WorldType,
+    edge_condition: EdgeCondition
   ) -> Self {
     match world_type {
       WorldType::BoxedWorld => {
@@ -51,7 +53,8 @@ impl World {
           max_iteration_till_reset,
           frame_iteration_count,
           integration_algorithm,
-          save_options
+          save_options,
+          edge_condition
         ))
       }
       WorldType::SimpleWorld => {

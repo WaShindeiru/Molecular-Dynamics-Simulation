@@ -197,6 +197,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     plt.xlabel("iteration")
     plt.ylabel("Temperature [K]")
     plt.title(f"Temperature")
+    plt.ylim([0, 3000])
     plt.legend()
     plt.savefig(path + '/Temperature.png')
     plt.show()
@@ -252,8 +253,9 @@ if __name__ == "__main__":
   # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check_v2/prog_check")
   import os
   output_dir = "../../output"
+  # output_dir = "/media/washindeiru/EE366BA9366B718F/md/output"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
   thermostat = True
   # compare_different_temps("../../output/2026-03-31_00-08-46")
-  # show_energy_plot(newest_folder, thermostat)
-  compare_different_temps(newest_folder)
+  show_energy_plot(newest_folder, thermostat)
+  # compare_different_temps(newest_folder)

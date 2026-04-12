@@ -4,10 +4,10 @@ use chrono::{DateTime, Local};
 
 static LOGGER_HANDLE: OnceLock<LoggerHandle> = OnceLock::new();
 
-pub fn get_save_path() -> String {
+pub fn get_save_path(prefix: String) -> String {
   let now: DateTime<Local> = Local::now();
   let time_string = now.format("%Y-%m-%d_%H-%M-%S").to_string();
-  "../output/".to_string() + &*time_string
+  prefix + &*time_string
 }
 
 pub fn init_logging(directory: String) {

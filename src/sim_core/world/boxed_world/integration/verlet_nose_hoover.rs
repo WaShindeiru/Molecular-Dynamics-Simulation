@@ -51,6 +51,7 @@ impl BoxedWorld {
           previous_thermostat_epsilon,
           current_iteration: self.iteration,
           container_size: self.size,
+          edge_condition: self.edge_condition,
         };
 
         self.tx_task.send(vel_task).unwrap();
@@ -145,9 +146,13 @@ impl BoxedWorld {
     self.box_container.write().unwrap().integration_box_cache_apply_gravity(POTENTIAL_GRAVITY_MAX, self.size.z);
 
     // TODO: move setting iteration for a particle into earlier step
-    self.box_container.write().unwrap().integration_box_cache_set_velocity(time_step, new_thermostat_epsilon,
-                                                                           self.iteration + 1,
-                                                                           &compliance_cache);
+    self.box_container.write().unwrap().integration_box_cache_set_velocity(
+      time_step, 
+      new_thermostat_epsilon,
+    self.iteration + 1, 
+      &compliance_cache,
+      self.edge_condition
+    );
 
     let simulation_temperature = self.box_container.read().unwrap().integration_box_cache_get_mean_temperature();
 

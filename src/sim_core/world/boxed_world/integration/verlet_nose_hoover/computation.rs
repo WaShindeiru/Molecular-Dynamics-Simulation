@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use nalgebra::Vector3;
 use crate::data::Constant;
 use crate::data::constants::get_constant;
-use crate::data::types::get_interaction_type;
+use crate::data::types::{get_interaction_type, AtomType};
 use crate::particle::potential::b::g;
 use crate::particle::potential::{b, fc};
 use crate::particle::potential::fc::{fc, fc_gradient};
@@ -10,7 +10,9 @@ use crate::particle::potential::va::{va, va_gradient};
 use crate::particle::potential::vr::{vr, vr_gradient};
 use crate::particle::Particle;
 use crate::utils::math::cos_from_vec;
-use crate::sim_core::world::boundary_constraint::{check_position_constraint, ParticleCompliance};
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
+use crate::sim_core::world::boundary_constraint::periodic::check_position_constraint_periodic;
+use crate::sim_core::world::boundary_constraint::simple::check_position_constraint_simple;
 
 const OPTIMIZATION: bool = true;
 
@@ -24,7 +26,7 @@ pub struct HalfVelocityResult {
 pub fn verlet_noose_hoover_half_velocity_position<I>(previous_atom_container: I, time_step: f64,
                                                      previous_thermostat_epsilon: f64,
                                                      atom_count: usize, current_iteration: usize,
-                                                     container_size: &Vector3<f64>)
+                                                     container_size: &Vector3<f64>, edge_condition: EdgeCondition)
   -> HalfVelocityResult
 where
   I: IntoIterator,
@@ -48,8 +50,10 @@ where
     let previous_position = atom_i.get_position();
     let next_position: Vector3<f64> = previous_position + half_velocity_i * time_step;
 
-    let (validated_position, compliance) =
-      check_position_constraint(next_position, container_size);
+    let (validated_position, compliance) = match edge_condition {
+      EdgeCondition::Simple => check_position_constraint_simple(next_position, container_size),
+      EdgeCondition::Periodic => check_position_constraint_periodic(next_position, container_size)
+    };
 
     let thermostat_work;
 
@@ -89,11 +93,19 @@ pub struct FPInfoBoxed {
   pub optimization_ignored: usize,
 }
 
-pub fn compute_forces_potential<'a, I>(particles_i: I, particles_j: I)
+pub trait ForceComputationOperations {
+  fn get_id(&self) -> usize;
+  fn get_position(&self) -> Vector3<f64>;
+  fn get_type(&self) -> AtomType;
+  fn get_mass(&self) -> f64;
+  fn prototype_clone(&self) -> Box<dyn ForceComputationOperations>;
+}
+
+pub fn compute_forces_potential<I>(particles_i: I, particles_j: I)
                                        -> FPInfoBoxed
 where
   I: IntoIterator + Clone,
-  I::Item: AsRef<Particle>,
+  I::Item: AsRef<dyn ForceComputationOperations>,
 {
   let mut fp: HashMap<usize, FP> = HashMap::new();
 
@@ -106,7 +118,7 @@ where
 
   for temp_j in particles_j.clone().into_iter() {
     let particle_j = temp_j.as_ref();
-    let j_id = particle_j.get_id() as usize;
+    let j_id = particle_j.get_id();
     fp.insert(j_id, defaultFP());
   }
 
@@ -117,11 +129,11 @@ where
   let mut potential_energy_total: f64 = 0.;
   let mut neighbours: Vec<usize>;
 
-  let mut particles_j_cache: HashMap<usize, Particle> = HashMap::new();
+  let mut particles_j_cache: HashMap<usize, Box<dyn ForceComputationOperations>> = HashMap::new();
 
   for temp_i in particles_i.into_iter() {
     let particle_i = temp_i.as_ref();
-    let i_id = particle_i.get_id() as usize;
+    let i_id = particle_i.get_id();
     neighbours = Vec::new();
 
     if OPTIMIZATION {
@@ -147,17 +159,17 @@ where
         else {
           optimization_considered += 1;
           neighbours.push(j_id);
-          particles_j_cache.insert(j_id, particle_j.clone());
+          particles_j_cache.insert(j_id, particle_j.prototype_clone());
         }
       }
     } else {
       for temp_j in particles_j.clone().into_iter() {
         optimization_considered += 1;
         let particle_j = temp_j.as_ref();
-        let j_id = particle_j.get_id() as usize;
+        let j_id = particle_j.get_id();
         if i_id == j_id { continue }
         neighbours.push(j_id);
-        particles_j_cache.insert(j_id, particle_j.clone());
+        particles_j_cache.insert(j_id, particle_j.prototype_clone());
       }
     }
 

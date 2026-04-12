@@ -15,11 +15,12 @@ use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 
 use box_task::threads::create_threads;
+use crate::sim_core::world::boundary_constraint::EdgeCondition;
 
 pub mod box_container;
 pub mod cube;
 pub mod box_task;
-mod integration;
+pub mod integration;
 
 pub struct BoxedWorld {
   size: Vector3<f64>,
@@ -42,6 +43,8 @@ pub struct BoxedWorld {
   threads: Vec<JoinHandle<()>>,
   tx_task: Sender<BoxTask>,
   rx_result: Receiver<BoxResult>,
+  
+  edge_condition: EdgeCondition,
 }
 
 impl BoxedWorld {
@@ -52,6 +55,7 @@ impl BoxedWorld {
     frame_iteration_count: usize,
     integration_algorithm: IntegrationAlgorithm,
     save_options: SaveOptions,
+    edge_condition: EdgeCondition
   ) -> Self {
 
     let num_of_atoms = atoms.len();
@@ -80,7 +84,11 @@ impl BoxedWorld {
 
     BoxedWorld {
       size,
-      box_container: Arc::new(RwLock::new(BoxContainer::new(atoms, size.clone(), box_type, max_iteration_till_reset))),
+      box_container: Arc::new(RwLock::new(
+        BoxContainer::new(
+            atoms, size.clone(), box_type, max_iteration_till_reset, edge_condition)
+        )
+      ),
       num_of_atoms,
 
       iteration: 0,
@@ -99,6 +107,8 @@ impl BoxedWorld {
       threads,
       tx_task,
       rx_result,
+
+      edge_condition
     }
   }
 

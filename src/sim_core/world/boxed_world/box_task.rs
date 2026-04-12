@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use nalgebra::Vector3;
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::ParticleCompliance;
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::FPInfoBoxed;
 
@@ -16,7 +16,8 @@ pub enum BoxTask {
     time_step: f64,
     previous_thermostat_epsilon: f64,
     current_iteration: usize,
-    container_size: Vector3<f64>
+    container_size: Vector3<f64>,
+    edge_condition: EdgeCondition,
   },
   ForceTask {
     box_container: Arc<RwLock<BoxContainer>>,

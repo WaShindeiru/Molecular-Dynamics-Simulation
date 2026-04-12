@@ -56,6 +56,7 @@ impl CustomPathAtom {
     self.potential_gravity_energy = potential_gravity_energy
   }
 
+
   pub fn set_force(&mut self, force_: Vector3<f64>) {
     self.force = force_;
   }

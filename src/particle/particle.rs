@@ -2,6 +2,7 @@ use nalgebra::Vector3;
 use crate::data::types::AtomType;
 use crate::output::AtomDTO;
 use crate::particle::{Atom, CustomPathAtom};
+use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Particle {
@@ -99,8 +100,9 @@ impl Particle {
      Particle::Atom(atom) => atom.set_potential_gravity_energy(potential_gravity_energy),
      Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.set_potential_gravity_energy(potential_gravity_energy),
    }
- } 
-  
+ }
+
+
   pub fn set_force(&mut self, force_: Vector3<f64>) {
     match self {
       Particle::Atom(atom) => atom.set_force(force_),
@@ -161,6 +163,28 @@ impl Particle {
 impl AsRef<Particle> for Particle {
   fn as_ref(&self) -> &Particle {
     self
+  }
+}
+
+impl ForceComputationOperations for Particle {
+  fn get_id(&self) -> usize {
+    Particle::get_id(self) as usize
+  }
+
+  fn get_position(&self) -> Vector3<f64> {
+    *Particle::get_position(self)
+  }
+
+  fn get_type(&self) -> AtomType {
+    Particle::get_type(self)
+  }
+
+  fn get_mass(&self) -> f64 {
+    Particle::get_mass(self)
+  }
+
+  fn prototype_clone(&self) -> Box<dyn ForceComputationOperations> {
+    Box::new(self.clone())
   }
 }
 

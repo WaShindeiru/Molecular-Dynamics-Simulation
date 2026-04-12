@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use nalgebra::Vector3;
 use crate::particle::Particle;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::Normal;
 
 pub fn get_id_simulation_box(coordinates: &Vector3<usize>, box_count_dim: &Vector3<usize>) -> usize {
   coordinates.x + coordinates.y * box_count_dim.x + coordinates.z * box_count_dim.x * box_count_dim.y
@@ -17,13 +19,27 @@ pub fn get_coordinates_from_simulation_box_id(box_id: usize, box_count_dim: &Vec
   Vector3::new(x, y, z)
 }
 
-#[derive(Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub enum SimBoxEdge {
+  LeftEdge,
+  Normal,
+  RightEdge,
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct SimBoxPlacement {
+  pub x: SimBoxEdge,
+  pub y: SimBoxEdge,
+}
+
+#[derive(PartialEq, Debug, Clone)]
 pub struct SimulationBox {
   id: usize,
   leftmost_point: Vector3<f64>,
   rightmost_point: Vector3<f64>,
   length: Vector3<f64>,
-  particles: HashMap<usize, Particle>,
+  particles: HashMap<usize, Arc<Particle>>,
+  sim_box_placement: SimBoxPlacement,
 }
 
 impl Default for SimulationBox {
@@ -33,36 +49,24 @@ impl Default for SimulationBox {
       Vector3::zeros(),
       Vector3::zeros(),
       Vector3::zeros(),
+      SimBoxPlacement {
+        x: Normal,
+        y: Normal
+      }
     )
   }
 }
 
 impl SimulationBox {
   pub fn new(id: usize, leftmost_point: Vector3<f64>, rightmost_point: Vector3<f64>,
-             length: Vector3<f64>) -> Self {
+             length: Vector3<f64>, sim_box_placement: SimBoxPlacement) -> Self {
     SimulationBox {
       id,
       leftmost_point,
       rightmost_point,
       length,
       particles: HashMap::new(),
-    }
-  }
-
-  pub fn new_from_particles(id: usize, leftmost_point: Vector3<f64>, rightmost_point: Vector3<f64>,
-                            length: Vector3<f64>, particles_: Vec<Particle>) -> Self {
-    let mut particles: HashMap<usize, Particle> = HashMap::new();
-
-    for particle in particles_ {
-      particles.insert(particle.get_id() as usize, particle);
-    }
-
-    SimulationBox {
-      id,
-      leftmost_point,
-      rightmost_point,
-      length,
-      particles,
+      sim_box_placement,
     }
   }
 
@@ -78,23 +82,23 @@ impl SimulationBox {
     &self.rightmost_point
   }
   
-  pub fn add_particle(&mut self, particle: Particle) {
+  pub fn add_particle(&mut self, particle: Arc<Particle>) {
     self.particles.insert(particle.get_id() as usize, particle);
   }
 
-  pub fn particles(&self) -> &HashMap<usize, Particle> {
+  pub fn particles(&self) -> &HashMap<usize, Arc<Particle>> {
     &self.particles
   }
   
-  pub fn particles_mut(&mut self) -> &mut HashMap<usize, Particle> {
+  pub fn particles_mut(&mut self) -> &mut HashMap<usize, Arc<Particle>> {
     &mut self.particles
   }
   
-  pub fn particle(&self, particle_id: usize) -> &Particle {
+  pub fn particle(&self, particle_id: usize) -> &Arc<Particle> {
     self.particles.get(&particle_id).unwrap()
   }
   
-  pub fn particle_mut(&mut self, particle_id: usize) -> &mut Particle {
+  pub fn particle_mut(&mut self, particle_id: usize) -> &mut Arc<Particle> {
     self.particles.get_mut(&particle_id).unwrap()
   }
 

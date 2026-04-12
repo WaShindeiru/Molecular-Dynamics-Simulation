@@ -12,6 +12,7 @@ use crate::data::units::TIME_U;
 use crate::particle::Particle;
 use crate::sim_core::world::integration::{IntegrationAlgorithm};
 use crate::sim_core::world::saver::SaveOptions;
+use crate::sim_core::world::boundary_constraint::EdgeCondition;
 
 pub struct Engine {
   world: World,
@@ -39,11 +40,12 @@ impl Engine {
                         mut save_options: SaveOptions,
                         integration_algorithm: IntegrationAlgorithm,
                         world_type: WorldType,
+                        edge_condition: EdgeCondition,
   ) -> Self {
 
     Engine::new_from_atoms_with_path(atoms, size, time_step, num_of_iterations, max_iteration_till_reset, 
                                      save_all_iterations, one_frame_duration, save_options, 
-                                     integration_algorithm, world_type
+                                     integration_algorithm, world_type, edge_condition
     )
   }
 
@@ -54,7 +56,8 @@ impl Engine {
                         one_frame_duration: f64,
                         save_options: SaveOptions,
                         integration_algorithm: IntegrationAlgorithm,
-                        world_type: WorldType,
+                        world_type: WorldType, 
+                        edge_condition: EdgeCondition
   ) -> Self {
     let mut frame_iteration_count = 1;
 
@@ -63,7 +66,7 @@ impl Engine {
     }
 
     let world = World::new_from_atoms(atoms, size, max_iteration_till_reset, frame_iteration_count,
-                                      integration_algorithm.clone(), save_options.clone(), world_type);
+                                      integration_algorithm.clone(), save_options.clone(), world_type, edge_condition);
 
     Engine {
       world,

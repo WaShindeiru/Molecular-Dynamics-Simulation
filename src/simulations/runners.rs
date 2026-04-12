@@ -11,15 +11,15 @@ const TIME_STEP: f64 = 1e-18 / TIME_U;
 const TEMPERATURE_CELCIUS: f64 = 1600.0;
 
 const TEMPERATURE_KELVIN: f64 = 1600.0;
-const Q_EFFECTIVE_MASS: f64 = 0.1;
+const Q_EFFECTIVE_MASS: f64 = 0.2;
 
 pub fn dense_runner() {
-  let save_path = get_save_path();
+  let save_path = get_save_path("../output/".to_string());
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 200., distance: TimeIterationDistance::Iteration(30000)},
-    TemperatureInfo{desired_temperature: 2400., distance: TimeIterationDistance::Iteration(30000)},
+    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration(1000)},
+    TemperatureInfo{desired_temperature: 1500., distance: TimeIterationDistance::Iteration(1000)},
     ].into_iter().map(
       |i| TemperatureInfo{
         desired_temperature: i.desired_temperature / TEMPERATURE_U,
@@ -32,7 +32,7 @@ pub fn dense_runner() {
   //     desired_temperature: i.desired_temperature / TEMPERATURE_U,
   //     distance: i.distance}).collect();
 
-  let num_iterations = (8e4) as usize;
+  let num_iterations = (10e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -50,7 +50,7 @@ pub fn dense_runner() {
 }
 
 pub fn sphere_runner() {
-  let save_path = get_save_path();
+  let save_path = get_save_path("/media/washindeiru/EE366BA9366B718F/md/output/".to_string());
   logging::init_logging(save_path.clone());
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
@@ -71,7 +71,7 @@ pub fn sphere_runner() {
 }
 
 pub fn triangle_runner() {
-  let save_path = get_save_path();
+  let save_path = get_save_path("/media/washindeiru/EE366BA9366B718F/md/output/".to_string());
   logging::init_logging(save_path.clone());
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
@@ -92,7 +92,7 @@ pub fn triangle_runner() {
 }
 
 pub fn symmetric_triangle_test_runner() {
-  let save_path = get_save_path();
+  let save_path = get_save_path("/media/washindeiru/EE366BA9366B718F/md/output/".to_string());
   logging::init_logging(save_path.clone());
 
   let temperature_kelvin_unitless = celcius_to_kelvin(TEMPERATURE_CELCIUS) / TEMPERATURE_U;
