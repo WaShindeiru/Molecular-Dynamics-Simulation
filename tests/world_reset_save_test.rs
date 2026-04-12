@@ -10,6 +10,7 @@ use carbon_nanotube::sim_core::Engine;
 use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
 use carbon_nanotube::sim_core::world::saver::SaveOptions;
 use carbon_nanotube::sim_core::world::WorldType;
+use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 
 const TIME_STEP: f64 = 1e-3;
 
@@ -22,7 +23,7 @@ fn validate_dto_type(world_type: &WorldType, world_dto: &WorldDTO) -> bool {
 }
 
 /// Test 1: Check that to_transfer_struct() returns all iterations without missing or repeating any
-fn test_reset_world_no_missing_iterations_runner(world_type: WorldType) {
+fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge_condition: EdgeCondition) {
   // Setup: Create a small simulation
   let simulation_size = Vector3::new(10., 10., 10.);
   let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
@@ -66,6 +67,7 @@ fn test_reset_world_no_missing_iterations_runner(world_type: WorldType) {
     save_options,
     integration_algorithm.clone(),
     world_type.clone(),
+    edge_condition,
   );
 
   // TODO: change it back to verlet
@@ -141,22 +143,26 @@ fn test_reset_world_no_missing_iterations_runner(world_type: WorldType) {
 }
 
 #[test]
-fn test_reset_world_no_missing_iterations_simple_world() {
-  test_reset_world_no_missing_iterations_runner(WorldType::SimpleWorld)
+fn test_reset_world_no_missing_iterations_boxed_simple() {
+  test_reset_world_no_missing_iterations_runner(WorldType::BoxedWorld, EdgeCondition::Simple)
 }
 
 #[test]
-fn test_reset_world_no_missing_iterations_boxed_world() {
-  test_reset_world_no_missing_iterations_runner(WorldType::BoxedWorld)
+fn test_reset_world_no_missing_iterations_boxed_periodic() {
+  test_reset_world_no_missing_iterations_runner(WorldType::BoxedWorld, EdgeCondition::Periodic)
 }
 
 /// Test 2: Test with Nose-Hoover thermostat and resets, verifying saved files
-fn test_reset_world_with_thermostat_runner(world_type: WorldType) {
+fn test_reset_world_with_thermostat_runner(world_type: WorldType, edge_condition: EdgeCondition) {
   let world_type_str = match world_type {
     WorldType::SimpleWorld => "simple",
     WorldType::BoxedWorld => "boxed",
   };
-  let test_dir = format!("../test/test_reset_world_with_thermostat_{}", world_type_str);
+  let edge_condition_str = match edge_condition {
+    EdgeCondition::Simple => "simple",
+    EdgeCondition::Periodic => "periodic",
+  };
+  let test_dir = format!("../test/test_reset_world_with_thermostat_{}_{}", world_type_str, edge_condition_str);
 
   // Clean up test directory if it exists
   if Path::new(&test_dir).exists() {
@@ -205,6 +211,7 @@ fn test_reset_world_with_thermostat_runner(world_type: WorldType) {
     save_options,
     integration_algorithm.clone(),
     world_type,
+    edge_condition,
   );
 
   engine.run(TIME_STEP);
@@ -217,22 +224,26 @@ fn test_reset_world_with_thermostat_runner(world_type: WorldType) {
 }
 
 #[test]
-fn test_reset_world_with_thermostat_simple_world() {
-  test_reset_world_with_thermostat_runner(WorldType::SimpleWorld);
+fn test_reset_world_with_thermostat_boxed_simple() {
+  test_reset_world_with_thermostat_runner(WorldType::BoxedWorld, EdgeCondition::Simple);
 }
 
 #[test]
-fn test_reset_world_with_thermostat_boxed_world() {
-  test_reset_world_with_thermostat_runner(WorldType::BoxedWorld);
+fn test_reset_world_with_thermostat_boxed_periodic() {
+  test_reset_world_with_thermostat_runner(WorldType::BoxedWorld, EdgeCondition::Periodic);
 }
 
 /// Test 3: Save to files and verify all CSV files contain correct iterations
-fn test_save_files_completeness_runner(world_type: WorldType) {
+fn test_save_files_completeness_runner(world_type: WorldType, edge_condition: EdgeCondition) {
   let world_type_str = match world_type {
     WorldType::SimpleWorld => "simple",
     WorldType::BoxedWorld => "boxed",
   };
-  let test_dir = format!("../test/test_save_files_completeness_{}", world_type_str);
+  let edge_condition_str = match edge_condition {
+    EdgeCondition::Simple => "simple",
+    EdgeCondition::Periodic => "periodic",
+  };
+  let test_dir = format!("../test/test_save_files_completeness_{}_{}", world_type_str, edge_condition_str);
 
   // Clean up test directory if it exists
   if Path::new(&test_dir).exists() {
@@ -284,6 +295,7 @@ fn test_save_files_completeness_runner(world_type: WorldType) {
     save_options,
     integration_algorithm.clone(),
     world_type,
+    edge_condition,
   );
 
   engine.run(TIME_STEP);
@@ -337,13 +349,13 @@ fn test_save_files_completeness_runner(world_type: WorldType) {
 }
 
 #[test]
-fn test_save_files_completeness_simple_world() {
-  test_save_files_completeness_runner(WorldType::SimpleWorld);
+fn test_save_files_completeness_boxed_simple() {
+  test_save_files_completeness_runner(WorldType::BoxedWorld, EdgeCondition::Simple);
 }
 
 #[test]
-fn test_save_files_completeness_boxed_world() {
-  test_save_files_completeness_runner(WorldType::BoxedWorld);
+fn test_save_files_completeness_boxed_periodic() {
+  test_save_files_completeness_runner(WorldType::BoxedWorld, EdgeCondition::Periodic);
 }
 
 /// Helper function to parse iterations from CSV file
@@ -476,7 +488,7 @@ fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: u
 }
 
 /// Test 4: Test edge case with single reset - verifies to_transfer_struct returns only last batch
-fn test_single_reset_runner(world_type: WorldType) {
+fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondition) {
   let simulation_size = Vector3::new(10., 10., 10.);
   let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
 
@@ -519,6 +531,7 @@ fn test_single_reset_runner(world_type: WorldType) {
     save_options,
     integration_algorithm.clone(),
     world_type.clone(),
+    edge_condition,
   );
 
   engine.run(TIME_STEP);
@@ -566,17 +579,17 @@ fn test_single_reset_runner(world_type: WorldType) {
 }
 
 #[test]
-fn test_single_reset_simple_world() {
-  test_single_reset_runner(WorldType::SimpleWorld);
+fn test_single_reset_boxed_simple() {
+  test_single_reset_runner(WorldType::BoxedWorld, EdgeCondition::Simple);
 }
 
 #[test]
-fn test_single_reset_boxed_world() {
-  test_single_reset_runner(WorldType::BoxedWorld);
+fn test_single_reset_boxed_periodic() {
+  test_single_reset_runner(WorldType::BoxedWorld, EdgeCondition::Periodic);
 }
 
 /// Test 5: Test no reset scenario
-fn test_no_reset_runner(world_type: WorldType) {
+fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition) {
   let simulation_size = Vector3::new(10., 10., 10.);
   let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
   
@@ -618,6 +631,7 @@ fn test_no_reset_runner(world_type: WorldType) {
     save_options,
     integration_algorithm.clone(),
     world_type.clone(),
+    edge_condition,
   );
 
   engine.run(TIME_STEP);
@@ -656,12 +670,12 @@ fn test_no_reset_runner(world_type: WorldType) {
 }
 
 #[test]
-fn test_no_reset_simple_world() {
-  test_no_reset_runner(WorldType::SimpleWorld);
+fn test_no_reset_boxed_simple() {
+  test_no_reset_runner(WorldType::BoxedWorld, EdgeCondition::Simple);
 }
 
 #[test]
-fn test_no_reset_boxed_world() {
-  test_no_reset_runner(WorldType::BoxedWorld);
+fn test_no_reset_boxed_periodic() {
+  test_no_reset_runner(WorldType::BoxedWorld, EdgeCondition::Periodic);
 }
 

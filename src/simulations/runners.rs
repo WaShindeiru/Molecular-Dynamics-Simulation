@@ -1,11 +1,12 @@
 use nalgebra::Vector3;
 use carbon_nanotube::data::units::{TEMPERATURE_U, TIME_U};
+use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
 use carbon_nanotube::sim_core::world::WorldType;
 use carbon_nanotube::utils::units::celcius_to_kelvin;
 use carbon_nanotube::utils::logging;
 use carbon_nanotube::utils::logging::get_save_path;
-use crate::simulations::examples::{dense_particles, sphere_particles, symmetric_triangle_test, triangle};
+use crate::simulations::examples::{dense_particles, one_particle_edge, sphere_particles, symmetric_triangle_test, triangle, two_particles_edge};
 
 const TIME_STEP: f64 = 1e-18 / TIME_U;
 const TEMPERATURE_CELCIUS: f64 = 1600.0;
@@ -32,7 +33,7 @@ pub fn dense_runner() {
   //     desired_temperature: i.desired_temperature / TEMPERATURE_U,
   //     distance: i.distance}).collect();
 
-  let num_iterations = (10e4) as usize;
+  let num_iterations = (4e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -41,12 +42,65 @@ pub fn dense_runner() {
   };
 
   let world_type = WorldType::BoxedWorld;
+  let edge_condition = EdgeCondition::Periodic;
 
   let world_size = Vector3::new(30., 30., 30.);
   let offset = Vector3::new(3.4, 3.4, 3.4);
 
   dense_particles(TIME_STEP, save, save_path, num_iterations, 3.1, world_size, offset,
-                  integration_algorithm, world_type);
+                  integration_algorithm, world_type, edge_condition);
+}
+
+pub fn one_particle_edge_runner() {
+  let save_path = get_save_path("../output/".to_string());
+  logging::init_logging(save_path.clone());
+
+  let desired_temperatures = vec![
+    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration(1000)},
+  ].into_iter().map(
+    |i| TemperatureInfo{
+      desired_temperature: i.desired_temperature / TEMPERATURE_U,
+      distance: i.distance}).collect();
+
+  let num_iterations = (4e4) as usize;
+  let save = true;
+
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: desired_temperatures,
+    q_effective_mass: Q_EFFECTIVE_MASS,
+  };
+
+  let world_type = WorldType::BoxedWorld;
+  let edge_condition = EdgeCondition::Periodic;
+
+  one_particle_edge(TIME_STEP, save, save_path, num_iterations,
+                  integration_algorithm, world_type, edge_condition);
+}
+
+pub fn two_particles_edge_runner() {
+  let save_path = get_save_path("../output/".to_string());
+  logging::init_logging(save_path.clone());
+
+  let desired_temperatures = vec![
+    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration(1000)},
+  ].into_iter().map(
+    |i| TemperatureInfo{
+      desired_temperature: i.desired_temperature / TEMPERATURE_U,
+      distance: i.distance}).collect();
+
+  let num_iterations = (4e4) as usize;
+  let save = true;
+
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: desired_temperatures,
+    q_effective_mass: Q_EFFECTIVE_MASS,
+  };
+
+  let world_type = WorldType::BoxedWorld;
+  let edge_condition = EdgeCondition::Periodic;
+
+  two_particles_edge(TIME_STEP, save, save_path, num_iterations,
+                    integration_algorithm, world_type, edge_condition);
 }
 
 pub fn sphere_runner() {

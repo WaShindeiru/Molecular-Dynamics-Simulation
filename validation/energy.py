@@ -256,6 +256,7 @@ if __name__ == "__main__":
   # output_dir = "/media/washindeiru/EE366BA9366B718F/md/output"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
   thermostat = True
-  # compare_different_temps("../../output/2026-03-31_00-08-46")
+  # newest_folder = "../../output/2026-04-13_00-36-14"
+  # compare_different_temps("../../output/2026-04-13_00-36-14")
   show_energy_plot(newest_folder, thermostat)
   # compare_different_temps(newest_folder)

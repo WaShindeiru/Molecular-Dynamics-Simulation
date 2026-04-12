@@ -94,8 +94,12 @@ impl SimulationBox {
     &mut self.particles
   }
   
-  pub fn particle(&self, particle_id: usize) -> &Arc<Particle> {
-    self.particles.get(&particle_id).unwrap()
+  pub fn particle(&self, particle_id: usize) -> Arc<Particle> {
+    self.particles.get(&particle_id).unwrap().clone()
+  }
+  
+  pub fn sim_box_placement(&self) -> SimBoxPlacement {
+    self.sim_box_placement
   }
   
   pub fn particle_mut(&mut self, particle_id: usize) -> &mut Arc<Particle> {

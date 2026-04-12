@@ -110,6 +110,79 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
   engine.run(time_step);
 }
 
+pub fn one_particle_edge(time_step: f64, save: bool, save_path: String, num_iterations: usize,
+                integration_algorithm: IntegrationAlgorithm, world_type: WorldType, edge_condition: EdgeCondition) {
+  let simulation_size = Vector3::new(50., 50., 50.);
+
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
+  let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(-10., 0., 0.));
+  let atoms: Vec<Particle> = vec![atom_0];
+
+  let max_iteration_till_reset = 2e3 as usize;
+  let save_laamps = true;
+  let save_verbose = false;
+  let save_all_iterations = false;
+  let one_frame_duration = 1e-16 / TIME_U;
+
+  let save_options = SaveOptions {
+    save,
+    save_laamps,
+    save_verbose,
+    save_path,
+  };
+
+  let mut engine = Engine::new_from_atoms(
+    atoms, simulation_size, time_step,
+    num_iterations,
+    max_iteration_till_reset,
+    save_all_iterations,
+    one_frame_duration,
+    save_options,
+    integration_algorithm,
+    world_type,
+    edge_condition,
+  );
+
+  engine.run(time_step);
+}
+
+pub fn two_particles_edge(time_step: f64, save: bool, save_path: String, num_iterations: usize,
+                         integration_algorithm: IntegrationAlgorithm, world_type: WorldType, edge_condition: EdgeCondition) {
+  let simulation_size = Vector3::new(50., 50., 50.);
+
+  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, simulation_size.z);
+  let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(1.5, 10., 10.), Vector3::new(0., 0., 0.));
+  let atom_1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(50. - 1.5, 10., 10.), Vector3::new(0., 0., 0.));
+  let atoms: Vec<Particle> = vec![atom_0, atom_1];
+
+  let max_iteration_till_reset = 2e3 as usize;
+  let save_laamps = true;
+  let save_verbose = false;
+  let save_all_iterations = false;
+  let one_frame_duration = 1e-16 / TIME_U;
+
+  let save_options = SaveOptions {
+    save,
+    save_laamps,
+    save_verbose,
+    save_path,
+  };
+
+  let mut engine = Engine::new_from_atoms(
+    atoms, simulation_size, time_step,
+    num_iterations,
+    max_iteration_till_reset,
+    save_all_iterations,
+    one_frame_duration,
+    save_options,
+    integration_algorithm,
+    world_type,
+    edge_condition,
+  );
+
+  engine.run(time_step);
+}
+
 // fn two_particles(save: bool, num_iterations: usize, use_thermostat: bool, verbose: bool) {
 //   let simulation_size = Vector3::new(50., 50., 50.);
 //   let atom_factory = SafeAtomFactory::new();
@@ -213,7 +286,8 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
 
 pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
                        particle_distance: f64, world_size: Vector3<f64>,  offset: Vector3<f64>,
-                       integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
+                       integration_algorithm: IntegrationAlgorithm, world_type: WorldType,
+                       edge_condition: EdgeCondition) {
   let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, world_size.z);
 
   let mut atoms: Vec<Particle> = Vec::new();
@@ -301,8 +375,6 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
     save_verbose,
     save_path,
   };
-
-  let edge_condition = EdgeCondition::Simple;
 
   let mut engine = Engine::new_from_atoms(
     atoms, world_size, time_step,

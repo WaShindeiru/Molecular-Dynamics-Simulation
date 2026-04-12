@@ -1,6 +1,7 @@
 mod neighbour_boxes;
 
 use std::collections::{HashMap};
+use std::sync::Arc;
 use nalgebra::Vector3;
 use crate::data::units::K_B;
 use crate::particle::Particle;
@@ -12,66 +13,20 @@ use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinate
 use crate::sim_core::world::boxed_world::cube::Cube;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 
-// struct ConstraintResult {
-//   compliant: bool,
-//   position: Vector3<f64>,
-//   velocity: Vector3<f64>,
-// }
-//
-// fn apply_boundary_constraint(atom: &Particle, container_size: &Vector3<f64>) -> ConstraintResult {
-//   let mut position = atom.get_position().clone();
-//   let mut velocity = atom.get_velocity().clone();
-//   let mut compliant = true;
-//
-//   if position.x < 0.0 {
-//     compliant = false;
-//     velocity.x = - velocity.x;
-//     position.x = - position.x;
-//   } else if position.x > container_size.x {
-//     compliant = false;
-//     velocity.x = - velocity.x;
-//     position.x = 2. * container_size.x - position.x;
-//   }
-//
-//   if position.y < 0.0 {
-//     compliant = false;
-//     velocity.y = - velocity.y;
-//     position.y = - position.y;
-//   } else if position.y > container_size.y {
-//     compliant = false;
-//     velocity.y = - velocity.y;
-//     position.y = 2. * container_size.y - position.y;
-//   }
-//
-//   if position.z < 0. {
-//     compliant = false;
-//     velocity.z = - velocity.z;
-//     position.z = - position.z;
-//   } else if position.z > container_size.z {
-//     compliant = false;
-//     velocity.z = - velocity.z;
-//     position.z = 2. * container_size.z - position.z;
-//   }
-//
-//   ConstraintResult {
-//     compliant,
-//     position,
-//     velocity,
-//   }
-// }
-
 impl BoxContainer {
   pub fn set_integration_half_velocity_cache(&mut self, cache: HashMap<usize, Vector3<f64>>) {
     self.integration_half_velocity_cache = cache;
   }
 
-  pub fn atoms_of_integration_box(&self) -> impl Iterator<Item = &Particle> {
-    self.integration_box_cache.iter().flat_map(|sim_box| sim_box.particles().values())
+  pub fn atoms_of_integration_box(&self) -> impl Iterator<Item = Arc<Particle>> {
+    self.integration_box_cache.iter().flat_map(|sim_box|
+      sim_box.particles().values().cloned()
+    )
   }
 
-  pub fn atoms_of_given_integration_box(&self, box_id: usize) -> impl Iterator<Item = &Particle> {
+  pub fn atoms_of_given_integration_box(&self, box_id: usize) -> impl Iterator<Item = Arc<Particle>> {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
-    self.integration_box_cache.get(coordinates.x, coordinates.y, coordinates.z).unwrap().particles().values()
+    self.integration_box_cache.get(coordinates.x, coordinates.y, coordinates.z).unwrap().particles().values().cloned()
   }
 
   pub fn integration_half_velocity_cache(&self) -> &HashMap<usize, Vector3<f64>> {
@@ -91,24 +46,28 @@ impl BoxContainer {
     let box_id = self.integration_box_id_cache.get(&particle_id).unwrap();
     let coordinates = get_coordinates_from_simulation_box_id(*box_id, self.box_count_dim());
     let sim_box = self.integration_box_cache.get_vec_mut(&coordinates).unwrap();
-    let particle = sim_box.particle_mut(particle_id);
-    particle.set_force(particle.get_force() + force);
-    particle.set_acceleration(particle.get_acceleration() + acceleration);
-    particle.set_potential_energy(particle.get_potential_energy() + pot_energy);
+
+    let mut new_particle = (*sim_box.particle(particle_id)).clone();
+    new_particle.set_force(new_particle.get_force() + force);
+    new_particle.set_acceleration(new_particle.get_acceleration() + acceleration);
+    new_particle.set_potential_energy(new_particle.get_potential_energy() + pot_energy);
+
+    *sim_box.particle_mut(particle_id) = Arc::new(new_particle);
   }
 
   pub fn integration_box_cache_set_velocity(&mut self, time_step: f64, thermostat_epsilon: f64,
-    next_iteration: usize, compliance_cache: &HashMap<usize, ParticleCompliance>, edge_condition: EdgeCondition) {
+                                            next_iteration: usize, compliance_cache: &HashMap<usize, ParticleCompliance>, edge_condition: EdgeCondition) {
 
     for sim_box in self.integration_box_cache.iter_mut() {
-      for (i_id_, particle_i) in sim_box.particles_mut().iter_mut() {
+      for (i_id_, particle_i_arc) in sim_box.particles_mut().iter_mut() {
+        let mut new_particle = (**particle_i_arc).clone();
+
         let numerator: Vector3<f64> = self.integration_half_velocity_cache.get(i_id_).unwrap() +
-          0.5 * particle_i.get_acceleration() * time_step;
+          0.5 * new_particle.get_acceleration() * time_step;
 
         let denominator = 1.0 + 0.5 * time_step * thermostat_epsilon;
 
         let new_velocity: Vector3<f64> = numerator / denominator;
-        // assert!(!new_velocity.x.is_nan() && !new_velocity.y.is_nan() && !new_velocity.z.is_nan());
 
         let compliance = compliance_cache.get(i_id_).unwrap();
 
@@ -117,8 +76,10 @@ impl BoxContainer {
           EdgeCondition::Periodic => apply_velocity_constraint_periodic(&compliance, new_velocity),
         };
 
-        particle_i.set_velocity(validated_velocity);
-        particle_i.set_iteration(next_iteration);
+        new_particle.set_velocity(validated_velocity);
+        new_particle.set_iteration(next_iteration);
+
+        *particle_i_arc = Arc::new(new_particle);
       }
     }
   }
@@ -142,13 +103,17 @@ impl BoxContainer {
   pub fn integration_box_cache_apply_gravity(&mut self, potential_gravity_max: f64, z_max: f64) {
     for sim_box in self.integration_box_cache.iter_mut() {
       for (_, particle_i) in sim_box.particles_mut().iter_mut() {
+        let mut new_particle = (**particle_i).clone();
+
         let new_force = particle_i.get_force() - Vector3::new(0., 0., 1.) *
           potential_gravity_max * particle_i.get_mass() / self.container_size.z;
-        particle_i.set_force(new_force);
+        new_particle.set_force(new_force);
 
-        particle_i.set_acceleration(new_force / particle_i.get_mass());
+        new_particle.set_acceleration(new_force / particle_i.get_mass());
 
-        particle_i.set_potential_gravity_energy(potential_gravity_max * particle_i.get_mass() * particle_i.get_position().z / self.container_size.z);
+        new_particle.set_potential_gravity_energy(potential_gravity_max * particle_i.get_mass() * particle_i.get_position().z / self.container_size.z);
+
+        *particle_i = Arc::new(new_particle);
       }
     }
   }

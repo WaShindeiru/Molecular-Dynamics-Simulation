@@ -4,37 +4,47 @@ use carbon_nanotube::particle::{Particle, Atom, SafeAtomFactory};
 use carbon_nanotube::data::types::{AtomType, InteractionType};
 use nalgebra::Vector3;
 use carbon_nanotube::data::parameters::POTENTIAL_GRAVITY_MAX;
+use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
+use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition::{Periodic, Simple};
 use carbon_nanotube::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
 
+
+fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
+  // Create a 10x10x10 world with CC interaction type
+  // CC box size is 2.0, so we should get 5x5x5 = 125 boxes
+  let size = Vector3::new(10.0, 10.0, 10.0);
+  let box_type = InteractionType::CC;
+
+  // Create empty atom list
+  let atoms: Vec<Particle> = vec![];
+
+  let container = BoxContainer::new(atoms, size, box_type, 100, edge_condition);
+
+  // Verify container size
+  assert_eq!(container.container_size(), &size);
+  assert_eq!(container.box_type(), &InteractionType::CC);
+
+  // With CC interaction (box_size = 2.0), we should have:
+  // x: floor(10.0 / 2.0) = 5 boxes
+  // y: floor(10.0 / 2.0) = 5 boxes
+  // z: floor(10.0 / 2.0) = 5 boxes
+  // Total: 5 * 5 * 5 = 125 boxes
+
+  println!("Test completed: simple partition with CC interaction type");
+}
 #[test]
-fn test_box_container_simple_partition() {
-    // Create a 10x10x10 world with CC interaction type
-    // CC box size is 2.0, so we should get 5x5x5 = 125 boxes
-    let size = Vector3::new(10.0, 10.0, 10.0);
-    let box_type = InteractionType::CC;
-
-    // Create empty atom list
-    let atoms: Vec<Particle> = vec![];
-
-    let container = BoxContainer::new(atoms, size, box_type, 100);
-
-    // Verify container size
-    assert_eq!(container.container_size(), &size);
-    assert_eq!(container.box_type(), &InteractionType::CC);
-
-    // With CC interaction (box_size = 2.0), we should have:
-    // x: floor(10.0 / 2.0) = 5 boxes
-    // y: floor(10.0 / 2.0) = 5 boxes
-    // z: floor(10.0 / 2.0) = 5 boxes
-    // Total: 5 * 5 * 5 = 125 boxes
-
-    println!("Test completed: simple partition with CC interaction type");
+fn test_box_container_simple_partition_simple() {
+  test_box_container_simple_partition_runner(Simple)
 }
 
 #[test]
-fn test_box_container_non_uniform_partition() {
-    // Create a 10x6x8 world with FeFe interaction type
-    // FeFe box size is 3.35, so we should get different dimensions
+fn test_box_container_simple_partition_periodic() {
+  test_box_container_simple_partition_runner(Periodic)
+}
+
+fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
+  // Create a 10x6x8 world with FeFe interaction type
+  // FeFe box size is 3.35, so we should get different dimensions
   let size = Vector3::new(100.0, 60.0, 80.0);
   let box_type = InteractionType::FeFe;
 
@@ -50,12 +60,12 @@ fn test_box_container_non_uniform_partition() {
   // Create a few test atoms
   let atoms: Vec<Particle> = vec![atom0.clone(), atom1.clone(), atom2.clone(), atom3.clone(), atom4.clone(), atom5.clone()];
 
-  let container = BoxContainer::new(atoms, size, box_type, 100);
+  let container = BoxContainer::new(atoms, size, box_type, 100, edge_condition);
 
   // Verify container size
   assert_eq!(container.container_size(), &size);
   assert_eq!(container.box_type(), &InteractionType::FeFe);
-  
+
   let expected_box_count_dim = Vector3::new(29, 17, 23);
   assert_eq!(container.box_count_dim(), &expected_box_count_dim);
   let expected_box_count = 29 + 17 + 23;
@@ -99,7 +109,17 @@ fn test_box_container_non_uniform_partition() {
   let expected_box_id = get_id_simulation_box(&expected_box_coordinates, &expected_box_count_dim);
   let actual_box_id = container.box_of_atom_given_index(atom5.get_id() as usize, 0).id();
   assert_eq!(actual_box_id, expected_box_id);
-  
+
   println!("Test completed: non-uniform partition with FeFe interaction type");
+}
+
+#[test]
+fn test_box_container_non_uniform_partition_simple() {
+  box_container_non_uniform_partition_runner(Simple)
+}
+
+#[test]
+fn test_box_container_non_uniform_partition_periodic() {
+  box_container_non_uniform_partition_runner(Periodic)
 }
 

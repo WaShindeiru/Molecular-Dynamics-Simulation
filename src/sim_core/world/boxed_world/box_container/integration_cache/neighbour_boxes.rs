@@ -101,7 +101,7 @@ impl BoxContainer {
     }))
   }
 
-  pub fn integration_particles_of_neighbour_boxes_simple(&self, box_id: usize) -> impl Iterator<Item = &Particle> {
+  pub fn integration_particles_of_neighbour_boxes_simple(&self, box_id: usize) -> impl Iterator<Item = Arc<Particle>> {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
     let box_count_dim = self.box_count_dim();
 
@@ -123,7 +123,7 @@ impl BoxContainer {
             y_ >= 0 && y_ < box_count_dim.y as isize &&
             z_ >= 0 && z_ < box_count_dim.z as isize {
             self.integration_box_cache.get(x_ as usize, y_ as usize, z_ as usize)
-              .map(|sim_box| sim_box.particles().values())
+              .map(|sim_box| sim_box.particles().values().cloned())
           } else {
             None
           }
@@ -165,9 +165,9 @@ impl BoxContainer {
             (EdgeCondition::Periodic, _, _) => AxisPlacement::Normal,
           };
 
-          let x_ = ((x + x_offset) as usize + box_count_dim.x) % box_count_dim.x;
-          let y_ = ((y + y_offset) as usize + box_count_dim.y) % box_count_dim.y;
-          let z_ = ((z + z_offset) as usize + box_count_dim.z) % box_count_dim.z;
+          let x_ = (((x + x_offset) + box_count_dim.x as isize) as usize) % box_count_dim.x;
+          let y_ = (((y + y_offset) + box_count_dim.y as isize) as usize) % box_count_dim.y;
+          let z_ = (((z + z_offset) + box_count_dim.z as isize) as usize) % box_count_dim.z;
 
           self.integration_box_cache.get(x_, y_, z_)
             .map(|sim_box| sim_box.particles().values()
