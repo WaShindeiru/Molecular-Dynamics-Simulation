@@ -78,7 +78,7 @@ def read_atoms_from_output_dumps(directory: str, atom_id_1: int, atom_id_2: int)
   result = pd.DataFrame(records, columns=["iteration", "atom_id", "x", "y", "z"])
   return result.sort_values(["iteration", "atom_id"]).reset_index(drop=True)
 
-def get_distribution(data, idx_01, idx_02):
+def get_distribution(data, idx_01, idx_02, name):
   df_pivot = data.pivot_table(index='iteration', columns='atom_id')
   df_merged = pd.DataFrame({
     'iteration': df_pivot.index,
@@ -100,22 +100,23 @@ def get_distribution(data, idx_01, idx_02):
 
   plt.figure()
   plt.plot(df_merged['iteration'], df_merged['distance'])
+  plt.savefig(name)
   plt.show()
 
   return df_merged['distance'].std()
 
 def compare_different_temps(path_: str):
-  idx_01 = 16
-  idx_02 = 27
+  idx_01 = 10
+  idx_02 = 40
   result = read_atoms_from_output_dumps(path_, idx_01, idx_02)
-  temp = result[(result['iteration'] >= 1218) & (result['iteration'] < 31218)]
+  temp = result[(result['iteration'] >= 19756) & (result['iteration'] < 29756)]
 
-  deviation_1 = get_distribution(temp, idx_01, idx_02)
+  deviation_1 = get_distribution(temp, idx_01, idx_02, path_ + "/first")
   print(deviation_1)
 
-  temp_2 = result[(result['iteration'] >= 50000) & (result['iteration'] < 80000)]
+  temp_2 = result[(result['iteration'] >= 70000) & (result['iteration'] < 80000)]
 
-  deviation_2 = get_distribution(temp_2, idx_01, idx_02)
+  deviation_2 = get_distribution(temp_2, idx_01, idx_02, path_ + "/second")
   print(deviation_2)
 
 
@@ -197,7 +198,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     plt.xlabel("iteration")
     plt.ylabel("Temperature [K]")
     plt.title(f"Temperature")
-    plt.ylim([0, 3000])
+    # plt.ylim([0, 3000])
     plt.legend()
     plt.savefig(path + '/Temperature.png')
     plt.show()
@@ -256,7 +257,7 @@ if __name__ == "__main__":
   # output_dir = "/media/washindeiru/EE366BA9366B718F/md/output"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
   thermostat = True
-  # newest_folder = "../../output/2026-04-13_00-36-14"
-  # compare_different_temps("../../output/2026-04-13_00-36-14")
+  # newest_folder = "../../output/2026-04-14_12-12-07_exp"
+  # compare_different_temps("../../output/2026-04-14_12-12-07_exp")
   show_energy_plot(newest_folder, thermostat)
   # compare_different_temps(newest_folder)

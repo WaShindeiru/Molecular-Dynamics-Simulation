@@ -8,5 +8,5 @@ mod output;
 mod simulations;
 
 fn main() {
-  two_particles_edge_runner()
+  dense_runner()
 }
