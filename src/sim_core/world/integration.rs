@@ -6,19 +6,21 @@ const TEMP_THRESHOLD: f64 = 30.;
 const TEMP_THRESHOLD_UNITLESS: f64 = TEMP_THRESHOLD / TEMPERATURE_U;
 const ACCEPTANCE_TIME_UNITLESS: f64 = 200. * 1e-18 / TIME_U;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
 pub enum TimeIterationDistance {
-  Time (f64),
-  Iteration (usize),
+  Time { value: f64 },
+  Iteration { value: usize },
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct TemperatureInfo {
   pub desired_temperature: f64,
   pub distance: TimeIterationDistance,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
 pub enum IntegrationAlgorithm {
   SemiImplicitEuler,
   VelocityVerlet,
@@ -117,11 +119,11 @@ impl IntegrationAlgorithmState {
           *consecutive = *consecutive + 1;
 
           let switch = match temp_info.distance {
-            TimeIterationDistance::Time(time) => {
+            TimeIterationDistance::Time { value: time } => {
               let current_time = time_step * *consecutive as f64;
               current_time > time
             }
-            TimeIterationDistance::Iteration(iteration) => *consecutive > iteration
+            TimeIterationDistance::Iteration { value: iteration } => *consecutive > iteration
           };
 
           if switch {

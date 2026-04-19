@@ -3,7 +3,7 @@ use crate::data::InteractionType;
 use crate::data::units::R_U;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct AtomDTO {
   pub id: u64,
   pub iteration: usize,

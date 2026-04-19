@@ -131,61 +131,27 @@ impl Engine {
     self.world.save()?;
 
     let now: DateTime<Local> = Local::now();
-    let time_string = now.format("%Y-%m-%d_%H-%M-%S").to_string();
+    let time_string: String = now.format("%Y-%m-%d_%H-%M-%S").to_string();
 
     let mut file = File::create(&format!("./{}/info.txt", self.save_options.save_path))?;
     writeln!(file, "Simulation date: {}", time_string)?;
     writeln!(file, "Number of iterations : {:?}", self.config.num_of_iterations)?;
-    writeln!(file, "Time step: {:.3e} seconds", self.config.time_step * TIME_U)?;
     writeln!(file, "Simulation Time: {:?} seconds", self.simulation_time)?;
-    writeln!(file, "integration type: {}", self.config.integration_algorithm)?;
 
-    // Particle information
-    let (total_particles, carbon_count, iron_count) = self.world.get_particle_counts();
-    writeln!(file, "\n=== Particle Information ===")?;
-    writeln!(file, "Total particles: {}", total_particles)?;
-    writeln!(file, "Carbon (C) particles: {}", carbon_count)?;
-    writeln!(file, "Iron (Fe) particles: {}", iron_count)?;
+    self.config.to_json_file(&format!("./{}/parameters.json", self.save_options.save_path))?;
 
-    // Gravity constant
-    writeln!(file, "\n=== Physical Parameters ===")?;
-    writeln!(file, "Gravity constant: {:.3e}", self.config.potential_gravity_max)?;
-
-    // Integration-specific information
-    writeln!(file, "\n=== Integration Algorithm Details ===")?;
-    match &self.config.integration_algorithm {
-      IntegrationAlgorithm::SemiImplicitEuler => {
-        writeln!(file, "Algorithm: Semi-Implicit Euler")?;
-      }
-      IntegrationAlgorithm::VelocityVerlet => {
-        writeln!(file, "Algorithm: Velocity Verlet")?;
-      }
-      IntegrationAlgorithm::NoseHooverVerlet { q_effective_mass, desired_temperature } => {
-        writeln!(file, "Algorithm: Nose-Hoover Verlet")?;
-        writeln!(file, "Q effective mass: {:.6e}", q_effective_mass)?;
-        writeln!(file, "Temperature schedule:")?;
-        for (idx, temp_info) in desired_temperature.iter().enumerate() {
-          writeln!(file, "  Stage {}: {:.2} K, distance: {:?}",
-            idx + 1,
-            temp_info.desired_temperature,
-            temp_info.distance
-          )?;
-        }
-      }
-    }
-
-    writeln!(file, "\n=== World Configuration ===")?;
-    writeln!(file, "World type: {}", self.world.get_world_info())?;
-    match &self.world {
-      World::SimpleWorld(simple_world) => {
-        writeln!(file, "Simple world specific parameters:")?;
-        writeln!(file, "  (No special parameters for SimpleWorld)")?;
-      }
-      World::BoxedWorld(boxed_world) => {
-        writeln!(file, "Boxed world specific parameters:")?;
-        writeln!(file, "  Box-based spatial partitioning active")?;
-      }
-    }
+    // writeln!(file, "\n=== World Configuration ===")?;
+    // writeln!(file, "World type: {}", self.world.get_world_info())?;
+    // match &self.world {
+    //   World::SimpleWorld(simple_world) => {
+    //     writeln!(file, "Simple world specific parameters:")?;
+    //     writeln!(file, "  (No special parameters for SimpleWorld)")?;
+    //   }
+    //   World::BoxedWorld(boxed_world) => {
+    //     writeln!(file, "Boxed world specific parameters:")?;
+    //     writeln!(file, "  Box-based spatial partitioning active")?;
+    //   }
+    // }
 
     Ok(())
   }

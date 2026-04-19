@@ -1,5 +1,7 @@
 pub mod builder;
 
+use std::fs;
+use std::io;
 use nalgebra::Vector3;
 use crate::particle::Particle;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
@@ -8,8 +10,9 @@ use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::data::types::AtomType;
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct SimulationConfig {
+    #[serde(skip)]
     pub atoms: Option<Vec<Particle>>,
     pub num_of_atoms: usize,
     pub num_of_carbon_atoms: usize,
@@ -111,6 +114,24 @@ impl SimulationConfig {
 
     pub fn count_particles_by_type(&self) -> (usize, usize) {
         (self.num_of_carbon_atoms, self.num_of_iron_atoms)
+    }
+
+    pub fn to_json_string(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    pub fn from_json_str(s: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(s)
+    }
+
+    pub fn to_json_file(&self, path: &str) -> io::Result<()> {
+        let json = self.to_json_string().map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        fs::write(path, json)
+    }
+
+    pub fn from_json_file(path: &str) -> io::Result<Self> {
+        let content = fs::read_to_string(path)?;
+        Self::from_json_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 }
 

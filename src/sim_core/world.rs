@@ -22,7 +22,8 @@ fn get_index_for_iteration(current_iteration: usize, max_iteration_till_reset: u
   index
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
 pub enum WorldType {
   SimpleWorld,
   BoxedWorld,

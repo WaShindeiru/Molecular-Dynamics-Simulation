@@ -16,7 +16,7 @@ pub enum Compliance {
   ExceededHigherBoundary,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum EdgeCondition {
   Simple,
   Periodic,

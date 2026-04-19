@@ -4,7 +4,7 @@ use crate::output::{SimpleWorldDTO, WorldDTO};
 mod simple_world;
 mod boxed_world;
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct SaveOptions {
   pub save: bool,
   pub save_path: String,

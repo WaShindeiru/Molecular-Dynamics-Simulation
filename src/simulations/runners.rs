@@ -19,14 +19,14 @@ pub fn dense_runner() {
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 2000., distance: TimeIterationDistance::Iteration(20000)},
-    TemperatureInfo{desired_temperature: 200., distance: TimeIterationDistance::Iteration(2000)},
+    TemperatureInfo{desired_temperature: 2000., distance: TimeIterationDistance::Iteration { value: 20000 }},
+    TemperatureInfo{desired_temperature: 200., distance: TimeIterationDistance::Iteration { value: 2000 }},
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
       distance: i.distance}).collect();
 
-  let num_iterations = (2e4) as usize;
+  let num_iterations = (6e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -40,7 +40,7 @@ pub fn dense_runner() {
   let world_size = Vector3::new(54., 54., 54.);
   let offset = Vector3::new(1.7, 1.7, 1.7);
 
-  dense_particles(TIME_STEP, save, save_path, num_iterations, 8., world_size, offset, integration_algorithm, world_type, edge_condition);
+  dense_particles(TIME_STEP, save, save_path, num_iterations, 7., world_size, offset, integration_algorithm, world_type, edge_condition);
 }
 
 pub fn one_particle_edge_runner() {
@@ -48,7 +48,7 @@ pub fn one_particle_edge_runner() {
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration(1000)},
+    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration { value: 1000 }},
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
@@ -74,7 +74,7 @@ pub fn two_particles_edge_runner() {
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration(1000)},
+    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration { value: 1000 }},
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
@@ -107,7 +107,7 @@ pub fn sphere_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
     desired_temperature: vec![TemperatureInfo {
       desired_temperature: temperature_kelvin_unitless,
-      distance: TimeIterationDistance::Iteration(num_iterations),
+      distance: TimeIterationDistance::Iteration { value: num_iterations },
     }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
@@ -128,7 +128,7 @@ pub fn triangle_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
     desired_temperature: vec![TemperatureInfo {
       desired_temperature: temperature_kelvin_unitless,
-      distance: TimeIterationDistance::Iteration(num_iterations),
+      distance: TimeIterationDistance::Iteration { value: num_iterations },
     }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
@@ -149,7 +149,7 @@ pub fn symmetric_triangle_test_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
     desired_temperature: vec![TemperatureInfo {
       desired_temperature: temperature_kelvin_unitless,
-      distance: TimeIterationDistance::Iteration(num_iterations),
+      distance: TimeIterationDistance::Iteration { value: num_iterations },
     }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };

@@ -1,13 +1,39 @@
 use nalgebra::Vector3;
+use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::output::AtomDTO;
 use crate::particle::{Atom, CustomPathAtom};
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(into = "AtomDTO", from = "AtomDTO")]
 pub enum Particle {
   Atom(Atom),
   CustomPathAtom(CustomPathAtom)
+}
+
+impl From<Particle> for AtomDTO {
+  fn from(particle: Particle) -> Self {
+    particle.to_transfer_struct()
+  }
+}
+
+impl From<AtomDTO> for Particle {
+  fn from(dto: AtomDTO) -> Self {
+    let atom_type = if dto.atom_type == 0 { AtomType::C } else { AtomType::Fe };
+    let mass = if atom_type == AtomType::C { ATOMIC_MASS_C } else { ATOMIC_MASS_FE };
+
+    Particle::Atom(Atom::new(
+      dto.id,
+      atom_type,
+      mass,
+      Vector3::new(dto.x, dto.y, dto.z),
+      Vector3::zeros(),
+      Vector3::new(dto.force_x, dto.force_y, dto.force_z),
+      Vector3::zeros(),
+      dto.potential_energy,
+    ))
+  }
 }
 
 impl Particle {
