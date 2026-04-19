@@ -7,10 +7,13 @@ use crate::particle::{Particle, SimpleAtomContainer};
 use crate::sim_core::world::get_index_for_iteration;
 use crate::sim_core::world::integration::{IntegrationAlgorithm};
 use crate::sim_core::world::saver::SaveOptions;
+use crate::data::types::AtomType;
+use crate::data::SimulationConfig;
 
 pub mod integration;
 
 pub struct SimpleWorld {
+  config: Option<SimulationConfig>,
   atoms: Vec<SimpleAtomContainer>,
   atom_count: usize,
   size: Vector3<f64>,
@@ -44,6 +47,7 @@ impl SimpleWorld {
     thermostat_epsilon.push(0.);
 
     SimpleWorld {
+      config: None,
       atoms,
       atom_count,
       size,
@@ -64,7 +68,48 @@ impl SimpleWorld {
       world_saver: PartialWorldSaver::new(save_options),
     }
   }
-  
+
+  /// Create SimpleWorld from a SimulationConfig
+  pub fn with_config(mut config: SimulationConfig) -> Self {
+    let atoms = config.atoms.take().unwrap_or_default();
+    let atom_count = atoms.len();
+
+    let atom_container = SimpleAtomContainer::new_from_atoms(atoms);
+    let mut atoms: Vec<SimpleAtomContainer> = Vec::with_capacity(config.max_iteration_till_reset);
+    atoms.push(atom_container);
+
+    let mut thermostat_epsilon: Vec<f64> = Vec::with_capacity(config.max_iteration_till_reset);
+    thermostat_epsilon.push(0.);
+
+    let frame_iteration_count = if !config.save_all_iterations {
+      (config.one_frame_duration / config.time_step) as usize
+    } else {
+      1
+    };
+
+    SimpleWorld {
+      config: Some(config.clone()),
+      atoms,
+      atom_count,
+      size: config.world_size,
+      current_iteration: 0,
+      current_index: 0,
+      integration_algorithm: config.integration_algorithm.clone(),
+
+      thermostat_epsilon,
+      thermostat_work_total: 0.,
+
+      max_iteration_till_reset: config.max_iteration_till_reset,
+      reset_counter: 1,
+      number_of_resets: 0,
+
+      frame_iteration_count,
+
+      save_options: config.save_options.clone(),
+      world_saver: PartialWorldSaver::new(config.save_options.clone()),
+    }
+  }
+
   pub fn save(&mut self) -> io::Result<()> {
     if self.save_options.save {
       let world = self.to_transfer_struct();
@@ -178,7 +223,6 @@ impl SimpleWorld {
   pub fn to_transfer_struct(&self) -> WorldDTO {
     let mut all_atoms_dto: Vec<Vec<AtomDTO>> = Vec::with_capacity(self.atoms.len());
     let mut potential_energies: Vec<f64> = Vec::with_capacity(self.atoms.len());
-
     let lower_index: usize;
 
     if self.number_of_resets > 0 {
@@ -209,13 +253,29 @@ impl SimpleWorld {
         box_y: self.size.y,
         box_z: self.size.z,
         integration_algorithm: self.integration_algorithm.clone(),
-  
+
         num_of_world_iterations: self.reset_counter,
         number_of_resets: self.number_of_resets,
         max_iteration_till_reset: self.max_iteration_till_reset,
-  
+
         frame_iteration_count: self.frame_iteration_count,
       }
     )
+  }
+
+  pub fn get_particle_counts(&self) -> (usize, usize, usize) {
+    let mut c_count = 0;
+    let mut fe_count = 0;
+
+    if let Some(atom_container) = self.atoms.first() {
+      for particle in atom_container.get_atoms().iter() {
+        match particle.get_type() {
+          AtomType::C => c_count += 1,
+          AtomType::Fe => fe_count += 1,
+        }
+      }
+    }
+
+    (self.atom_count, c_count, fe_count)
   }
 }

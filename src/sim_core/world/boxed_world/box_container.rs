@@ -5,7 +5,8 @@ use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinate
 use crate::sim_core::world::boxed_world::cube::Cube;
 use crate::particle::Particle;
 use crate::data::constants::get_box_size;
-use crate::data::InteractionType;
+use crate::data::{InteractionType, SimulationConfig};
+use crate::data::types::AtomType;
 use crate::output::{AtomDTO, BoxContainerDTO};
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::{LeftEdge, Normal, RightEdge};
@@ -15,123 +16,158 @@ pub mod sim_box;
 mod integration_cache;
 
 pub struct BoxContainer {
+  config: SimulationConfig,
+
   box_type: InteractionType,
   boxes: Vec<Cube<SimulationBox>>,
   thermostat_epsilon: Vec<f64>,
   box_id_caches: Vec<HashMap<usize, usize>>,
   current_index: usize,
 
-  container_size: Vector3<f64>,
   box_length: Vector3<f64>,
 
   box_count: usize,
   box_count_dim: Vector3<usize>,
 
-  max_iteration_till_reset: usize,
-
   integration_box_cache: Cube<SimulationBox>,
   integration_box_id_cache: HashMap<usize, usize>,
   integration_half_velocity_cache: HashMap<usize, Vector3<f64>>,
+}
 
-  edge_condition: EdgeCondition,
+pub struct BoxesInitial {
+  boxes: Cube<SimulationBox>,
+  box_length: Vector3<f64>,
+  box_count_dim: Vector3<usize>,
+  box_count: usize,
+}
+
+fn create_boxes_initial(box_type: InteractionType, world_size: Vector3<f64>) -> BoxesInitial {
+  let box_length_ = get_box_size(&box_type);
+  let box_count_x = (world_size.x / box_length_).floor();
+  let box_count_y = (world_size.y / box_length_).floor();
+  let box_count_z = (world_size.z / box_length_).floor();
+
+  let box_count_dim = Vector3::new(box_count_x as usize, box_count_y as usize, box_count_z as usize);
+  let box_count = box_count_dim.x * box_count_dim.y * box_count_dim.z;
+
+  let box_length_x = world_size.x / box_count_x;
+  let box_length_y = world_size.y / box_count_y;
+  let box_length_z = world_size.z / box_count_z;
+  let box_length = Vector3::new(box_length_x, box_length_y, box_length_z);
+
+  let mut boxes_1: Cube<SimulationBox> = Cube::new(box_count_x as usize, box_count_y as usize, box_count_z as usize);
+
+  for x_i in 0..box_count_x as usize {
+    for y_i in 0..box_count_y as usize {
+      for z_i in 0..box_count_z as usize {
+        let coordinates = Vector3::new(x_i, y_i, z_i);
+        let box_id = get_id_simulation_box(&coordinates, &box_count_dim);
+
+        let leftmost_point = Vector3::new(
+          x_i as f64 * box_length_x,
+          y_i as f64 * box_length_y,
+          z_i as f64 * box_length_z,
+        );
+
+        let rightmost_point = Vector3::new(
+          (x_i + 1) as f64 * box_length_x,
+          (y_i + 1) as f64 * box_length_y,
+          (z_i + 1) as f64 * box_length_z,
+        );
+
+        let x_edge: SimBoxEdge;
+        let y_edge: SimBoxEdge;
+
+        if x_i == 0 {
+          x_edge = LeftEdge;
+        } else if x_i == box_count_x as usize - 1 {
+          x_edge = RightEdge;
+        } else {
+          x_edge = Normal;
+        }
+
+        if y_i == 0 {
+          y_edge = LeftEdge;
+        } else if y_i == box_count_y as usize - 1 {
+          y_edge = RightEdge;
+        } else {
+          y_edge = Normal;
+        }
+
+        let sim_box_placement = SimBoxPlacement {
+          x: x_edge,
+          y: y_edge,
+        };
+
+        let sim_box = SimulationBox::new(box_id, leftmost_point, rightmost_point,
+                                         box_length, sim_box_placement);
+
+        boxes_1.set(x_i, y_i, z_i, sim_box).unwrap();
+      }
+    }
+  }
+
+  BoxesInitial {
+    boxes: boxes_1,
+    box_length,
+    box_count_dim,
+    box_count,
+  }
 }
 
 impl BoxContainer {
-  pub fn new(atoms: Vec<Particle>, size: Vector3<f64>, box_type: InteractionType,
-             max_iteration_till_reset: usize, edge_condition: EdgeCondition) -> Self {
-    let box_length_ = get_box_size(&box_type);
-    let box_count_x = (size.x / box_length_).floor();
-    let box_count_y = (size.y / box_length_).floor();
-    let box_count_z = (size.z / box_length_).floor();
+  fn detect_box_type(atoms: &[Particle]) -> InteractionType {
+    let mut fe = false;
+    let mut c = false;
 
-    let box_count_dim = Vector3::new(box_count_x as usize, box_count_y as usize, box_count_z as usize);
-    let box_count = box_count_dim.x * box_count_dim.y * box_count_dim.z;
-
-    let box_length_x = size.x / box_count_x;
-    let box_length_y = size.y / box_count_y;
-    let box_length_z = size.z / box_count_z;
-    let box_length = Vector3::new(box_length_x, box_length_y, box_length_z);
-
-    let mut boxes_1: Cube<SimulationBox> = Cube::new(box_count_x as usize, box_count_y as usize, box_count_z as usize);
-
-    for x_i in 0..box_count_x as usize {
-      for y_i in 0..box_count_y as usize {
-        for z_i in 0..box_count_z as usize {
-          let coordinates = Vector3::new(x_i, y_i, z_i);
-          let box_id = get_id_simulation_box(&coordinates, &box_count_dim);
-
-          let leftmost_point = Vector3::new(
-            x_i as f64 * box_length_x,
-            y_i as f64 * box_length_y,
-            z_i as f64 * box_length_z,
-          );
-
-          let rightmost_point = Vector3::new(
-            (x_i + 1) as f64 * box_length_x,
-            (y_i + 1) as f64 * box_length_y,
-            (z_i + 1) as f64 * box_length_z,
-          );
-          
-          let x_edge: SimBoxEdge;
-          let y_edge: SimBoxEdge;
-          
-          if x_i == 0 {
-            x_edge = LeftEdge;
-          } else if x_i == box_count_x as usize - 1 {
-            x_edge = RightEdge;
-          } else {
-            x_edge = Normal;
-          }
-          
-          if y_i == 0 {
-            y_edge = LeftEdge;
-          } else if y_i == box_count_y as usize - 1 {
-            y_edge = RightEdge;
-          } else {
-            y_edge = Normal;
-          }
-          
-          let sim_box_placement = SimBoxPlacement {
-            x: x_edge,
-            y: y_edge,
-          };
-
-          let sim_box = SimulationBox::new(box_id, leftmost_point, rightmost_point, 
-                                           box_length, sim_box_placement);
-
-          boxes_1.set(x_i, y_i, z_i, sim_box).unwrap();
-        }
+    for particle in atoms {
+      if particle.get_type() == AtomType::C {
+        c = true;
+      } else {
+        fe = true;
       }
     }
 
-    let mut thermostat_epsilon: Vec<f64> = Vec::with_capacity(max_iteration_till_reset);
+    if fe && c {
+      InteractionType::FeC
+    } else if fe {
+      InteractionType::FeFe
+    } else {
+      InteractionType::CC
+    }
+  }
+
+  pub fn with_config(mut config: SimulationConfig, atoms: Option<Vec<Particle>>) -> Self {
+    let atoms_to_use = atoms.or_else(|| config.atoms.take()).unwrap_or_default();
+
+    let box_type = Self::detect_box_type(&atoms_to_use);
+
+    let boxes_initial = create_boxes_initial(box_type, config.world_size);
+
+    let mut thermostat_epsilon: Vec<f64> = Vec::with_capacity(config.max_iteration_till_reset);
     thermostat_epsilon.push(0.);
 
     let mut result = BoxContainer {
+      config,
       box_type,
-      boxes: vec![boxes_1],
+      boxes: vec![boxes_initial.boxes],
       box_id_caches: Vec::new(),
       thermostat_epsilon,
       current_index: 0,
 
-      container_size: size,
-      box_length,
+      box_length: boxes_initial.box_length,
 
-      box_count,
-      box_count_dim,
-
-      max_iteration_till_reset,
+      box_count: boxes_initial.box_count,
+      box_count_dim: boxes_initial.box_count_dim,
 
       integration_box_cache: Cube::new(1, 1, 1),
       integration_box_id_cache: HashMap::new(),
       integration_half_velocity_cache: HashMap::new(),
-
-      edge_condition,
     };
 
-    let box_id_cache = result.assign_particles_to_boxes(atoms);
+    let box_id_cache = result.assign_particles_to_boxes(atoms_to_use);
 
-    let mut box_id_caches: Vec<HashMap<usize, usize>> = Vec::with_capacity(max_iteration_till_reset);
+    let mut box_id_caches: Vec<HashMap<usize, usize>> = Vec::with_capacity(result.config.max_iteration_till_reset);
     box_id_caches.push(box_id_cache);
 
     result.box_id_caches = box_id_caches;
@@ -145,19 +181,19 @@ impl BoxContainer {
     let z: usize;
     let position = particle.get_position();
 
-    if position.x == self.container_size.x {
+    if position.x == self.config.world_size.x {
       x = self.box_count_dim.x - 1;
     } else {
       x = (position.x / self.box_length.x) as usize;
     }
 
-    if position.y == self.container_size.y {
+    if position.y == self.config.world_size.y {
       y = self.box_count_dim.y - 1;
     } else {
       y = (position.y / self.box_length.y) as usize;
     }
 
-    if position.z == self.container_size.z {
+    if position.z == self.config.world_size.z {
       z = self.box_count_dim.z - 1;
     } else {
       z = (position.z / self.box_length.z) as usize;
@@ -212,11 +248,11 @@ impl BoxContainer {
   }
 
   pub fn container_size(&self) -> &Vector3<f64> {
-    &self.container_size
+    &self.config.world_size
   }
 
   pub fn edge_condition(&self) -> EdgeCondition {
-    self.edge_condition
+    self.config.edge_condition
   }
 
   pub fn box_count(&self) -> usize {
@@ -267,21 +303,21 @@ impl BoxContainer {
   pub fn reset_container(&mut self) {
     let new_index = 0;
 
-    let mut new_thermostat_epsilon: Vec<f64> = Vec::with_capacity(self.max_iteration_till_reset + 1);
+    let mut new_thermostat_epsilon: Vec<f64> = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     if let Some(last_epsilon) = self.thermostat_epsilon.pop() {
       new_thermostat_epsilon.push(last_epsilon);
     } else {
       panic!("Thermostat epsilon is empty!");
     }
 
-    let mut new_boxes: Vec<Cube<SimulationBox>> = Vec::with_capacity(self.max_iteration_till_reset + 1);
+    let mut new_boxes: Vec<Cube<SimulationBox>> = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     if let Some(last_boxes) = self.boxes.pop() {
       new_boxes.push(last_boxes);
     } else {
       panic!("Boxes are empty!");
     }
 
-    let mut new_box_id_caches: Vec<HashMap<usize, usize>> = Vec::with_capacity(self.max_iteration_till_reset + 1);
+    let mut new_box_id_caches: Vec<HashMap<usize, usize>> = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     if let Some(last_box_id_cache) = self.box_id_caches.pop() {
       new_box_id_caches.push(last_box_id_cache);
     } else {
@@ -320,5 +356,24 @@ impl BoxContainer {
       box_count: self.box_count,
       box_count_dim: self.box_count_dim,
     }
+  }
+
+  pub fn get_particle_counts(&self) -> (usize, usize, usize) {
+    let mut c_count = 0;
+    let mut fe_count = 0;
+
+    if let Some(cube) = self.boxes.last() {
+      for sim_box in cube.iter() {
+        for (_, particle) in sim_box.particles() {
+          match particle.get_type() {
+            AtomType::C => c_count += 1,
+            AtomType::Fe => fe_count += 1,
+          }
+        }
+      }
+    }
+
+    let total = c_count + fe_count;
+    (total, c_count, fe_count)
   }
 }

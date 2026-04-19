@@ -72,7 +72,7 @@ impl BoxContainer {
   pub fn atoms_for_force_computation_of_single_integration_box(&self, box_id: usize)
                                                                -> Box<dyn Iterator<Item = Box<dyn ForceComputationOperations>> + '_> {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
-    let world_size = self.container_size;
+    let world_size = self.container_size().clone();
     let simulation_box = self.integration_box_cache.get(coordinates.x, coordinates.y, coordinates.z).unwrap();
 
     Box::new(simulation_box.particles().values().map(move |particle| {
@@ -151,14 +151,14 @@ impl BoxContainer {
             return None;
           }
 
-          let x_axis_placement = match (self.edge_condition, simulation_box_placement.x, x_offset) {
+          let x_axis_placement = match (self.edge_condition(), simulation_box_placement.x, x_offset) {
             (EdgeCondition::Simple, _ ,_) => AxisPlacement::Normal,
             (EdgeCondition::Periodic, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
             (EdgeCondition::Periodic, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
             (EdgeCondition::Periodic, _, _) => AxisPlacement::Normal,
           };
 
-          let y_axis_placement = match (self.edge_condition, simulation_box_placement.y, y_offset) {
+          let y_axis_placement = match (self.edge_condition(), simulation_box_placement.y, y_offset) {
             (EdgeCondition::Simple, _ ,_) => AxisPlacement::Normal,
             (EdgeCondition::Periodic, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
             (EdgeCondition::Periodic, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
@@ -189,7 +189,7 @@ impl BoxContainer {
   }
 
   pub fn integration_particles_of_neighbour_boxes(&self, box_id: usize) -> Box<dyn Iterator<Item = Box<dyn ForceComputationOperations>> + '_> {
-    let world_size = self.container_size;
+    let world_size = self.container_size().clone();
     match self.edge_condition() {
       EdgeCondition::Simple => {
         Box::new(

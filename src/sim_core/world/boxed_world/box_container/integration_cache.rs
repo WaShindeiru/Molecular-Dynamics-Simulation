@@ -101,17 +101,20 @@ impl BoxContainer {
   }
 
   pub fn integration_box_cache_apply_gravity(&mut self, potential_gravity_max: f64, z_max: f64) {
+    let z_max = self.container_size().z;
+    
     for sim_box in self.integration_box_cache.iter_mut() {
       for (_, particle_i) in sim_box.particles_mut().iter_mut() {
         let mut new_particle = (**particle_i).clone();
 
         let new_force = particle_i.get_force() - Vector3::new(0., 0., 1.) *
-          potential_gravity_max * particle_i.get_mass() / self.container_size.z;
+          potential_gravity_max * particle_i.get_mass() / z_max;
         new_particle.set_force(new_force);
 
         new_particle.set_acceleration(new_force / particle_i.get_mass());
 
-        new_particle.set_potential_gravity_energy(potential_gravity_max * particle_i.get_mass() * particle_i.get_position().z / self.container_size.z);
+        new_particle.set_potential_gravity_energy(potential_gravity_max * 
+          particle_i.get_mass() * particle_i.get_position().z / z_max);
 
         *particle_i = Arc::new(new_particle);
       }

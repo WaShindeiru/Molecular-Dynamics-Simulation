@@ -7,6 +7,7 @@ use nalgebra::Vector3;
 
 use crate::data::InteractionType;
 use crate::data::types::AtomType;
+use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::output::{BoxedWorldDTO, WorldDTO};
 use crate::sim_core::world::integration::{new_integration_algorithm_state, IntegrationAlgorithm, IntegrationAlgorithmState};
@@ -23,13 +24,11 @@ pub mod box_task;
 pub mod integration;
 
 pub struct BoxedWorld {
-  size: Vector3<f64>,
+  config: SimulationConfig,
   box_container: Arc<RwLock<BoxContainer>>,
-  num_of_atoms: usize,
 
   iteration: usize,
-  
-  max_iteration_till_reset: usize,
+
   reset_counter: usize,
   number_of_resets: usize,
 
@@ -43,22 +42,11 @@ pub struct BoxedWorld {
   threads: Vec<JoinHandle<()>>,
   tx_task: Sender<BoxTask>,
   rx_result: Receiver<BoxResult>,
-  
-  edge_condition: EdgeCondition,
 }
 
 impl BoxedWorld {
-  pub fn new_from_atoms(
-    atoms: Vec<Particle>,
-    size: Vector3<f64>,
-    max_iteration_till_reset: usize,
-    frame_iteration_count: usize,
-    integration_algorithm: IntegrationAlgorithm,
-    save_options: SaveOptions,
-    edge_condition: EdgeCondition
-  ) -> Self {
-
-    let num_of_atoms = atoms.len();
+  pub fn with_config(mut config: SimulationConfig) -> Self {
+    let atoms = config.atoms.take().unwrap();
     let (tx_task, rx_result, threads) = create_threads(false);
 
     let box_type = {
@@ -82,33 +70,34 @@ impl BoxedWorld {
       }
     };
 
+    let frame_iteration_count = if !config.save_all_iterations {
+      (config.one_frame_duration / config.time_step) as usize
+    } else {
+      1
+    };
+
     BoxedWorld {
-      size,
+      config: config.clone(),
       box_container: Arc::new(RwLock::new(
-        BoxContainer::new(
-            atoms, size.clone(), box_type, max_iteration_till_reset, edge_condition)
+        BoxContainer::with_config(config.clone(), Some(atoms))
         )
       ),
-      num_of_atoms,
 
       iteration: 0,
 
-      max_iteration_till_reset,
       reset_counter: 1,
       number_of_resets: 0,
 
       frame_iteration_count,
-      integration_algorithm_state: new_integration_algorithm_state(&integration_algorithm),
-      integration_algorithm,
+      integration_algorithm_state: new_integration_algorithm_state(&config.integration_algorithm),
+      integration_algorithm: config.integration_algorithm.clone(),
 
-      save_options: save_options.clone(),
-      world_saver: PartialWorldSaver::new(save_options),
+      save_options: config.save_options.clone(),
+      world_saver: PartialWorldSaver::new(config.save_options.clone()),
 
       threads,
       tx_task,
       rx_result,
-
-      edge_condition
     }
   }
 
@@ -122,9 +111,9 @@ impl BoxedWorld {
   }
 
   pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) {
-    assert!(self.reset_counter <= self.max_iteration_till_reset);
+    assert!(self.reset_counter <= self.config.max_iteration_till_reset);
 
-    if self.reset_counter == self.max_iteration_till_reset {
+    if self.reset_counter == self.config.max_iteration_till_reset {
       self.save().unwrap();
       self.reset_world();
     }
@@ -152,7 +141,7 @@ impl BoxedWorld {
   }
 
   pub fn get_size(&self) -> &Vector3<f64> {
-    &self.size
+    &self.config.world_size
   }
 
   pub fn to_transfer_struct(&self) -> WorldDTO {
@@ -162,20 +151,24 @@ impl BoxedWorld {
     } else {
       lower_index = 0;
     }
-    
+
     WorldDTO::BoxedWorldDTO(
       BoxedWorldDTO {
-        num_of_atoms: self.num_of_atoms,
-        size: self.size,
+        num_of_atoms: self.config.num_of_atoms,
+        size: self.config.world_size,
         box_container: self.box_container.read().unwrap().to_transfer_struct(lower_index),
         integration_algorithm: self.integration_algorithm.clone(),
 
         num_of_world_iterations: self.iteration,
         number_of_resets: self.number_of_resets,
-        max_iteration_till_reset: self.max_iteration_till_reset,
+        max_iteration_till_reset: self.config.max_iteration_till_reset,
 
         frame_iteration_count: self.frame_iteration_count,
       }
     )
+  }
+
+  pub fn get_particle_counts(&self) -> (usize, usize, usize) {
+    self.box_container.read().unwrap().get_particle_counts()
   }
 }

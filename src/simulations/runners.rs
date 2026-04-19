@@ -1,33 +1,22 @@
 use nalgebra::Vector3;
-use carbon_nanotube::data::units::{TEMPERATURE_U, TIME_U};
-use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
-use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
-use carbon_nanotube::sim_core::world::WorldType;
-use carbon_nanotube::utils::units::celcius_to_kelvin;
-use carbon_nanotube::utils::logging;
-use carbon_nanotube::utils::logging::get_save_path;
+use crate::data::units::{TEMPERATURE_U, TIME_U};
+use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
+use crate::sim_core::world::WorldType;
+use crate::utils::units::celcius_to_kelvin;
+use crate::utils::logging;
+use crate::utils::logging::get_save_path;
 use crate::simulations::examples::{dense_particles, one_particle_edge, sphere_particles, symmetric_triangle_test, triangle, two_particles_edge};
 
 const TIME_STEP: f64 = 1e-18 / TIME_U;
 const TEMPERATURE_CELCIUS: f64 = 1600.0;
 
 const TEMPERATURE_KELVIN: f64 = 1600.0;
-const Q_EFFECTIVE_MASS: f64 = 1000.;
+const Q_EFFECTIVE_MASS: f64 = 100.;
 
 pub fn dense_runner() {
   let save_path = get_save_path("../output/".to_string());
   logging::init_logging(save_path.clone());
-
-  // let desired_temperatures = vec![
-  //   TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration(2000)},
-  //   TemperatureInfo{desired_temperature: 900., distance: TimeIterationDistance::Iteration(2000)},
-  //   TemperatureInfo{desired_temperature: 1200., distance: TimeIterationDistance::Iteration(2000)},
-  //   TemperatureInfo{desired_temperature: 1350., distance: TimeIterationDistance::Iteration(2000)},
-  //   TemperatureInfo{desired_temperature: 1500., distance: TimeIterationDistance::Iteration(2000)},
-  //   ].into_iter().map(
-  //     |i| TemperatureInfo{
-  //       desired_temperature: i.desired_temperature / TEMPERATURE_U,
-  //       distance: i.distance}).collect();
 
   let desired_temperatures = vec![
     TemperatureInfo{desired_temperature: 2000., distance: TimeIterationDistance::Iteration(20000)},
@@ -51,8 +40,7 @@ pub fn dense_runner() {
   let world_size = Vector3::new(54., 54., 54.);
   let offset = Vector3::new(1.7, 1.7, 1.7);
 
-  dense_particles(TIME_STEP, save, save_path, num_iterations, 7.8, world_size, offset,
-                  integration_algorithm, world_type, edge_condition);
+  dense_particles(TIME_STEP, save, save_path, num_iterations, 8., world_size, offset, integration_algorithm, world_type, edge_condition);
 }
 
 pub fn one_particle_edge_runner() {

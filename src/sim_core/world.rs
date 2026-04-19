@@ -2,11 +2,10 @@ use std::io;
 use nalgebra::Vector3;
 use crate::output::WorldDTO;
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::simple_world::SimpleWorld;
 use crate::sim_core::world::integration::{IntegrationAlgorithm};
-use crate::sim_core::world::saver::SaveOptions;
 
 pub mod integration;
 pub mod simple_world;
@@ -35,38 +34,10 @@ pub enum World {
 }
 
 impl World {
-  pub fn new_from_atoms(
-    atoms: Vec<Particle>,
-    size: Vector3<f64>,
-    max_iteration_till_reset: usize,
-    frame_iteration_count: usize,
-    integration_algorithm: IntegrationAlgorithm,
-    save_options: SaveOptions,
-    world_type: WorldType,
-    edge_condition: EdgeCondition
-  ) -> Self {
-    match world_type {
-      WorldType::BoxedWorld => {
-        World::BoxedWorld(BoxedWorld::new_from_atoms(
-          atoms,
-          size,
-          max_iteration_till_reset,
-          frame_iteration_count,
-          integration_algorithm,
-          save_options,
-          edge_condition
-        ))
-      }
-      WorldType::SimpleWorld => {
-        World::SimpleWorld(SimpleWorld::new_from_atoms(
-          atoms,
-          size,
-          max_iteration_till_reset,
-          frame_iteration_count,
-          integration_algorithm,
-          save_options
-        ))
-      }
+  pub fn from_config(config: SimulationConfig) -> Self {
+    match config.world_type {
+      WorldType::SimpleWorld => World::SimpleWorld(SimpleWorld::with_config(config)),
+      WorldType::BoxedWorld => World::BoxedWorld(BoxedWorld::with_config(config)),
     }
   }
   
@@ -150,6 +121,20 @@ impl World {
     match self {
       World::SimpleWorld(world) => world.to_transfer_struct(),
       World::BoxedWorld(world) => world.to_transfer_struct(),
+    }
+  }
+
+  pub fn get_particle_counts(&self) -> (usize, usize, usize) {
+    match self {
+      World::SimpleWorld(world) => world.get_particle_counts(),
+      World::BoxedWorld(world) => world.get_particle_counts(),
+    }
+  }
+
+  pub fn get_world_info(&self) -> String {
+    match self {
+      World::SimpleWorld(_) => "Simple World".to_string(),
+      World::BoxedWorld(_) => "Boxed World".to_string(),
     }
   }
 }

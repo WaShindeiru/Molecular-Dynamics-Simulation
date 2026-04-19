@@ -3,7 +3,7 @@ use carbon_nanotube::sim_core::world::boxed_world::box_container::BoxContainer;
 use carbon_nanotube::particle::{Particle, Atom, SafeAtomFactory};
 use carbon_nanotube::data::types::{AtomType, InteractionType};
 use nalgebra::Vector3;
-use carbon_nanotube::data::parameters::POTENTIAL_GRAVITY_MAX;
+use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition::{Periodic, Simple};
 use carbon_nanotube::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
@@ -18,7 +18,9 @@ fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
   // Create empty atom list
   let atoms: Vec<Particle> = vec![];
 
-  let container = BoxContainer::new(atoms, size, box_type, 100, edge_condition);
+  let builder = SimulationConfigBuilder::new();
+  let config = builder.atoms(atoms).world_size(size).max_iteration_till_reset(100).edge_condition(edge_condition).build().unwrap();
+  let container = BoxContainer::with_config(config, None);
 
   // Verify container size
   assert_eq!(container.container_size(), &size);
@@ -47,8 +49,9 @@ fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
   // FeFe box size is 3.35, so we should get different dimensions
   let size = Vector3::new(100.0, 60.0, 80.0);
   let box_type = InteractionType::FeFe;
+  let potential_gravity_max = 1.0;
 
-  let atom_factory = SafeAtomFactory::new(POTENTIAL_GRAVITY_MAX, size.z);
+  let atom_factory = SafeAtomFactory::new(potential_gravity_max, size.z);
   let atom0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(1.0, 1.0, 1.0), Vector3::new(0., 0., 0.));
   let atom1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(5.0, 3.0, 4.0), Vector3::new(0., 0., 0.));
   let atom2 = atom_factory.get_atom(AtomType::Fe, Vector3::new(9.0, 5.5, 7.5), Vector3::new(0., 0., 0.));
@@ -60,7 +63,9 @@ fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
   // Create a few test atoms
   let atoms: Vec<Particle> = vec![atom0.clone(), atom1.clone(), atom2.clone(), atom3.clone(), atom4.clone(), atom5.clone()];
 
-  let container = BoxContainer::new(atoms, size, box_type, 100, edge_condition);
+  let config = SimulationConfigBuilder::new().atoms(atoms).world_size(size).max_iteration_till_reset(100).edge_condition(edge_condition).build().unwrap();
+
+  let container = BoxContainer::with_config(config, None);
 
   // Verify container size
   assert_eq!(container.container_size(), &size);
@@ -68,7 +73,7 @@ fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
 
   let expected_box_count_dim = Vector3::new(29, 17, 23);
   assert_eq!(container.box_count_dim(), &expected_box_count_dim);
-  let expected_box_count = 29 + 17 + 23;
+  let expected_box_count = 29 * 17 * 23;
   assert_eq!(container.box_count(), expected_box_count);
 
   let expected_box_length = Vector3::new(3.44827586, 3.52941176, 3.47826087);

@@ -1,1 +1,0 @@
-pub const POTENTIAL_GRAVITY_MAX: f64 = 1.;

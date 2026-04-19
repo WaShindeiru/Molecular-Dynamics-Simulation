@@ -7,7 +7,6 @@ use std::sync::mpsc::RecvTimeoutError;
 use std::time::Duration;
 use log::info;
 use nalgebra::Vector3;
-use crate::data::parameters::POTENTIAL_GRAVITY_MAX;
 use crate::sim_core::world::integration::IntegrationStateUpdateResponse;
 use crate::data::units::TEMPERATURE_U;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::FP;
@@ -50,8 +49,8 @@ impl BoxedWorld {
           time_step,
           previous_thermostat_epsilon,
           current_iteration: self.iteration,
-          container_size: self.size,
-          edge_condition: self.edge_condition,
+          container_size: self.config.world_size,
+          edge_condition: self.config.edge_condition,
         };
 
         self.tx_task.send(vel_task).unwrap();
@@ -62,7 +61,7 @@ impl BoxedWorld {
     let mut particles_all: HashMap<usize, Particle> = HashMap::new();
     let mut compliance_cache: HashMap<usize, ParticleCompliance> = HashMap::new();
 
-    while half_velocity_cache_all.len() < self.num_of_atoms {
+    while half_velocity_cache_all.len() < self.config.num_of_atoms {
       let result = self.rx_result.recv().unwrap();
 
       match result {
@@ -79,9 +78,9 @@ impl BoxedWorld {
       }
     }
 
-    assert_eq!(self.num_of_atoms, half_velocity_cache_all.len());
-    assert_eq!(self.num_of_atoms, particles_all.len());
-    assert_eq!(self.num_of_atoms, compliance_cache.len());
+    assert_eq!(self.config.num_of_atoms, half_velocity_cache_all.len());
+    assert_eq!(self.config.num_of_atoms, particles_all.len());
+    assert_eq!(self.config.num_of_atoms, compliance_cache.len());
 
     {
       let mut lock = self.box_container.write().unwrap();
@@ -143,7 +142,7 @@ impl BoxedWorld {
 
     assert_eq!(box_ids, expected_boxes);
 
-    self.box_container.write().unwrap().integration_box_cache_apply_gravity(POTENTIAL_GRAVITY_MAX, self.size.z);
+    self.box_container.write().unwrap().integration_box_cache_apply_gravity(self.config.potential_gravity_max, self.config.world_size.z);
 
     // TODO: move setting iteration for a particle into earlier step
     self.box_container.write().unwrap().integration_box_cache_set_velocity(
@@ -151,7 +150,7 @@ impl BoxedWorld {
       new_thermostat_epsilon,
     self.iteration + 1, 
       &compliance_cache,
-      self.edge_condition
+      self.config.edge_condition
     );
 
     let simulation_temperature = self.box_container.read().unwrap().integration_box_cache_get_mean_temperature();
