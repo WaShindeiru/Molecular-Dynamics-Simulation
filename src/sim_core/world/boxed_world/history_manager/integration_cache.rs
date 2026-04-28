@@ -8,12 +8,12 @@ use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
 use crate::sim_core::world::boundary_constraint::simple::apply_velocity_constraint_simple;
-use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, SimulationBox};
+use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
+use crate::sim_core::world::boxed_world::history_manager::sim_box::{get_coordinates_from_simulation_box_id, SimulationBox};
 use crate::sim_core::world::boxed_world::cube::Cube;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 
-impl BoxContainer {
+impl HistoryManager {
   pub fn set_integration_half_velocity_cache(&mut self, cache: HashMap<usize, Vector3<f64>>) {
     self.integration_half_velocity_cache = cache;
   }

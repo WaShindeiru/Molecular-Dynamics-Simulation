@@ -1,12 +1,12 @@
 use approx::assert_abs_diff_eq;
-use carbon_nanotube::sim_core::world::boxed_world::box_container::BoxContainer;
+use carbon_nanotube::sim_core::world::boxed_world::history_manager::HistoryManager;
 use carbon_nanotube::particle::{Particle, Atom, SafeAtomFactory};
 use carbon_nanotube::data::types::{AtomType, InteractionType};
 use nalgebra::Vector3;
 use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition::{Periodic, Simple};
-use carbon_nanotube::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
+use carbon_nanotube::sim_core::world::boxed_world::history_manager::sim_box::get_id_simulation_box;
 
 
 fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
@@ -20,7 +20,7 @@ fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
 
   let builder = SimulationConfigBuilder::new();
   let config = builder.atoms(atoms).world_size(size).max_iteration_till_reset(100).edge_condition(edge_condition).build().unwrap();
-  let container = BoxContainer::with_config(config, None);
+  let container = HistoryManager::with_config(config, None);
 
   // Verify container size
   assert_eq!(container.container_size(), &size);
@@ -65,7 +65,7 @@ fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
 
   let config = SimulationConfigBuilder::new().atoms(atoms).world_size(size).max_iteration_till_reset(100).edge_condition(edge_condition).build().unwrap();
 
-  let container = BoxContainer::with_config(config, None);
+  let container = HistoryManager::with_config(config, None);
 
   // Verify container size
   assert_eq!(container.container_size(), &size);

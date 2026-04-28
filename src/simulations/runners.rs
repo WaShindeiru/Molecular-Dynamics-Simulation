@@ -37,7 +37,7 @@ pub fn dense_runner() {
   let world_type = WorldType::BoxedWorld;
   let edge_condition = EdgeCondition::Periodic;
 
-  let world_size = Vector3::new(54., 54., 54.);
+  let world_size = Vector3::new(100., 100., 100.);
   let offset = Vector3::new(1.7, 1.7, 1.7);
 
   dense_particles(TIME_STEP, save, save_path, num_iterations, 7., world_size, offset, integration_algorithm, world_type, edge_condition);

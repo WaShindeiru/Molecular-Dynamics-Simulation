@@ -1,6 +1,7 @@
 use nalgebra::Vector3;
 use crate::data::InteractionType;
 use crate::data::units::R_U;
+use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -40,19 +41,19 @@ pub struct SimpleWorldDTO {
 }
 
 pub struct BoxContainerDTO {
-  pub box_type: InteractionType,
-  pub atoms: Vec<Vec<AtomDTO>>,
-  pub thermostat_epsilon: Vec<f64>,
+  pub atoms: Vec<AtomDTO>,
+  pub config: BoxContainerConfig,
+}
 
-  pub box_length: Vector3<f64>,
-  pub box_count: usize,
-  pub box_count_dim: Vector3<usize>,
+pub struct HistoryDTO {
+  pub box_container: Vec<BoxContainerDTO>,
+  pub thermostat_epsilon: Vec<f64>,
 }
 
 pub struct BoxedWorldDTO {
   pub num_of_atoms: usize,
   pub size: Vector3<f64>,
-  pub box_container: BoxContainerDTO,
+  pub box_container: HistoryDTO,
   pub integration_algorithm: IntegrationAlgorithm,
 
   pub num_of_world_iterations: usize,

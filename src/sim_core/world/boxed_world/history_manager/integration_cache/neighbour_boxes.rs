@@ -3,8 +3,8 @@ use nalgebra::Vector3;
 use crate::data::types::AtomType;
 use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
-use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, SimBoxEdge};
+use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
+use crate::sim_core::world::boxed_world::history_manager::sim_box::{get_coordinates_from_simulation_box_id, SimBoxEdge};
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 
 #[derive(Copy, Clone)]
@@ -68,7 +68,7 @@ impl ForceComputationOperations for ParticlePositionProxy {
   }
 }
 
-impl BoxContainer {
+impl HistoryManager {
   pub fn atoms_for_force_computation_of_single_integration_box(&self, box_id: usize)
                                                                -> Box<dyn Iterator<Item = Box<dyn ForceComputationOperations>> + '_> {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);

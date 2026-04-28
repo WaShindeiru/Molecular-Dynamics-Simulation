@@ -8,7 +8,7 @@ use nalgebra::Vector3;
 use crate::data::InteractionType;
 use crate::data::types::AtomType;
 use crate::data::SimulationConfig;
-use crate::sim_core::world::boxed_world::box_container::BoxContainer;
+use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::output::{BoxedWorldDTO, WorldDTO};
 use crate::sim_core::world::integration::{new_integration_algorithm_state, IntegrationAlgorithm, IntegrationAlgorithmState};
 use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
@@ -17,31 +17,40 @@ use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 
 use box_task::threads::create_threads;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManager;
+use crate::sim_core::world::boxed_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
+use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
+use crate::sim_core::world::boxed_world::integration_creator::IntegrationCreator;
 
-pub mod box_container;
+mod integration_creator;
+mod integration_cache;
+pub mod history_manager;
 pub mod cube;
 pub mod box_task;
 pub mod integration;
+pub mod box_container;
 
 pub struct BoxedWorld {
   config: SimulationConfig,
-  box_container: Arc<RwLock<BoxContainer>>,
+  history_manager: HistoryManager,
+  integration_cache_builder: IntegrationCacheBuilder,
+  integration_cache: Option<Arc<IntegrationCache>>,
+  integration_creator: IntegrationCreator,
+  task_manager: TaskManager,
 
   iteration: usize,
 
+  // move this into saver maybe, or idk
   reset_counter: usize,
   number_of_resets: usize,
 
   frame_iteration_count: usize,
-  integration_algorithm: IntegrationAlgorithm,
+  // up to this
+
   integration_algorithm_state: IntegrationAlgorithmState,
 
   save_options: SaveOptions,
   world_saver: PartialWorldSaver,
-
-  threads: Vec<JoinHandle<()>>,
-  tx_task: Sender<BoxTask>,
-  rx_result: Receiver<BoxResult>,
 }
 
 impl BoxedWorld {
@@ -79,7 +88,7 @@ impl BoxedWorld {
     BoxedWorld {
       config: config.clone(),
       box_container: Arc::new(RwLock::new(
-        BoxContainer::with_config(config.clone(), Some(atoms))
+        HistoryManager::with_config(config.clone(), Some(atoms))
         )
       ),
 

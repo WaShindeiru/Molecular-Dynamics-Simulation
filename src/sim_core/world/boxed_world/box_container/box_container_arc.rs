@@ -1,0 +1,111 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+use nalgebra::Vector3;
+use crate::output::BoxContainerDTO;
+use crate::particle::Particle;
+use crate::sim_core::world::boxed_world::box_container::{box_container_config, BoxContainer};
+use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, get_id_simulation_box, SimBoxPlacement, SimulationBox};
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::{LeftEdge, Normal, RightEdge};
+use crate::sim_core::world::boxed_world::cube::Cube;
+
+impl BoxContainer<Arc<SimulationBox>> {
+	pub fn new(atoms: Vec<Particle>, world_size: Vector3<f64>) -> Self {
+		let config = box_container_config::new_config(&atoms, world_size);
+		let mut container = Self::from_config(config);
+		container.box_id_cache = container.assign_particles_to_boxes(atoms);
+		container
+	}
+
+	fn from_config(box_container_config: BoxContainerConfig) -> Self {
+		let mut boxes: Cube<Arc<SimulationBox>> = Cube::new(
+			box_container_config.box_count_dim.x,
+			box_container_config.box_count_dim.y,
+			box_container_config.box_count_dim.z,
+		);
+
+		for x_i in 0..box_container_config.box_count_dim.x {
+			for y_i in 0..box_container_config.box_count_dim.y {
+				for z_i in 0..box_container_config.box_count_dim.z {
+					let coordinates = Vector3::new(x_i, y_i, z_i);
+					let box_id = get_id_simulation_box(&coordinates, &box_container_config.box_count_dim);
+
+					let leftmost_point = Vector3::new(
+						x_i as f64 * box_container_config.box_length.x,
+						y_i as f64 * box_container_config.box_length.y,
+						z_i as f64 * box_container_config.box_length.z,
+					);
+
+					let rightmost_point = Vector3::new(
+						(x_i + 1) as f64 * box_container_config.box_length.x,
+						(y_i + 1) as f64 * box_container_config.box_length.y,
+						(z_i + 1) as f64 * box_container_config.box_length.z,
+					);
+
+					let x_edge = if x_i == 0 {
+						LeftEdge
+					} else if x_i == box_container_config.box_count_dim.x - 1 {
+						RightEdge
+					} else {
+						Normal
+					};
+
+					let y_edge = if y_i == 0 {
+						LeftEdge
+					} else if y_i == box_container_config.box_count_dim.y - 1 {
+						RightEdge
+					} else {
+						Normal
+					};
+
+					let sim_box = SimulationBox::new(
+						box_id,
+						leftmost_point,
+						rightmost_point,
+						box_container_config.box_length,
+						SimBoxPlacement { x: x_edge, y: y_edge },
+					);
+
+					boxes.set(x_i, y_i, z_i, Arc::new(sim_box)).unwrap();
+				}
+			}
+		}
+
+		BoxContainer {
+			config: box_container_config,
+			simulation_boxes: boxes,
+			box_id_cache: HashMap::new(),
+		}
+	}
+
+	pub fn assign_particles_to_boxes(&mut self, atoms: Vec<Particle>) -> HashMap<usize, usize> {
+		let mut box_id_cache: HashMap<usize, usize> = HashMap::with_capacity(atoms.len());
+
+		for particle_i in atoms {
+			let box_id = self.assign_box_id_for_particle(&particle_i);
+			box_id_cache.insert(particle_i.get_id() as usize, box_id);
+			let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.config.box_count_dim);
+			Arc::make_mut(self.simulation_boxes.get_mut(coordinates.x, coordinates.y, coordinates.z).unwrap())
+				.add_particle(Arc::new(particle_i));
+		}
+
+		box_id_cache
+	}
+
+	pub fn simulation_boxes(&self) -> &Cube<Arc<SimulationBox>> {
+		&self.simulation_boxes
+	}
+
+	pub fn to_transfer_struct(&self) -> BoxContainerDTO {
+		let atoms = self.simulation_boxes
+			.iter()
+			.flat_map(|sim_box| sim_box.particles().values())
+			.map(|particle| particle.to_transfer_struct())
+			.collect();
+
+		BoxContainerDTO {
+			atoms,
+			config: self.config,
+		}
+	}
+}

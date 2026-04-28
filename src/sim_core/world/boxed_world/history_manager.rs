@@ -1,0 +1,109 @@
+use std::sync::Arc;
+use crate::particle::Particle;
+use crate::data::SimulationConfig;
+use crate::data::types::AtomType;
+use crate::output::HistoryDTO;
+use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::boxed_world::box_container::BoxContainer;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
+
+mod integration_cache;
+mod new_functions_idk_whats_that;
+mod old_functions_to_delete_probably;
+mod getter;
+
+pub struct HistoryManager {
+  config: SimulationConfig,
+  thermostat_epsilon: Vec<f64>,
+  box_container_config: BoxContainerConfig,
+  history: Vec<Arc<BoxContainer<Arc<SimulationBox>>>>,
+  current_index: usize,
+}
+impl HistoryManager {
+  pub fn with_config(mut config: SimulationConfig, atoms: Option<Vec<Particle>>) -> Self {
+    let atoms_to_use = atoms.or_else(|| config.atoms.take()).unwrap_or_default();
+
+    let mut thermostat_epsilon: Vec<f64> = Vec::with_capacity(config.max_iteration_till_reset);
+    thermostat_epsilon.push(0.);
+
+    let mut history: Vec<Arc<BoxContainer>> = Vec::with_capacity(config.max_iteration_till_reset);
+    history.push(Arc::new(BoxContainer::new(atoms_to_use, config.world_size)));
+    
+    let box_container_config = history.get(0).unwrap().config().clone();
+
+    HistoryManager {
+      config,
+      thermostat_epsilon,
+      box_container_config,
+      history,
+      current_index: 0,
+    }
+  }
+
+  pub fn current_box_container(&self) -> Arc<BoxContainer<Arc<SimulationBox>>> {
+    self.history.last().unwrap().clone()
+  }
+
+  pub fn current_thermostat_epsilon(&self) -> f64 { *self.thermostat_epsilon.last().unwrap() }
+
+  pub fn thermostat_epsilon_of_iteration(&self, iteration: usize) -> f64 {
+    *self.thermostat_epsilon.get(iteration).unwrap()
+  }
+  
+  pub fn add_thermostat_epsilon(&mut self, thermostat_epsilon: f64) {
+    self.thermostat_epsilon.push(thermostat_epsilon);
+  }
+
+  pub fn reset_container(&mut self) {
+    let new_index = 0;
+
+    let mut new_thermostat_epsilon: Vec<f64> = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
+    if let Some(last_epsilon) = self.thermostat_epsilon.pop() {
+      new_thermostat_epsilon.push(last_epsilon);
+    } else {
+      panic!("Thermostat epsilon is empty!");
+    }
+
+    let mut new_box_container: Vec<Arc<BoxContainer>> = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
+    if let Some(last_history) = self.history.pop() {
+      new_box_container.push(last_history);
+    } else {
+      panic!("Boxes are empty!");
+    }
+
+    self.current_index = new_index;
+    self.history = new_box_container;
+    self.thermostat_epsilon = new_thermostat_epsilon;
+  }
+
+  pub fn to_transfer_struct(&self, lower_index: usize) -> HistoryDTO {
+    let box_container = self.history[lower_index..]
+      .iter()
+      .map(|container| container.to_transfer_struct())
+      .collect();
+
+    HistoryDTO {
+      box_container,
+      thermostat_epsilon: self.thermostat_epsilon.clone(),
+    }
+  }
+
+  pub fn get_particle_counts(&self) -> (usize, usize, usize) {
+    let mut c_count = 0;
+    let mut fe_count = 0;
+
+    if let Some(container) = self.history.last() {
+      for sim_box in container.simulation_boxes().iter() {
+        for (_, particle) in sim_box.particles() {
+          match particle.get_type() {
+            AtomType::C => c_count += 1,
+            AtomType::Fe => fe_count += 1,
+          }
+        }
+      }
+    }
+
+    let total = c_count + fe_count;
+    (total, c_count, fe_count)
+  }
+}

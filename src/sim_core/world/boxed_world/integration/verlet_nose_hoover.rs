@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::mpsc::RecvTimeoutError;
 use std::time::Duration;
-use log::info;
+use log::{debug, info};
 use nalgebra::Vector3;
 use crate::sim_core::world::integration::IntegrationStateUpdateResponse;
 use crate::data::units::TEMPERATURE_U;
@@ -20,6 +20,10 @@ use crate::sim_core::world::integration::{IntegrationAlgorithm, IntegrationAlgor
 
 impl BoxedWorld {
   pub fn update_verlet_nose_hoover(&mut self, time_step: f64, next_iteration: usize) {
+
+    self.iteration;
+    debug!("Started iteration: {} of verlet_nose_hoover", self.iteration);
+
     let previous_thermostat_epsilon = self.box_container.read().unwrap().current_thermostat_epsilon();
     let current_desired_temperature: f64;
     let q_effective_mass: f64;
@@ -54,6 +58,8 @@ impl BoxedWorld {
         };
 
         self.tx_task.send(vel_task).unwrap();
+
+        debug!("Create velocity task for box {}", sim_box.id());
       }
     }
 
@@ -66,6 +72,7 @@ impl BoxedWorld {
 
       match result {
         BoxResult::VelocityResult(task_result) => {
+          debug!("Received velocity task for box {}", task_result.box_id);
           for (id, result) in task_result.particles {
             half_velocity_cache_all.insert(id, result.half_velocity);
             particles_all.insert(id, result.particle);
@@ -83,6 +90,8 @@ impl BoxedWorld {
     assert_eq!(self.config.num_of_atoms, compliance_cache.len());
 
     {
+      debug!("Set box and half_velocity cache.");
+
       let mut lock = self.box_container.write().unwrap();
       lock.set_integration_half_velocity_cache(half_velocity_cache_all);
       lock.set_integration_box_cache(particles_all);
@@ -91,6 +100,8 @@ impl BoxedWorld {
     // thermostat epsilon
     let new_thermostat_epsilon;
     {
+      debug!("Compute new thermostat epsilon.");
+
       let lock = self.box_container.read().unwrap();
       new_thermostat_epsilon =
         compute_new_thermostat_epsilon(previous_thermostat_epsilon, lock.integration_half_velocity_cache(),
@@ -111,6 +122,8 @@ impl BoxedWorld {
 
         self.tx_task.send(force_task).unwrap();
 
+        debug!("Create Force task for box {}", sim_box.id());
+
         expected_boxes.insert(sim_box.id());
       }
     }
@@ -130,6 +143,8 @@ impl BoxedWorld {
 
       match result {
         BoxResult::ForceResult(result) => {
+          debug!("Received Force task for box {}.", result.box_id);
+
           let box_id = result.box_id;
           assert!(!box_ids.contains(&box_id));
           box_ids.insert(box_id);
@@ -142,8 +157,10 @@ impl BoxedWorld {
 
     assert_eq!(box_ids, expected_boxes);
 
+    debug!("Apply gravity.");
     self.box_container.write().unwrap().integration_box_cache_apply_gravity(self.config.potential_gravity_max, self.config.world_size.z);
 
+    debug!("Set velocity for integration cache.");
     // TODO: move setting iteration for a particle into earlier step
     self.box_container.write().unwrap().integration_box_cache_set_velocity(
       time_step, 
@@ -153,6 +170,7 @@ impl BoxedWorld {
       self.config.edge_condition
     );
 
+    debug!("Update algorithm state.");
     let simulation_temperature = self.box_container.read().unwrap().integration_box_cache_get_mean_temperature();
 
     let result = self.integration_algorithm_state.update_state(time_step, &self.integration_algorithm, simulation_temperature);
@@ -168,8 +186,10 @@ impl BoxedWorld {
     }
 
     // idk
+    debug!("Save integration cache.");
     self.box_container.write().unwrap().apply_integration_cache();
 
+    debug!("Complete verlet nose hoover for iteration: {}", self.iteration);
     self.iteration += 1;
     assert_eq!(self.iteration, next_iteration);
   }
