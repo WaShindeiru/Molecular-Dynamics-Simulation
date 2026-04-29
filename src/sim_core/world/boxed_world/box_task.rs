@@ -11,6 +11,7 @@ use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::comput
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
 pub mod task_manager;
+mod force_task_box_container;
 mod handle_task;
 
 pub enum BoxTask {
@@ -39,6 +40,7 @@ pub enum BoxTask {
   },
   ForceBatchTask {
     task_id: usize,
+    boundary_condition: EdgeCondition,
     box_ids: Vec<usize>,
     integration_cache: Arc<IntegrationCache>
   }

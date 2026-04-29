@@ -14,6 +14,10 @@ impl<B> BoxContainer<B> {
 	pub fn config(&self) -> &BoxContainerConfig {
 		&self.config
 	}
+
+	pub fn particle_box_id(&self, particle_id: usize) -> usize {
+		*self.box_id_cache.get(&particle_id).expect("Particle not found in box_id_cache")
+	}
 }
 
 impl<B: Deref<Target = SimulationBox>> BoxContainer<B> {

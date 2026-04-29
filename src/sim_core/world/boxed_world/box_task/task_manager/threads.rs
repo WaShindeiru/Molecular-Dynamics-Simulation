@@ -4,8 +4,7 @@ use std::thread;
 use std::thread::JoinHandle;
 use log::info;
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
-use crate::sim_core::world::boxed_world::box_task::handle_task::handle_velocity_batch_task;
-use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManager;
+use crate::sim_core::world::boxed_world::box_task::handle_task::{handle_force_batch_task, handle_velocity_batch_task};
 
 pub fn worker_task_handle(job_rx_clone: Arc<Mutex<Receiver<BoxTask>>>, result_tx_clone: Sender<BoxResult>) {
   loop {
@@ -28,8 +27,11 @@ pub fn worker_task_handle(job_rx_clone: Arc<Mutex<Receiver<BoxTask>>>, result_tx
             result_tx_clone.send(BoxResult::VelocityResult(velocity_result)).unwrap();
           },
           
-          BoxTask::ForceBatchTask { .. } => {
-            unimplemented!("ForceBatchTask not yet implemented");
+          BoxTask::ForceBatchTask { task_id, boundary_condition, box_ids, integration_cache } => {
+            let force_result = handle_force_batch_task(
+              task_id, boundary_condition, &box_ids, &integration_cache,
+            );
+            result_tx_clone.send(BoxResult::ForceResult(force_result)).unwrap();
           }
         }
       }

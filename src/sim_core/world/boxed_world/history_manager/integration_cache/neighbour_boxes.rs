@@ -70,7 +70,7 @@ impl ForceComputationOperations for ParticlePositionProxy {
 
 impl HistoryManager {
   pub fn atoms_for_force_computation_of_single_integration_box(&self, box_id: usize)
-                                                               -> Box<dyn Iterator<Item = Box<dyn ForceComputationOperations>> + '_> {
+                                                               -> Box<dyn Iterator<Item = Box<dyn ForceComputationOperations>>> {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.box_count_dim);
     let world_size = self.container_size().clone();
     let simulation_box = self.integration_box_cache.get(coordinates.x, coordinates.y, coordinates.z).unwrap();

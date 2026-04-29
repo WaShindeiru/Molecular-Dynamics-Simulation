@@ -9,6 +9,7 @@ pub mod box_container_config;
 pub mod box_container_mutual;
 pub mod box_container_arc;
 pub mod box_container_value;
+pub mod box_container_option;
 
 pub struct BoxContainer<B = Arc<SimulationBox>> {
 	config: BoxContainerConfig,

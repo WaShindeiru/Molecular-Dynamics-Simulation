@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use nalgebra::Vector3;
 use crate::output::BoxContainerDTO;
@@ -94,6 +94,34 @@ impl BoxContainer<Arc<SimulationBox>> {
 
 	pub fn simulation_boxes(&self) -> &Cube<Arc<SimulationBox>> {
 		&self.simulation_boxes
+	}
+
+	pub fn get_box(&self, box_id: usize) -> Arc<SimulationBox> {
+		let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.config.box_count_dim);
+		self.simulation_boxes.get(coordinates.x, coordinates.y, coordinates.z).unwrap().clone()
+	}
+
+	pub fn view_select_boxes(&self, box_ids: &[usize]) -> BoxContainer<Option<Arc<SimulationBox>>> {
+		let id_set: HashSet<usize> = box_ids.iter().copied().collect();
+
+		let (nx, ny, nz) = self.simulation_boxes.dimensions();
+		let mut result: Cube<Option<Arc<SimulationBox>>> = Cube::new(nx, ny, nz);
+
+		for ((x, y, z), sim_box) in self.simulation_boxes.iter_with_coords() {
+			let box_id = get_id_simulation_box(&Vector3::new(x, y, z), &self.config.box_count_dim);
+			let value = if id_set.contains(&box_id) {
+				Some(Arc::clone(sim_box))
+			} else {
+				None
+			};
+			result.set(x, y, z, value).unwrap();
+		}
+
+		BoxContainer {
+			config: self.config,
+			simulation_boxes: result,
+			box_id_cache: HashMap::new(),
+		}
 	}
 
 	pub fn to_transfer_struct(&self) -> BoxContainerDTO {
