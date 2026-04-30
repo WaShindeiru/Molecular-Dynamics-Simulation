@@ -124,6 +124,24 @@ impl BoxContainer<Arc<SimulationBox>> {
 		}
 	}
 
+	// TODO: Consider if it wouldn't be better to do Arc::make_mut instead?
+	pub fn from_particles(
+		config: BoxContainerConfig,
+		particles: &HashMap<usize, Particle>,
+		box_mapping: &HashMap<usize, usize>,
+	) -> Self {
+		let mut local = BoxContainer::<SimulationBox>::new_local(config);
+
+		for (particle_id, particle) in particles {
+			let box_id = *box_mapping.get(particle_id).expect("Particle not found in box mapping");
+			local.get_box_mut(box_id).add_particle(Arc::new(particle.clone()));
+		}
+
+		let mut shared = local.into_shared();
+		shared.box_id_cache = box_mapping.clone();
+		shared
+	}
+
 	pub fn to_transfer_struct(&self) -> BoxContainerDTO {
 		let atoms = self.simulation_boxes
 			.iter()

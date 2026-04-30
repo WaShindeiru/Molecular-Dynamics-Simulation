@@ -18,6 +18,10 @@ impl<B> BoxContainer<B> {
 	pub fn particle_box_id(&self, particle_id: usize) -> usize {
 		*self.box_id_cache.get(&particle_id).expect("Particle not found in box_id_cache")
 	}
+
+	pub fn box_id_cache(&self) -> &HashMap<usize, usize> {
+		&self.box_id_cache
+	}
 }
 
 impl<B: Deref<Target = SimulationBox>> BoxContainer<B> {
@@ -43,6 +47,14 @@ impl<B: Deref<Target = SimulationBox>> BoxContainer<B> {
 			.iter()
 			.flat_map(|sim_box| sim_box.particles().iter())
 			.map(|(&id, particle)| (id, particle.reset_clone()))
+			.collect()
+	}
+
+	pub fn all_particles_cloned(&self) -> HashMap<usize, Particle> {
+		self.simulation_boxes
+			.iter()
+			.flat_map(|sim_box| sim_box.particles().iter())
+			.map(|(&id, particle)| (id, (**particle).clone()))
 			.collect()
 	}
 

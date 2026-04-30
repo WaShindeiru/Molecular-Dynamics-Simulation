@@ -20,9 +20,9 @@ use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManager;
 use crate::sim_core::world::boxed_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
-use crate::sim_core::world::boxed_world::integration_creator::IntegrationCreator;
+use crate::sim_core::world::boxed_world::computation_collector::IntegrationCreator;
 
-mod integration_creator;
+mod computation_collector;
 mod integration_cache;
 pub mod history_manager;
 pub mod cube;

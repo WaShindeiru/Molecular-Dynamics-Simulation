@@ -54,6 +54,12 @@ impl HistoryManager {
     self.thermostat_epsilon.push(thermostat_epsilon);
   }
 
+  // TODO: should I update current_index here?
+  pub fn push_box_container(&mut self, container: BoxContainer<Arc<SimulationBox>>) {
+    self.history.push(Arc::new(container));
+    self.current_index += 1;
+  }
+
   pub fn reset_container(&mut self) {
     let new_index = 0;
 
