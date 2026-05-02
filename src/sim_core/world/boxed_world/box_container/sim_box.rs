@@ -83,7 +83,7 @@ impl SimulationBox {
 	}
 
 	pub fn add_particle(&mut self, particle: Arc<Particle>) {
-		self.particles.insert(particle.get_id() as usize, particle);
+		self.particles.insert(particle.get_id(), particle);
 	}
 
 	pub fn particles(&self) -> &HashMap<usize, Arc<Particle>> {

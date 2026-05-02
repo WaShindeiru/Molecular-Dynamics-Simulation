@@ -1,9 +1,9 @@
 use nalgebra::Vector3;
 use crate::data::types::AtomType;
-use crate::output::AtomDTO;
+use crate::output::atom::AtomDTO;
 
 impl CustomPathAtom {
-  pub fn get_id(&self) -> u64 {
+  pub fn get_id(&self) -> usize {
     self.id
   }
   
@@ -125,7 +125,7 @@ impl CustomPathAtom {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CustomPathAtom {
-  id: u64,
+  id: usize,
   iteration: usize,
   type_: AtomType,
   mass: f64,
@@ -147,7 +147,7 @@ pub struct CustomPathAtom {
 
 impl CustomPathAtom {
   pub fn new(
-    id: u64,
+    id: usize,
     type_: AtomType,
     mass: f64,
     path: Vec<Vector3<f64>>,

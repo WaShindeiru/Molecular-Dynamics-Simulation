@@ -5,14 +5,14 @@ use crate::particle::{AtomCollection, Particle};
 use crate::particle::atom_collection::AtomMetadata;
 
 pub struct AtomData {
-  id: u64,
+  id: usize,
   type_: AtomType,
   mass: f64,
   position: Vector3<f64>,
 }
 
 impl AtomData {
-  pub fn new(id: u64, type_: AtomType, mass: f64, position: Vector3<f64>) -> Self {
+  pub fn new(id: usize, type_: AtomType, mass: f64, position: Vector3<f64>) -> Self {
     AtomData {
       id,
       type_,
@@ -32,7 +32,7 @@ impl AtomData {
 }
 
 impl AtomMetadata for AtomData {
-  fn get_id(&self) -> u64 {
+  fn get_id(&self) -> usize {
     self.id
   }
 
@@ -50,7 +50,7 @@ impl AtomMetadata for AtomData {
 }
 
 pub struct AtomDataContainer {
-  atom_map: HashMap<u64, Box<AtomData>>,
+  atom_map: HashMap<usize, Box<AtomData>>,
 }
 
 impl AtomDataContainer {
@@ -69,22 +69,22 @@ impl AtomDataContainer {
     self.atom_map.len()
   }
 
-  pub fn get_map(&self) -> &HashMap<u64, Box<AtomData>> {
+  pub fn get_map(&self) -> &HashMap<usize, Box<AtomData>> {
     &self.atom_map
   }
 
-  pub fn get_atom_data(&self, id: u64) -> Option<&AtomData> {
+  pub fn get_atom_data(&self, id: usize) -> Option<&AtomData> {
     self.atom_map.get(&id).map(|atom| atom.as_ref())
   }
 }
 
 impl AtomCollection for AtomDataContainer {
-  fn get_atom_by_id(&self, id: u64) -> Option<&dyn AtomMetadata> {
+  fn get_atom_by_id(&self, id: usize) -> Option<&dyn AtomMetadata> {
     self.atom_map.get(&id).map(|atom| atom.as_ref() as &dyn AtomMetadata)
   }
 
-  fn get_all_atoms(&self) -> HashMap<u64, Box<dyn AtomMetadata>> {
-    let mut metadata_map: HashMap<u64, Box<dyn AtomMetadata>> = HashMap::with_capacity(self.atom_map.len());
+  fn get_all_atoms(&self) -> HashMap<usize, Box<dyn AtomMetadata>> {
+    let mut metadata_map: HashMap<usize, Box<dyn AtomMetadata>> = HashMap::with_capacity(self.atom_map.len());
 
     for (id, atom_data) in &self.atom_map {
       metadata_map.insert(*id, Box::new(AtomData {
@@ -100,7 +100,7 @@ impl AtomCollection for AtomDataContainer {
 }
 
 pub struct AtomForceData {
-  id: u64,
+  id: usize,
   velocity: Vector3<f64>,
   acceleration: Vector3<f64>,
   force: Vector3<f64>,
@@ -109,7 +109,7 @@ pub struct AtomForceData {
 }
 
 impl AtomForceData {
-  pub fn new(id: u64, velocity: Vector3<f64>, acceleration: Vector3<f64>, force: Vector3<f64>,
+  pub fn new(id: usize, velocity: Vector3<f64>, acceleration: Vector3<f64>, force: Vector3<f64>,
              potential_energy: f64) -> Self {
     AtomForceData {
       id,
@@ -130,7 +130,7 @@ impl AtomForceData {
     }
   }
 
-  pub fn get_id(&self) -> u64 {
+  pub fn get_id(&self) -> usize {
     self.id
   }
 
@@ -164,7 +164,7 @@ impl AtomForceData {
 }
 
 pub struct AtomForceContainer {
-  force_map: HashMap<u64, AtomForceData>,
+  force_map: HashMap<usize, AtomForceData>,
 }
 
 impl AtomForceContainer {
@@ -183,38 +183,15 @@ impl AtomForceContainer {
     self.force_map.len()
   }
 
-  pub fn get_atom_force(&self, id: u64) -> Option<&AtomForceData> {
+  pub fn get_atom_force(&self, id: usize) -> Option<&AtomForceData> {
     self.force_map.get(&id)
   }
   
-  pub fn get_atom_force_mut(&mut self, id: u64) -> Option<&mut AtomForceData> {
+  pub fn get_atom_force_mut(&mut self, id: usize) -> Option<&mut AtomForceData> {
     self.force_map.get_mut(&id)
   }
 
-  pub fn get_map(&self) -> &HashMap<u64, AtomForceData> {
+  pub fn get_map(&self) -> &HashMap<usize, AtomForceData> {
     &self.force_map
   }
 }
-
-// pub fn new_atom_container_from_parts(atom_data_container: AtomDataContainer,
-//                                      atom_force_container: AtomForceContainer,
-//                                      previous_container: &SimpleAtomContainer) -> SimpleAtomContainer {
-//   let mut atom_map: HashMap<u64, Box<dyn ParticleOperations>> = HashMap::with_capacity(atom_data_container.len());
-// 
-//   for (id, atom_data) in atom_data_container.atom_map {
-//     let atom_force = atom_force_container.force_map.get(&id).unwrap();
-// 
-//     let previous_atom = previous_container.get_atom(id).unwrap();
-//     let mut current_atom = previous_atom.custom_clone();
-// 
-//     current_atom.update_position(atom_data.position);
-//     current_atom.set_velocity(atom_force.velocity);
-//     current_atom.set_force(atom_force.force);
-//     current_atom.set_acceleration(atom_force.acceleration);
-//     current_atom.set_potential_energy(atom_force.potential_energy);
-// 
-//     atom_map.insert(id, current_atom);
-//   }
-// 
-//   SimpleAtomContainer::new_from_map(atom_map)
-// }

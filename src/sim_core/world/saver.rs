@@ -1,5 +1,5 @@
 use std::io;
-use crate::output::{SimpleWorldDTO, WorldDTO};
+use crate::output::world::WorldDTO;
 
 mod simple_world;
 mod boxed_world;

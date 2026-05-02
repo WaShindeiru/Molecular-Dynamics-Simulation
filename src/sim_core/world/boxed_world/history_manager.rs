@@ -2,14 +2,11 @@ use std::sync::Arc;
 use crate::particle::Particle;
 use crate::data::SimulationConfig;
 use crate::data::types::AtomType;
-use crate::output::HistoryDTO;
+use crate::output::world::history::HistoryDTO;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 
-mod integration_cache;
-mod new_functions_idk_whats_that;
-mod old_functions_to_delete_probably;
 mod getter;
 
 pub struct HistoryManager {

@@ -17,7 +17,7 @@ pub struct BoxContainerConfig {
 }
 
 impl BoxContainerConfig {
-  pub fn box_id_for_position(&self, position: &Vector3<f64>) -> usize {
+  pub fn box_coordinates_for_position(&self, position: &Vector3<f64>) -> Vector3<usize> {
     let x = if position.x == self.world_size.x {
       self.box_count_dim.x - 1
     } else {
@@ -36,7 +36,11 @@ impl BoxContainerConfig {
       (position.z / self.box_length.z) as usize
     };
 
-    get_id_simulation_box(&Vector3::new(x, y, z), &self.box_count_dim)
+    Vector3::new(x, y, z)
+  }
+
+  pub fn box_id_for_position(&self, position: &Vector3<f64>) -> usize {
+    get_id_simulation_box(&self.box_coordinates_for_position(position), &self.box_count_dim)
   }
 }
 

@@ -3,8 +3,8 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
-use carbon_nanotube::output::WorldDTO;
 use carbon_nanotube::data::types::AtomType;
+use carbon_nanotube::output::world::WorldDTO;
 use carbon_nanotube::particle::{Particle, SafeAtomFactory};
 use carbon_nanotube::sim_core::Engine;
 use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
@@ -17,7 +17,7 @@ const TIME_STEP: f64 = 1e-3;
 fn validate_dto_type(world_type: &WorldType, world_dto: &WorldDTO) -> bool {
   match (world_type, world_dto) {
     (WorldType::SimpleWorld, WorldDTO::SimpleWorldDTO(_)) => true,
-    (WorldType::BoxedWorld, WorldDTO::BoxedWorldDTO(_)) => true,
+    (WorldType::BoxedWorld {..}, WorldDTO::BoxedWorldDTO(_)) => true,
     _ => false,
   }
 }
@@ -81,9 +81,15 @@ pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge
 
   validate_dto_type(&world_type, &world_dto);
 
-  let atoms = match world_dto {
+  let boxed_atoms_tmp: Vec<Vec<_>>;
+  let atoms: &Vec<Vec<_>> = match world_dto {
     WorldDTO::SimpleWorldDTO(simple_dto) => &simple_dto.atoms,
-    WorldDTO::BoxedWorldDTO(boxed_dto) => &boxed_dto.box_container.atoms,
+    WorldDTO::BoxedWorldDTO(boxed_dto) => {
+      boxed_atoms_tmp = boxed_dto.history.box_container.iter()
+        .map(|bc| bc.atoms.clone())
+        .collect();
+      &boxed_atoms_tmp
+    }
   };
 
   // Collect all iterations from all atoms
@@ -147,7 +153,7 @@ pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge
 pub fn test_reset_world_with_thermostat_runner(world_type: WorldType, edge_condition: EdgeCondition) {
     let world_type_str = match world_type {
         WorldType::SimpleWorld => "simple",
-        WorldType::BoxedWorld => "boxed",
+        WorldType::BoxedWorld { .. } => "boxed",
     };
     let edge_condition_str = match edge_condition {
         EdgeCondition::Simple => "simple",
@@ -222,7 +228,7 @@ pub fn test_reset_world_with_thermostat_runner(world_type: WorldType, edge_condi
 pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition: EdgeCondition) {
   let world_type_str = match world_type {
     WorldType::SimpleWorld => "simple",
-    WorldType::BoxedWorld => "boxed",
+    WorldType::BoxedWorld { .. } => "boxed",
   };
   let edge_condition_str = match edge_condition {
     EdgeCondition::Simple => "simple",
@@ -521,9 +527,15 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
 
   assert!(validate_dto_type(&world_type, &world_dto), "WorldDTO type doesn't match WorldType");
 
-  let atoms = match world_dto {
+  let boxed_atoms_tmp: Vec<Vec<_>>;
+  let atoms: &Vec<Vec<_>> = match world_dto {
     WorldDTO::SimpleWorldDTO(simple_dto) => &simple_dto.atoms,
-    WorldDTO::BoxedWorldDTO(boxed_dto) => &boxed_dto.box_container.atoms,
+    WorldDTO::BoxedWorldDTO(boxed_dto) => {
+      boxed_atoms_tmp = boxed_dto.history.box_container.iter()
+        .map(|bc| bc.atoms.clone())
+        .collect();
+      &boxed_atoms_tmp
+    }
   };
 
   let mut all_iterations: Vec<usize> = Vec::new();
@@ -613,9 +625,15 @@ pub fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition
 
   assert!(validate_dto_type(&world_type, &world_dto), "WorldDTO type doesn't match WorldType");
 
-  let atoms = match world_dto {
+  let boxed_atoms_tmp: Vec<Vec<_>>;
+  let atoms: &Vec<Vec<_>> = match world_dto {
     WorldDTO::SimpleWorldDTO(simple_dto) => &simple_dto.atoms,
-    WorldDTO::BoxedWorldDTO(boxed_dto) => &boxed_dto.box_container.atoms,
+    WorldDTO::BoxedWorldDTO(boxed_dto) => {
+      boxed_atoms_tmp = boxed_dto.history.box_container.iter()
+        .map(|bc| bc.atoms.clone())
+        .collect();
+      &boxed_atoms_tmp
+    }
   };
 
   let mut all_iterations: Vec<usize> = Vec::new();

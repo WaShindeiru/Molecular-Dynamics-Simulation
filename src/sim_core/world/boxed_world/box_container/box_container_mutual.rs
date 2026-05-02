@@ -25,7 +25,7 @@ impl<B> BoxContainer<B> {
 }
 
 impl<B: Deref<Target = SimulationBox>> BoxContainer<B> {
-	pub fn particles_of_box<'a>(&'a self, box_id: usize) -> impl Iterator<Item = Arc<Particle>> + 'a {
+	pub fn particles_of_box<'a>(&'a self, box_id: usize) -> impl Iterator<Item = Arc<Particle>> {
 		let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.config.box_count_dim);
 		self.simulation_boxes
 			.get(coordinates.x, coordinates.y, coordinates.z)
@@ -35,11 +35,17 @@ impl<B: Deref<Target = SimulationBox>> BoxContainer<B> {
 			.cloned()
 	}
 
-	pub fn particles_of_boxes<'a>(&'a self, box_ids: &'a [usize]) -> impl Iterator<Item = Arc<Particle>> + 'a {
+	pub fn particles_of_boxes<'a>(&'a self, box_ids: &'a [usize]) -> impl Iterator<Item = Arc<Particle>> {
 		box_ids.iter().flat_map(move |box_id_ref| {
 			let box_id: usize = *box_id_ref;
 			self.particles_of_box(box_id)
 		})
+	}
+
+	pub fn all_particles(&self) -> impl Iterator<Item = Arc<Particle>> {
+		self.simulation_boxes
+			.iter()
+			.flat_map(|sim_box| sim_box.particles().values().cloned())
 	}
 
 	pub fn all_particles_reset(&self) -> HashMap<usize, Particle> {

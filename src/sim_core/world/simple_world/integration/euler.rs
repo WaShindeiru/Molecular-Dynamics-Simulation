@@ -1,4 +1,5 @@
-use crate::particle::{potential, SimpleAtomContainer};
+use crate::particle::potential;
+use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
 use crate::sim_core::world::simple_world::SimpleWorld;
 
 impl SimpleWorld {
@@ -14,7 +15,7 @@ impl SimpleWorld {
     let forces = fpinfo.fp;
 
     for (i, particle_i) in previous_atom_container.get_atoms().iter().enumerate() {
-      assert_eq!(i, particle_i.get_id() as usize);
+      assert_eq!(i, particle_i.get_id());
 
       let new_force = forces.get(i).unwrap().force;
       let new_acceleration = new_force / particle_i.get_mass();

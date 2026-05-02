@@ -1,5 +1,5 @@
 use crate::particle::Particle;
-use crate::sim_core::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
+use crate::sim_core::old::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
 
 pub struct SimpleAtomContainer {
   atoms: Vec<Particle>,

@@ -1,4 +1,5 @@
 use approx::assert_abs_diff_eq;
+use carbon_nanotube::sim_core::world::boxed_world::box_container::box_container_config::SimulationBoxType;
 use carbon_nanotube::sim_core::world::boxed_world::history_manager::HistoryManager;
 use carbon_nanotube::particle::{Particle, Atom, SafeAtomFactory};
 use carbon_nanotube::data::types::{AtomType, InteractionType};
@@ -6,7 +7,7 @@ use nalgebra::Vector3;
 use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition::{Periodic, Simple};
-use carbon_nanotube::sim_core::world::boxed_world::history_manager::sim_box::get_id_simulation_box;
+use carbon_nanotube::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
 
 
 fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
@@ -23,8 +24,8 @@ fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
   let container = HistoryManager::with_config(config, None);
 
   // Verify container size
-  assert_eq!(container.container_size(), &size);
-  assert_eq!(container.box_type(), &InteractionType::CC);
+  assert_eq!(&container.box_container_config().world_size, &size);
+  assert_eq!(&container.box_container_config().box_type, &SimulationBoxType::CC);
 
   // With CC interaction (box_size = 2.0), we should have:
   // x: floor(10.0 / 2.0) = 5 boxes
@@ -67,52 +68,56 @@ fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
 
   let container = HistoryManager::with_config(config, None);
 
+  let config = container.box_container_config();
+
   // Verify container size
-  assert_eq!(container.container_size(), &size);
-  assert_eq!(container.box_type(), &InteractionType::FeFe);
+  assert_eq!(&config.world_size, &size);
+  assert_eq!(&config.box_type, &InteractionType::FeFe);
 
   let expected_box_count_dim = Vector3::new(29, 17, 23);
-  assert_eq!(container.box_count_dim(), &expected_box_count_dim);
+  assert_eq!(&config.box_count_dim, &expected_box_count_dim);
   let expected_box_count = 29 * 17 * 23;
-  assert_eq!(container.box_count(), expected_box_count);
+  assert_eq!(config.box_count, expected_box_count);
 
   let expected_box_length = Vector3::new(3.44827586, 3.52941176, 3.47826087);
-  assert_abs_diff_eq!(container.box_length(), &expected_box_length, epsilon =1e-6);
+  assert_abs_diff_eq!(&config.box_length, &expected_box_length, epsilon = 1e-6);
+
+  let current = container.current_box_container();
 
   // atom0
   let expected_box_coordinates: Vector3<usize> = Vector3::new(0, 0, 0);
   let expected_box_id = get_id_simulation_box(&expected_box_coordinates, &expected_box_count_dim);
-  let actual_box_id = container.box_of_atom_given_index(atom0.get_id() as usize, 0).id();
+  let actual_box_id = current.particle_box_id(atom0.get_id() as usize);
   assert_eq!(actual_box_id, expected_box_id);
 
   // atom1
   let expected_box_coordinates: Vector3<usize> = Vector3::new(1, 0, 1);
   let expected_box_id = get_id_simulation_box(&expected_box_coordinates, &expected_box_count_dim);
-  let actual_box_id = container.box_of_atom_given_index(atom1.get_id() as usize, 0).id();
+  let actual_box_id = current.particle_box_id(atom1.get_id() as usize);
   assert_eq!(actual_box_id, expected_box_id);
 
   // atom2
   let expected_box_coordinates: Vector3<usize> = Vector3::new(2, 1, 2);
   let expected_box_id = get_id_simulation_box(&expected_box_coordinates, &expected_box_count_dim);
-  let actual_box_id = container.box_of_atom_given_index(atom2.get_id() as usize, 0).id();
+  let actual_box_id = current.particle_box_id(atom2.get_id() as usize);
   assert_eq!(actual_box_id, expected_box_id);
 
   // atom3
   let expected_box_coordinates: Vector3<usize> = Vector3::new(10,  6, 19);
   let expected_box_id = get_id_simulation_box(&expected_box_coordinates, &expected_box_count_dim);
-  let actual_box_id = container.box_of_atom_given_index(atom3.get_id() as usize, 0).id();
+  let actual_box_id = current.particle_box_id(atom3.get_id() as usize);
   assert_eq!(actual_box_id, expected_box_id);
 
   // atom4
   let expected_box_coordinates: Vector3<usize> = Vector3::new(3, 16,  0);
   let expected_box_id = get_id_simulation_box(&expected_box_coordinates, &expected_box_count_dim);
-  let actual_box_id = container.box_of_atom_given_index(atom4.get_id() as usize, 0).id();
+  let actual_box_id = current.particle_box_id(atom4.get_id() as usize);
   assert_eq!(actual_box_id, expected_box_id);
 
   // atom5
   let expected_box_coordinates: Vector3<usize> = Vector3::new(28, 16, 22);
   let expected_box_id = get_id_simulation_box(&expected_box_coordinates, &expected_box_count_dim);
-  let actual_box_id = container.box_of_atom_given_index(atom5.get_id() as usize, 0).id();
+  let actual_box_id = current.particle_box_id(atom5.get_id() as usize);
   assert_eq!(actual_box_id, expected_box_id);
 
   println!("Test completed: non-uniform partition with FeFe interaction type");

@@ -1,13 +1,11 @@
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use nalgebra::Vector3;
-use crate::particle::Particle;
+
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
+
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
-use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
-use crate::sim_core::world::boxed_world::history_manager::history_manager::HistoryManager;
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::FPInfoBoxed;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
 pub mod task_manager;
@@ -15,19 +13,6 @@ mod force_task_box_container;
 mod handle_task;
 
 pub enum BoxTask {
-  // VelocityTask {
-  //   history_manager: Arc<RwLock<HistoryManager>>,
-  //   box_id: usize,
-  //   time_step: f64,
-  //   previous_thermostat_epsilon: f64,
-  //   current_iteration: usize,
-  //   container_size: Vector3<f64>,
-  //   edge_condition: EdgeCondition,
-  // },
-  // ForceTask {
-  //   history_manager: Arc<RwLock<HistoryManager>>,
-  //   box_id: usize,
-  // },
   VelocityBatchTask {
     task_id: usize,
     box_ids: Vec<usize>,
@@ -61,7 +46,6 @@ pub struct VelocityTaskResult {
 pub struct ForceTaskParticleData {
   pub box_id: usize,
   pub force: Vector3<f64>,
-  pub acceleration: Vector3<f64>,
   pub potential_energy: f64,
 }
 

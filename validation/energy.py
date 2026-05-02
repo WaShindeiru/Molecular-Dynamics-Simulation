@@ -140,7 +140,8 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     plt.plot(iteration, thermostat_work, label="thermostat work")
   plt.xlabel("iteration")
   plt.ylabel("Energy [eV]")
-  # plt.xlim([0, 1000])
+  # plt.xlim([0, 200])
+  # plt.ylim([-5, 5])
   plt.title("Energy plot")
   plt.legend()
   plt.savefig(path + '/energy.png')
@@ -166,7 +167,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   plt.xlabel("iteration")
   plt.ylabel("Energy [eV]")
   plt.title("Total energy error")
-  # plt.xlim([0, 1000])
+  # plt.xlim([0, 200])
   plt.savefig(path + '/energy_difference.png')
   plt.show()
 

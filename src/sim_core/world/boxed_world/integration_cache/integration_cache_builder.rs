@@ -33,8 +33,7 @@ impl IntegrationCacheBuilder {
       particle.update_position(data.new_position);
       particle.set_thermostat_work(data.thermostat_work);
 
-      let box_id = self.local_boxes.config().box_id_for_position(particle.get_position());
-      self.local_boxes.get_box_mut(box_id).add_particle(Arc::new(particle.clone()));
+      self.local_boxes.add_particle(Arc::new(particle.clone()));
 
       self.half_velocity.insert(id, data.half_velocity);
       self.particle_compliance.insert(id, data.compliance);

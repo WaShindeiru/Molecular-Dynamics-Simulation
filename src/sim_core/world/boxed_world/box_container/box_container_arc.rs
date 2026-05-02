@@ -1,13 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use nalgebra::Vector3;
-use crate::output::BoxContainerDTO;
+use crate::output::world::boxed::box_container::BoxContainerDTO;
 use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::box_container::{box_container_config, BoxContainer};
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, get_id_simulation_box, SimBoxPlacement, SimulationBox};
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::{LeftEdge, Normal, RightEdge};
-use crate::sim_core::world::boxed_world::cube::Cube;
+use crate::utils::cube::Cube;
 
 impl BoxContainer<Arc<SimulationBox>> {
 	pub fn new(atoms: Vec<Particle>, world_size: Vector3<f64>) -> Self {
@@ -83,7 +83,7 @@ impl BoxContainer<Arc<SimulationBox>> {
 
 		for particle_i in atoms {
 			let box_id = self.assign_box_id_for_particle(&particle_i);
-			box_id_cache.insert(particle_i.get_id() as usize, box_id);
+			box_id_cache.insert(particle_i.get_id(), box_id);
 			let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.config.box_count_dim);
 			Arc::make_mut(self.simulation_boxes.get_mut(coordinates.x, coordinates.y, coordinates.z).unwrap())
 				.add_particle(Arc::new(particle_i));
@@ -120,7 +120,7 @@ impl BoxContainer<Arc<SimulationBox>> {
 		BoxContainer {
 			config: self.config,
 			simulation_boxes: result,
-			box_id_cache: HashMap::new(),
+			box_id_cache: self.box_id_cache.clone(),
 		}
 	}
 

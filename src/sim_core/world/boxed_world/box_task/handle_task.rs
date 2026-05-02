@@ -56,10 +56,10 @@ pub fn handle_force_batch_task(
 ) -> ForceTaskResult {
   assert_eq!(boundary_condition, EdgeCondition::Periodic, "Only periodic boundary condition is supported for force batch task");
 
-  let config = integration_cache.integration_box_cache.config();
+  let config = integration_cache.box_cache().config();
   let needed_ids = get_needed_box_id_periodic(&box_ids.to_vec(), config);
 
-  let view = integration_cache.integration_box_cache.view_select_boxes(&needed_ids);
+  let view = integration_cache.box_cache().view_select_boxes(&needed_ids);
   let force_container = ForceTaskBoxContainer::new(view, boundary_condition);
 
   let mut particles: HashMap<usize, ForceTaskParticleData> = HashMap::new();
@@ -87,18 +87,15 @@ pub fn handle_force_batch_task(
     for particle in particles_j.iter() {
       let id = particle.get_id();
       let fp = info.fp.get(&id).unwrap();
-      let acceleration = fp.force / particle.get_mass();
-      let particle_box_id = integration_cache.integration_box_cache.particle_box_id(id);
+      let particle_box_id = force_container.view().particle_box_id(id);
       particles.entry(id)
         .and_modify(|entry| {
           entry.force += fp.force;
-          entry.acceleration += acceleration;
           entry.potential_energy += fp.potential_energy;
         })
         .or_insert(ForceTaskParticleData {
           box_id: particle_box_id,
           force: fp.force,
-          acceleration,
           potential_energy: fp.potential_energy,
         });
     }

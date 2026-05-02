@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, SimulationBox};
-use crate::sim_core::world::boxed_world::cube::Cube;
+use crate::sim_core::world::boxed_world::box_container::sim_box::{SimulationBox, get_coordinates_from_simulation_box_id, get_id_simulation_box};
+use crate::utils::cube::Cube;
 
 impl BoxContainer<SimulationBox> {
 	pub fn new_local(config: BoxContainerConfig) -> Self {
@@ -23,6 +24,15 @@ impl BoxContainer<SimulationBox> {
 	pub fn get_box_mut(&mut self, box_id: usize) -> &mut SimulationBox {
 		let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.config.box_count_dim);
 		self.simulation_boxes.get_mut(coordinates.x, coordinates.y, coordinates.z).unwrap()
+	}
+
+	pub fn add_particle(&mut self, particle: Arc<Particle>) {
+		let particle_id = particle.get_id();
+		let box_coordinates = self.config().box_coordinates_for_position(particle.get_position());
+		self.simulation_boxes.get_mut(box_coordinates.x, box_coordinates.y, box_coordinates.z).unwrap().add_particle(particle);
+
+		let box_id = get_id_simulation_box(&box_coordinates, &self.config().box_count_dim);
+		self.box_id_cache.insert(particle_id, box_id);
 	}
 
 	pub fn get_box(&self, box_id: usize) -> &SimulationBox {

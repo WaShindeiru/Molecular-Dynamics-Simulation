@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
@@ -13,6 +12,7 @@ use crate::sim_core::world::boxed_world::box_container::box_container_config::Bo
 use crate::sim_core::world::boxed_world::box_container::sim_box::{SimulationBox, get_id_simulation_box};
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::box_task::task_manager::threads::create_threads;
+use crate::sim_core::world::boxed_world::computation_collector::ComputationCollector;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 use crate::sim_core::world::boxed_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
 
@@ -21,15 +21,23 @@ mod threads;
 pub struct TaskManager {
   simulation_config: SimulationConfig,
   container_config: BoxContainerConfig,
+
   threads: Vec<JoinHandle<()>>,
   tx_task: Sender<BoxTask>,
   rx_result: Receiver<BoxResult>,
   num_workers: usize,
+  task_worker_multiplier: f64,
+
   task_box_mapping: Option<HashMap<usize, Vec<usize>>>
 }
 
 impl TaskManager {
-  pub fn new(debug: bool, simulation_config: SimulationConfig, container_config: BoxContainerConfig) -> Self {
+  pub fn new(
+    debug: bool, 
+    simulation_config: SimulationConfig, 
+    container_config: BoxContainerConfig,
+    task_worker_multiplier: f64,
+  ) -> Self {
     let (tx_task, rx_result, threads, num_workers) = create_threads(debug);
 
     TaskManager {
@@ -39,6 +47,7 @@ impl TaskManager {
       tx_task,
       rx_result,
       num_workers,
+      task_worker_multiplier,
       task_box_mapping: Option::None,
     }
   }
@@ -51,13 +60,8 @@ impl TaskManager {
     self.task_box_mapping = None
   }
 
-  pub fn split_into_tasks<B, C>(&mut self, num_of_task: usize, container: C)
-  where
-    C: Deref<Target = BoxContainer<B>>,
-  {
+  pub fn split_into_tasks(&mut self, num_of_task: usize, config: &BoxContainerConfig) {
     assert!(self.task_box_mapping.is_none());
-
-    let config = container.config();
     let nx = config.box_count_dim.x;
     let ny = config.box_count_dim.y;
     let nz = config.box_count_dim.z;
@@ -85,16 +89,23 @@ impl TaskManager {
     self.task_box_mapping = Some(mapping);
   }
 
+  pub fn split_into_tasks_multiplier(&mut self, config: &BoxContainerConfig) {
+    self.split_into_tasks(
+      (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize, 
+      config
+    );
+  }
+
   pub fn task_box_mapping(&self) -> Option<&HashMap<usize, Vec<usize>>> {
     self.task_box_mapping.as_ref()
   }
 
   pub fn half_velocity_step(
-    &mut self,
+    &self,
     box_container: Arc<BoxContainer<Arc<SimulationBox>>>,
     thermostat_epsilon: f64,
     current_iteration: usize,
-  ) -> IntegrationCache {
+  ) -> Arc<IntegrationCache> {
     let mapping = self.task_box_mapping.as_ref()
       .expect("split_into_tasks must be called before half_velocity_step");
 
@@ -118,7 +129,7 @@ impl TaskManager {
     }
 
     for _ in 0..num_tasks {
-      match self.rx_result.recv_timeout(Duration::from_secs(60)) {
+      match self.rx_result.recv_timeout(Duration::from_secs(20)) {
         Ok(BoxResult::VelocityResult(result)) => {
           debug!("Received VelocityResult for task_id {}", result.task_id);
           builder.add_velocity_results(result.particles);
@@ -129,6 +140,42 @@ impl TaskManager {
       }
     }
 
-    builder.build().expect("Not all particles received velocity results")
+    Arc::new(builder.build().expect("Not all particles received velocity results"))
+  }
+
+  pub fn force_step(
+    &self,
+    integration_cache: Arc<IntegrationCache>,
+  ) -> ComputationCollector {
+    let mapping = self.task_box_mapping.as_ref()
+      .expect("split_into_tasks must be called before force_step");
+
+    let num_tasks = mapping.len();
+    let mut collector = ComputationCollector::from_integration_cache(self.simulation_config.clone(), Arc::clone(&integration_cache));
+
+    for (task_id, box_ids) in mapping {
+      let task = BoxTask::ForceBatchTask {
+        task_id: *task_id,
+        boundary_condition: self.simulation_config.edge_condition,
+        box_ids: box_ids.clone(),
+        integration_cache: Arc::clone(&integration_cache),
+      };
+      self.tx_task.send(task).unwrap();
+      debug!("Sent ForceBatchTask for task_id {}", task_id);
+    }
+
+    for _ in 0..num_tasks {
+      match self.rx_result.recv_timeout(Duration::from_secs(20)) {
+        Ok(BoxResult::ForceResult(result)) => {
+          debug!("Received ForceResult for task_id {}", result.task_id);
+          collector.apply_force_results(&result.particles);
+        }
+        Ok(_) => panic!("Expected ForceResult, got wrong result type"),
+        Err(RecvTimeoutError::Timeout) => panic!("Force step timed out after 60 seconds"),
+        Err(RecvTimeoutError::Disconnected) => panic!("Worker channel disconnected"),
+      }
+    }
+
+    collector
   }
 }

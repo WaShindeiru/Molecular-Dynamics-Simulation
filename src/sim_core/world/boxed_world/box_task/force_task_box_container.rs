@@ -146,4 +146,8 @@ impl ForceTaskBoxContainer {
 
     Box::new(proxies.into_iter())
   }
+
+  pub fn view(&self) -> &BoxContainer<Option<Arc<SimulationBox>>> {
+    &self.container
+  }
 }

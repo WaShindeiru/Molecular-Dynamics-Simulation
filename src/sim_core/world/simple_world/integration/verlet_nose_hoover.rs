@@ -1,11 +1,7 @@
-use std::collections::HashMap;
 use nalgebra::Vector3;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
 use crate::data::units::K_B;
-use crate::particle::{potential, Particle, SimpleAtomContainer};
-use crate::sim_core::world::boundary_constraint::{ParticleCompliance};
+use crate::particle::{Particle};
 use crate::sim_core::world::simple_world::SimpleWorld;
-use crate::utils::math::cos_from_vec;
 
 fn compute_half_velocity_kinetic_energy(half_velocity_cache: &Vec<Vector3<f64>>, new_position_atoms: &Vec<Particle>) -> f64 {
   let mut kinetic_energy = 0.;

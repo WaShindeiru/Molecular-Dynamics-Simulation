@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
-use crate::sim_core::world::boxed_world::cube::Cube;
+use crate::utils::cube::Cube;
 
 pub mod sim_box;
 pub mod box_container_config;

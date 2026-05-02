@@ -48,7 +48,8 @@ pub fn create_threads(debug: bool) -> (Sender<BoxTask>, Receiver<BoxResult>, Vec
     num_workers = 1;
   } else  {
     num_workers = thread::available_parallelism()
-      .map(|n| n.get() - 1)
+      // .map(|n| n.get() - 1)
+      .map(|n| n.get())
       .unwrap_or(1);
   }
   info!("Using {num_workers} threads.");

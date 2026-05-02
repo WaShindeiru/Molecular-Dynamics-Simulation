@@ -34,7 +34,7 @@ pub fn new_particle_position_proxy(particle: Arc<Particle>, particle_placement: 
 
 impl ForceComputationOperations for ParticlePositionProxy {
   fn get_id(&self) -> usize {
-    self.particle.get_id() as usize
+    self.particle.get_id()
   }
 
   fn get_position(&self) -> Vector3<f64> {

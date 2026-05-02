@@ -5,13 +5,13 @@ use rand_distr::{Distribution};
 
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
-use crate::output::{AtomDTO};
+use crate::output::atom::AtomDTO;
 use crate::particle::custom_path_atom::CustomPathAtom;
 use crate::particle::Particle;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Atom {
-  id: u64,
+  id: usize,
   iteration: usize,
   type_: AtomType,
   mass: f64,
@@ -30,7 +30,7 @@ pub struct Atom {
 }
 
 impl Atom {
-  pub fn get_id(&self) -> u64 {
+  pub fn get_id(&self) -> usize {
     self.id
   }
   
@@ -144,7 +144,7 @@ impl Atom {
 
 impl Atom {
   pub fn new(
-    id: u64,
+    id: usize,
     type_: AtomType,
     mass: f64,
     position: Vector3<f64>,
@@ -170,7 +170,7 @@ impl Atom {
   }
 
   pub fn new_custom_iteration(
-    id: u64,
+    id: usize,
     iteration: usize,
     type_: AtomType,
     mass: f64,
@@ -198,15 +198,15 @@ impl Atom {
 }
 
 struct AtomFactory {
-  counter: u64,
+  counter: usize,
   potential_gravity_max: f64,
   z_max: f64,
 }
 
 impl AtomFactory {
   fn new(potential_gravity_max: f64, z_max: f64) -> Self {
-    AtomFactory{
-      counter: 0,
+    AtomFactory {
+      counter: 0usize,
       potential_gravity_max,
       z_max,
     }
