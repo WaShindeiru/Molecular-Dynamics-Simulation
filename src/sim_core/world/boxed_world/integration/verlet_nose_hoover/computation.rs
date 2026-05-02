@@ -39,7 +39,7 @@ where
 
   for temp_i in previous_atom_container.into_iter() {
     let atom_i = temp_i.as_ref();
-    let i_id = atom_i.get_id() as usize;
+    let i_id = atom_i.get_id();
 
     let thermostat_difference = atom_i.get_acceleration() -
       previous_thermostat_epsilon * atom_i.get_velocity();
@@ -139,7 +139,7 @@ where
     if OPTIMIZATION {
       for temp_j in particles_j.clone().into_iter() {
         let particle_j = temp_j.as_ref();
-        let j_id = particle_j.get_id() as usize;
+        let j_id = particle_j.get_id();
         if i_id == j_id {
           continue
         }

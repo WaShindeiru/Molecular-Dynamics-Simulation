@@ -76,7 +76,7 @@ impl SimulationConfig {
         }
     }
 
-    /// Create a config without atoms (for internal structures like BoxContainer)
+    /// Create a config without atoms (for internal structures like HistoryManager)
     pub fn new_without_atoms(
         world_size: Vector3<f64>,
         num_of_atoms: usize,

@@ -1,10 +1,12 @@
 use std::{fs, io};
 use std::fs::OpenOptions;
+
 use csv::Writer;
 use log::info;
 use nalgebra::Vector3;
+
 use crate::sim_core::world::integration::IntegrationAlgorithm;
-use crate::output::BoxedWorldDTO;
+use crate::output::world::boxed::BoxedWorldDTO;
 use crate::sim_core::world::saver::PartialWorldSaver;
 
 impl PartialWorldSaver {
@@ -33,7 +35,7 @@ impl PartialWorldSaver {
   }
 
   pub fn append_energies_boxed_world(&mut self, world: &BoxedWorldDTO) -> io::Result<()> {
-    let atoms = &world.box_container.atoms;
+    let box_containers = &world.history.box_container;
     let num_of_iterations = world.num_of_world_iterations;
 
     let mut kinetic_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
@@ -42,13 +44,13 @@ impl PartialWorldSaver {
     let mut total_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut thermostat_work: Vec<f64> = Vec::with_capacity(num_of_iterations);
 
-    for (i, atom_container) in atoms.iter().enumerate() {
+    for (i, box_container_dto) in box_containers.iter().enumerate() {
       let mut kinetic_energy_i = 0.;
       let mut thermostat_work_i = 0.;
       let mut potential_energy_i = 0.;
       let mut potential_gravity_energy_i = 0.;
 
-      for atom_dto in atom_container.iter() {
+      for atom_dto in box_container_dto.atoms.iter() {
         kinetic_energy_i += atom_dto.kinetic_energy;
         thermostat_work_i += atom_dto.thermostat_work;
         potential_energy_i += atom_dto.potential_energy;
@@ -86,7 +88,7 @@ impl PartialWorldSaver {
             format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
             format!("{}", thermostat_work.get(i).unwrap()),
-            format!("{}", world.box_container.thermostat_epsilon.get(i).unwrap()),
+            format!("{}", world.history.thermostat_epsilon.get(i).unwrap()),
           ])?;
         }
         _ => {
@@ -107,10 +109,10 @@ impl PartialWorldSaver {
   }
 
   fn save_laamps_boxed_world(&mut self, world: &BoxedWorldDTO) -> io::Result<()> {
-    let atoms = &world.box_container.atoms;
+    let box_containers = &world.history.box_container;
     let mut files_saved = 0;
 
-    for i in 0..atoms.len() {
+    for i in 0..box_containers.len() {
       if self.frame_iteration_count_current_iteration % world.frame_iteration_count == 0 {
         let iteration_number = i + world.number_of_resets * world.max_iteration_till_reset;
 
@@ -119,7 +121,7 @@ impl PartialWorldSaver {
         result_string.push_str(&format!("{}\n", iteration_number));
 
         result_string.push_str(&"ITEM: NUMBER OF ATOMS\n".to_string());
-        let atom_container = atoms.get(i).unwrap();
+        let atom_container = &box_containers.get(i).unwrap().atoms;
         let num_of_atoms = atom_container.len();
         result_string.push_str(&format!("{}\n", num_of_atoms));
 
@@ -146,21 +148,21 @@ impl PartialWorldSaver {
   }
 
   fn compute_force_and_potential_boxed_world(&self, world: &BoxedWorldDTO) -> (Vec<Vec<Vector3<f64>>>, Vec<Vec<f64>>) {
-    let atoms = &world.box_container.atoms;
+    let box_containers = &world.history.box_container;
     let mut forces: Vec<Vec<Vector3<f64>>> = Vec::new();
     let mut potential_energies: Vec<Vec<f64>> = Vec::new();
 
-    for (i, atom_container) in atoms.iter().enumerate() {
+    for (i, box_container_dto) in box_containers.iter().enumerate() {
       let mut current_forces: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); world.num_of_atoms];
       let mut current_potential_energies: Vec<f64> = vec![0.; world.num_of_atoms];
 
-      for atom_dto in atom_container.iter() {
-        let force_i = current_forces.get_mut(atom_dto.id as usize).unwrap();
+      for atom_dto in box_container_dto.atoms.iter() {
+        let force_i = current_forces.get_mut(atom_dto.id).unwrap();
         force_i.x = atom_dto.force_x;
         force_i.y = atom_dto.force_y;
         force_i.z = atom_dto.force_z;
 
-        *current_potential_energies.get_mut(atom_dto.id as usize).unwrap() = atom_dto.potential_energy;
+        *current_potential_energies.get_mut(atom_dto.id).unwrap() = atom_dto.potential_energy;
       }
 
       forces.push(current_forces);
@@ -229,7 +231,7 @@ impl PartialWorldSaver {
   }
 
   fn append_positions_in_one_file_boxed_world(&self, world: &BoxedWorldDTO) -> io::Result<()> {
-    let atoms = &world.box_container.atoms;
+    let box_containers = &world.history.box_container;
     let file = OpenOptions::new()
       .create(true)
       .append(true)
@@ -237,10 +239,10 @@ impl PartialWorldSaver {
 
     let mut wtr = Writer::from_writer(file);
 
-    for i in 0..atoms.len() {
+    for i in 0..box_containers.len() {
       let iteration = world.number_of_resets * world.max_iteration_till_reset + i;
 
-      let atom_container = atoms.get(i).unwrap();
+      let atom_container = &box_containers.get(i).unwrap().atoms;
 
       for (id, atom) in atom_container.iter().enumerate() {
         wtr.write_record(&[

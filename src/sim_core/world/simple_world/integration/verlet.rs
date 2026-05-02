@@ -1,5 +1,6 @@
 use nalgebra::Vector3;
-use crate::particle::{potential, Particle, SimpleAtomContainer};
+use crate::particle::{potential, Particle};
+use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
 use crate::sim_core::world::simple_world::SimpleWorld;
 
 impl SimpleWorld {
@@ -15,7 +16,7 @@ impl SimpleWorld {
     let mut new_position_atoms: Vec<Particle> = Vec::with_capacity(self.atom_count);
 
     for (i, atom_i) in previous_atom_container.get_atoms().iter().enumerate() {
-      assert_eq!(i, atom_i.get_id() as usize);
+      assert_eq!(i, atom_i.get_id());
       let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + atom_i.get_acceleration() * (time_step / 2.0);
       half_velocity_cache[i] = half_velocity_i;
 
@@ -33,7 +34,7 @@ impl SimpleWorld {
     let forces = fpinfo.fp;
 
     for (i, particle_i) in new_position_atoms.iter().enumerate() {
-      assert_eq!(i, particle_i.get_id() as usize);
+      assert_eq!(i, particle_i.get_id());
 
       let new_force = forces.get(i).unwrap().force;
       let new_potential_energy = forces.get(i).unwrap().potential_energy;

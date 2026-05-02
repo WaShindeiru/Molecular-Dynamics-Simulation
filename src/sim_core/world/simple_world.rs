@@ -1,14 +1,17 @@
 use std::io;
 use log::info;
 use nalgebra::Vector3;
-use crate::output::{AtomDTO, SimpleWorldDTO, WorldDTO};
 use crate::sim_core::world::saver::PartialWorldSaver;
-use crate::particle::{Particle, SimpleAtomContainer};
+use crate::particle::Particle;
 use crate::sim_core::world::get_index_for_iteration;
 use crate::sim_core::world::integration::{IntegrationAlgorithm};
 use crate::sim_core::world::saver::SaveOptions;
 use crate::data::types::AtomType;
 use crate::data::SimulationConfig;
+use crate::output::atom::AtomDTO;
+use crate::output::world::simple::SimpleWorldDTO;
+use crate::output::world::WorldDTO;
+use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
 
 pub mod integration;
 

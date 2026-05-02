@@ -13,7 +13,7 @@ where
 
   for temp_i in new_position_atoms.into_iter() {
     let particle_i = temp_i.as_ref();
-    let i_id = particle_i.get_id() as usize;
+    let i_id = particle_i.get_id();
     let velocity = half_velocity_cache.get(&i_id).unwrap();
     let mass = particle_i.get_mass();
 

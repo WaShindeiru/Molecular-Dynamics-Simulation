@@ -1,44 +1,60 @@
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use nalgebra::Vector3;
-use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
-use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::FPInfoBoxed;
 
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
+
+use crate::sim_core::world::boxed_world::box_container::BoxContainer;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
+use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
+
+pub mod task_manager;
+mod force_task_box_container;
 mod handle_task;
-pub mod threads;
 
 pub enum BoxTask {
-  VelocityTask {
-    box_container: Arc<RwLock<BoxContainer>>,
-    box_id: usize,
+  VelocityBatchTask {
+    task_id: usize,
+    box_ids: Vec<usize>,
+    history: Arc<BoxContainer<Arc<SimulationBox>>>,
     time_step: f64,
     previous_thermostat_epsilon: f64,
     current_iteration: usize,
     container_size: Vector3<f64>,
     edge_condition: EdgeCondition,
   },
-  ForceTask {
-    box_container: Arc<RwLock<BoxContainer>>,
-    box_id: usize,
-  },
+  ForceBatchTask {
+    task_id: usize,
+    boundary_condition: EdgeCondition,
+    box_ids: Vec<usize>,
+    integration_cache: Arc<IntegrationCache>
+  }
 }
 
-pub struct VelocityParticle {
-  pub particle: Particle,
+pub struct VelocityTaskParticleData {
   pub half_velocity: Vector3<f64>,
+  pub new_position: Vector3<f64>,
+  pub thermostat_work: f64,
   pub compliance: ParticleCompliance,
 }
 
 pub struct VelocityTaskResult {
-  pub particles: HashMap<usize, VelocityParticle>
+  pub task_id: usize,
+  pub particles: HashMap<usize, VelocityTaskParticleData>,
+}
+
+pub struct ForceTaskParticleData {
+  pub box_id: usize,
+  pub force: Vector3<f64>,
+  pub potential_energy: f64,
 }
 
 pub struct ForceTaskResult {
-  pub box_id: usize,
-  pub info_boxed: FPInfoBoxed,
-  pub acceleration: HashMap<usize, Vector3<f64>>,
+  pub task_id: usize,
+  pub potential_energy: f64,
+  pub optimization_considered: usize,
+  pub optimization_ignored: usize,
+  pub particles: HashMap<usize, ForceTaskParticleData>
 }
 
 pub enum BoxResult {

@@ -1,73 +1,59 @@
 use std::io;
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, RwLock};
-use std::thread::JoinHandle;
 use log::info;
+use std::sync::Arc;
+
 use nalgebra::Vector3;
 
-use crate::data::InteractionType;
-use crate::data::types::AtomType;
 use crate::data::SimulationConfig;
-use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::output::{BoxedWorldDTO, WorldDTO};
+
+use crate::output::world::WorldDTO;
+use crate::output::world::boxed::BoxedWorldDTO;
+
+use crate::sim_core::world::WorldType;
+use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::sim_core::world::integration::{new_integration_algorithm_state, IntegrationAlgorithm, IntegrationAlgorithmState};
 use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
-use crate::particle::Particle;
-use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
+use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManager;
+use crate::sim_core::world::boxed_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
+use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
+use crate::sim_core::world::boxed_world::computation_collector::ComputationCollector;
 
-use box_task::threads::create_threads;
-use crate::sim_core::world::boundary_constraint::EdgeCondition;
-
-pub mod box_container;
-pub mod cube;
+mod computation_collector;
+mod integration_cache;
+pub mod history_manager;
 pub mod box_task;
 pub mod integration;
+pub mod box_container;
 
 pub struct BoxedWorld {
   config: SimulationConfig,
-  box_container: Arc<RwLock<BoxContainer>>,
+  history_manager: HistoryManager,
+  integration_cache_builder: IntegrationCacheBuilder,
+  integration_cache: Option<Arc<IntegrationCache>>,
+  computation_collector: Option<ComputationCollector>,
+  task_manager: TaskManager,
 
   iteration: usize,
 
+  // move this into saver maybe, or idk
   reset_counter: usize,
   number_of_resets: usize,
 
   frame_iteration_count: usize,
-  integration_algorithm: IntegrationAlgorithm,
+  // up to this
+
+  // TODO: improve the integration_algorithm_logic
   integration_algorithm_state: IntegrationAlgorithmState,
 
   save_options: SaveOptions,
   world_saver: PartialWorldSaver,
-
-  threads: Vec<JoinHandle<()>>,
-  tx_task: Sender<BoxTask>,
-  rx_result: Receiver<BoxResult>,
 }
 
 impl BoxedWorld {
   pub fn with_config(mut config: SimulationConfig) -> Self {
-    let atoms = config.atoms.take().unwrap();
-    let (tx_task, rx_result, threads) = create_threads(false);
-
-    let box_type = {
-      let mut fe = false;
-      let mut c = false;
-
-      for i in &atoms {
-        if i.get_type() == AtomType::C {
-          c = true;
-        } else {
-          fe = true;
-        }
-      }
-
-      if fe && c {
-        InteractionType::FeC
-      } else if fe {
-        InteractionType::FeFe
-      } else {
-        InteractionType::CC
-      }
+    let task_worker_multiplier = match config.world_type {
+      WorldType::BoxedWorld { task_worker_multiplier } => task_worker_multiplier,
+      _ => unreachable!(),
     };
 
     let frame_iteration_count = if !config.save_all_iterations {
@@ -76,28 +62,36 @@ impl BoxedWorld {
       1
     };
 
+    let history_manager = HistoryManager::with_config(config.clone(), config.atoms.take());
+
+    let box_container_config = *history_manager.box_container_config();
+
+    let mut task_manager = TaskManager::new(
+      false,
+      config.clone(),
+      box_container_config,
+      task_worker_multiplier,
+    );
+
+    task_manager.split_into_tasks_multiplier(&box_container_config);
+
+    let initial_particles = history_manager.current_box_container().all_particles_reset();
+    let integration_cache_builder = IntegrationCacheBuilder::new(box_container_config, initial_particles);
+
     BoxedWorld {
-      config: config.clone(),
-      box_container: Arc::new(RwLock::new(
-        BoxContainer::with_config(config.clone(), Some(atoms))
-        )
-      ),
-
-      iteration: 0,
-
-      reset_counter: 1,
-      number_of_resets: 0,
-
-      frame_iteration_count,
       integration_algorithm_state: new_integration_algorithm_state(&config.integration_algorithm),
-      integration_algorithm: config.integration_algorithm.clone(),
-
       save_options: config.save_options.clone(),
       world_saver: PartialWorldSaver::new(config.save_options.clone()),
-
-      threads,
-      tx_task,
-      rx_result,
+      config,
+      history_manager,
+      integration_cache_builder,
+      integration_cache: None,
+      computation_collector: None,
+      task_manager,
+      iteration: 0,
+      reset_counter: 1,
+      number_of_resets: 0,
+      frame_iteration_count,
     }
   }
 
@@ -122,7 +116,7 @@ impl BoxedWorld {
       IntegrationAlgorithm::SemiImplicitEuler => unimplemented!("semi implicit euler for boxed world"),
       IntegrationAlgorithm::VelocityVerlet => unimplemented!("velocity verlet for boxed world!"),
       IntegrationAlgorithm::NoseHooverVerlet { .. } => {
-          self.update_verlet_nose_hoover(time_step, next_iteration);
+          self.update_verlet_nose_hoover(next_iteration);
       }
     }
 
@@ -134,7 +128,7 @@ impl BoxedWorld {
 
     let new_number_of_resets = self.number_of_resets + 1;
 
-    self.box_container.write().unwrap().reset_container();
+    self.history_manager.reset_container();
 
     self.number_of_resets = new_number_of_resets;
     self.reset_counter = 0;
@@ -156,8 +150,8 @@ impl BoxedWorld {
       BoxedWorldDTO {
         num_of_atoms: self.config.num_of_atoms,
         size: self.config.world_size,
-        box_container: self.box_container.read().unwrap().to_transfer_struct(lower_index),
-        integration_algorithm: self.integration_algorithm.clone(),
+        history: self.history_manager.to_transfer_struct(lower_index),
+        integration_algorithm: self.config.integration_algorithm.clone(),
 
         num_of_world_iterations: self.iteration,
         number_of_resets: self.number_of_resets,
@@ -169,6 +163,6 @@ impl BoxedWorld {
   }
 
   pub fn get_particle_counts(&self) -> (usize, usize, usize) {
-    self.box_container.read().unwrap().get_particle_counts()
+    self.history_manager.get_particle_counts()
   }
 }

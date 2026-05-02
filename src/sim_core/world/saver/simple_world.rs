@@ -1,9 +1,11 @@
 use std::{fs, io};
 use std::fs::OpenOptions;
+
 use csv::Writer;
 use log::info;
 use nalgebra::Vector3;
-use crate::output::{AtomDTO, SimpleWorldDTO};
+
+use crate::output::world::simple::SimpleWorldDTO;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 use crate::sim_core::world::saver::PartialWorldSaver;
 
@@ -42,12 +44,12 @@ impl PartialWorldSaver {
       let mut current_potential_energies: Vec<f64> = vec![0.; world.num_of_atoms];
 
       for atom_dto in atom_container.iter() {
-        let force_i = current_forces.get_mut(atom_dto.id as usize).unwrap();
+        let force_i = current_forces.get_mut(atom_dto.id).unwrap();
         force_i.x = atom_dto.force_x;
         force_i.y = atom_dto.force_y;
         force_i.z = atom_dto.force_z;
 
-        *current_potential_energies.get_mut(atom_dto.id as usize).unwrap() = atom_dto.potential_energy;
+        *current_potential_energies.get_mut(atom_dto.id).unwrap() = atom_dto.potential_energy;
       }
 
       forces.push(current_forces);

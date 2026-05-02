@@ -26,7 +26,7 @@ pub fn dense_runner() {
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
       distance: i.distance}).collect();
 
-  let num_iterations = (6e4) as usize;
+  let num_iterations = (1e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -34,13 +34,13 @@ pub fn dense_runner() {
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 
-  let world_type = WorldType::BoxedWorld;
+  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 3.0 };
   let edge_condition = EdgeCondition::Periodic;
 
-  let world_size = Vector3::new(54., 54., 54.);
+  let world_size = Vector3::new(50., 50., 50.);
   let offset = Vector3::new(1.7, 1.7, 1.7);
 
-  dense_particles(TIME_STEP, save, save_path, num_iterations, 7., world_size, offset, integration_algorithm, world_type, edge_condition);
+  dense_particles(TIME_STEP, save, save_path, num_iterations, 5., world_size, offset, integration_algorithm, world_type, edge_condition);
 }
 
 pub fn one_particle_edge_runner() {
@@ -62,7 +62,7 @@ pub fn one_particle_edge_runner() {
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 
-  let world_type = WorldType::BoxedWorld;
+  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 2.0 };
   let edge_condition = EdgeCondition::Periodic;
 
   one_particle_edge(TIME_STEP, save, save_path, num_iterations,
@@ -88,7 +88,7 @@ pub fn two_particles_edge_runner() {
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 
-  let world_type = WorldType::BoxedWorld;
+  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 2.0 };
   let edge_condition = EdgeCondition::Periodic;
 
   two_particles_edge(TIME_STEP, save, save_path, num_iterations,
@@ -111,7 +111,7 @@ pub fn sphere_runner() {
     }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
-  let world_type = WorldType::BoxedWorld;
+  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 2.0 };
 
   sphere_particles(TIME_STEP, save, save_path, num_iterations, 30, integration_algorithm, world_type);
 }
@@ -132,7 +132,7 @@ pub fn triangle_runner() {
     }],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
-  let world_type = WorldType::BoxedWorld;
+  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 2.0 };
 
   triangle(TIME_STEP, save, save_path, num_iterations, integration_algorithm, world_type);
 }
@@ -156,7 +156,7 @@ pub fn symmetric_triangle_test_runner() {
 
   // let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;
 
-  let world_type = WorldType::BoxedWorld;
+  let world_type = WorldType::BoxedWorld {task_worker_multiplier: 4.0};
 
   symmetric_triangle_test(TIME_STEP, save, save_path, num_iterations, integration_algorithm, world_type);
 }

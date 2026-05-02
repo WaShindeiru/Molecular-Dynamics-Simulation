@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
-use crate::output::AtomDTO;
+use crate::output::atom::AtomDTO;
 use crate::particle::{Atom, CustomPathAtom};
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 
@@ -37,7 +37,7 @@ impl From<AtomDTO> for Particle {
 }
 
 impl Particle {
-  pub fn get_id(&self) -> u64 {
+  pub fn get_id(&self) -> usize {
     match self {
       Particle::Atom(atom) => atom.get_id(),
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_id(),
@@ -150,6 +150,13 @@ impl Particle {
     }
   }
 
+  pub fn get_iteration(&self) -> usize {
+    match self {
+      Particle::Atom(atom) => atom.get_iteration(),
+      Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_iteration(),
+    }
+  }
+
   pub fn set_iteration(&mut self, iteration_: usize) {
     match self {
       Particle::Atom(atom) => atom.set_iteration(iteration_),
@@ -194,7 +201,7 @@ impl AsRef<Particle> for Particle {
 
 impl ForceComputationOperations for Particle {
   fn get_id(&self) -> usize {
-    Particle::get_id(self) as usize
+    Particle::get_id(self)
   }
 
   fn get_position(&self) -> Vector3<f64> {

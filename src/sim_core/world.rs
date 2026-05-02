@@ -1,11 +1,11 @@
 use std::io;
 use nalgebra::Vector3;
-use crate::output::WorldDTO;
+use crate::output::world::WorldDTO;
 use crate::particle::Particle;
 use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::simple_world::SimpleWorld;
-use crate::sim_core::world::integration::{IntegrationAlgorithm};
+use crate::sim_core::world::integration::IntegrationAlgorithm;
 
 pub mod integration;
 pub mod simple_world;
@@ -26,7 +26,7 @@ fn get_index_for_iteration(current_iteration: usize, max_iteration_till_reset: u
 #[serde(tag = "type")]
 pub enum WorldType {
   SimpleWorld,
-  BoxedWorld,
+  BoxedWorld {task_worker_multiplier: f64},
 }
 
 pub enum World {
@@ -38,7 +38,7 @@ impl World {
   pub fn from_config(config: SimulationConfig) -> Self {
     match config.world_type {
       WorldType::SimpleWorld => World::SimpleWorld(SimpleWorld::with_config(config)),
-      WorldType::BoxedWorld => World::BoxedWorld(BoxedWorld::with_config(config)),
+      WorldType::BoxedWorld { .. } => World::BoxedWorld(BoxedWorld::with_config(config)),
     }
   }
   

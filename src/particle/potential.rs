@@ -45,7 +45,7 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
   // let mut num_of_neighbours_cache: Vec<i32> = vec![0; particles.len()];
 
   for (i, particle_i) in particles.iter().enumerate() {
-    assert_eq!(i, particle_i.get_id() as usize);
+    assert_eq!(i, particle_i.get_id());
     neighbours = Vec::with_capacity(particles.len() - 1);
 
     if OPTIMIZATION {

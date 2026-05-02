@@ -1,5 +1,5 @@
 use nalgebra::Vector3;
-use crate::output::{EngineDTO};
+use crate::output::engine::EngineDTO;
 use crate::sim_core::world::{World, WorldType};
 use crate::data::SimulationConfig;
 
@@ -40,50 +40,6 @@ impl Engine {
       save_options: config.save_options.clone(),
     }
   }
-
-  // pub fn new_from_atoms(atoms: Vec<Particle>, size: Vector3<f64>, time_step: f64,
-  //                       num_of_iterations: usize,
-  //                       max_iteration_till_reset: usize,
-  //                       save_all_iterations: bool,
-  //                       one_frame_duration: f64,
-  //                       mut save_options: SaveOptions,
-  //                       integration_algorithm: IntegrationAlgorithm,
-  //                       world_type: WorldType,
-  //                       edge_condition: EdgeCondition,
-  // ) -> Self {
-  // 
-  //   Engine::new_from_atoms_with_path(atoms, size, time_step, num_of_iterations, max_iteration_till_reset, 
-  //                                    save_all_iterations, one_frame_duration, save_options, 
-  //                                    integration_algorithm, world_type, edge_condition
-  //   )
-  // }
-  // 
-  // pub fn new_from_atoms_with_path(atoms: Vec<Particle>, size: Vector3<f64>, time_step: f64,
-  //                       num_of_iterations: usize,
-  //                       max_iteration_till_reset: usize,
-  //                       save_all_iterations: bool,
-  //                       one_frame_duration: f64,
-  //                       save_options: SaveOptions,
-  //                       integration_algorithm: IntegrationAlgorithm,
-  //                       world_type: WorldType, 
-  //                       edge_condition: EdgeCondition
-  // ) -> Self {
-  //   let config = SimulationConfig::new(
-  //     atoms,
-  //     size,
-  //     time_step,
-  //     num_of_iterations,
-  //     max_iteration_till_reset,
-  //     save_all_iterations,
-  //     one_frame_duration,
-  //     save_options,
-  //     integration_algorithm,
-  //     world_type,
-  //     edge_condition,
-  //   );
-  // 
-  //   Self::from_config(config)
-  // }
 
   pub fn run(&mut self, time_step: f64) {
     info!("Starting simulation...");
