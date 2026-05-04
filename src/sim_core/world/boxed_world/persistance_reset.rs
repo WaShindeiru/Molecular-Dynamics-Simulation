@@ -1,0 +1,149 @@
+mod saver_handle;
+mod saver_worker;
+
+use std::io;
+use std::sync::Arc;
+
+use log::info;
+
+use crate::data::SimulationConfig;
+use crate::output::world::boxed::BoxedWorldDTO;
+use crate::output::world::history::HistoryDTO;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
+use crate::sim_core::world::boxed_world::box_container::BoxContainer;
+use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
+use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
+
+use saver_handle::SaverHandle;
+
+pub struct PersistanceReset {
+  history_manager: HistoryManager,
+  save_options: SaveOptions,
+  config: SimulationConfig,
+  frame_iteration_count: usize,
+  reset_counter: usize,
+  number_of_resets: usize,
+  saver_handle: SaverHandle,
+}
+
+impl PersistanceReset {
+  pub fn new(
+    history_manager: HistoryManager,
+    config: SimulationConfig,
+    frame_iteration_count: usize,
+    saver: PartialWorldSaver,
+  ) -> Self {
+    let save_enabled = config.save_options.save;
+    let save_options = config.save_options.clone();
+    Self {
+      history_manager,
+      save_options,
+      config,
+      frame_iteration_count,
+      reset_counter: 1,
+      number_of_resets: 0,
+      saver_handle: SaverHandle::spawn(saver, save_enabled),
+    }
+  }
+
+  pub fn history_manager(&self) -> &HistoryManager {
+    &self.history_manager
+  }
+
+  pub fn history_manager_mut(&mut self) -> &mut HistoryManager {
+    &mut self.history_manager
+  }
+
+  pub fn number_of_resets(&self) -> usize {
+    self.number_of_resets
+  }
+
+  pub fn frame_iteration_count(&self) -> usize {
+    self.frame_iteration_count
+  }
+
+  fn build_boxed_snapshot_dto(&self, num_of_world_iterations: usize) -> BoxedWorldDTO {
+    let lower_index = if self.number_of_resets > 0 { 1 } else { 0 };
+    let (containers, thermostat_epsilon) = self.history_manager.clone_for_cache();
+    let history = history_dto_from_snapshot(containers, thermostat_epsilon, lower_index);
+
+    BoxedWorldDTO {
+      num_of_atoms: self.config.num_of_atoms,
+      size: self.config.world_size,
+      history,
+      integration_algorithm: self.config.integration_algorithm.clone(),
+      num_of_world_iterations,
+      number_of_resets: self.number_of_resets,
+      max_iteration_till_reset: self.config.max_iteration_till_reset,
+      frame_iteration_count: self.frame_iteration_count,
+    }
+  }
+
+  pub fn begin_update_step(&mut self, num_of_world_iterations: usize) -> io::Result<()> {
+    assert!(self.reset_counter <= self.config.max_iteration_till_reset);
+
+    self.saver_handle.drain_finished_results()?;
+
+    if self.reset_counter == self.config.max_iteration_till_reset {
+      if self.save_options.save {
+        let dto = self.build_boxed_snapshot_dto(num_of_world_iterations);
+        self.saver_handle.send_dto(dto)?;
+      }
+
+      info!(
+        "Resetting boxed world, reset number: {}",
+        self.number_of_resets
+      );
+      self.history_manager.reset_container();
+      self.number_of_resets += 1;
+      self.reset_counter = 0;
+    }
+
+    Ok(())
+  }
+
+  pub fn end_update_step(&mut self) {
+    self.reset_counter += 1;
+  }
+
+  pub fn reset_world_without_save(&mut self) {
+    info!(
+      "Resetting boxed world, reset number: {}",
+      self.number_of_resets
+    );
+    self.history_manager.reset_container();
+    self.number_of_resets += 1;
+    self.reset_counter = 0;
+  }
+
+  pub fn save_full_snapshot_blocking(&mut self, num_of_world_iterations: usize) -> io::Result<()> {
+    if !self.save_options.save {
+      return Ok(());
+    }
+    self.saver_handle.drain_finished_results()?;
+    let dto = self.build_boxed_snapshot_dto(num_of_world_iterations);
+    self.saver_handle.send_dto_wait_result(dto)
+  }
+}
+
+impl Drop for PersistanceReset {
+  fn drop(&mut self) {
+    self.saver_handle.shutdown_inner();
+  }
+}
+
+fn history_dto_from_snapshot(
+  containers: Vec<Arc<BoxContainer<Arc<SimulationBox>>>>,
+  thermostat_epsilon: Vec<f64>,
+  lower_index: usize,
+) -> HistoryDTO {
+  let box_container = containers[lower_index..]
+    .iter()
+    .map(|c| c.to_transfer_struct())
+    .collect();
+
+  HistoryDTO {
+    box_container,
+    thermostat_epsilon,
+  }
+}

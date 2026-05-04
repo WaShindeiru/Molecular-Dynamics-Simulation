@@ -13,8 +13,8 @@ use crate::sim_core::world::integration::IntegrationStateUpdateResponse;
 
 impl BoxedWorld {
     pub fn update_verlet_nose_hoover(&mut self, next_iteration: usize) {
-        let current_thermostat_epsilon = self.history_manager.current_thermostat_epsilon();
-        let current_box_container = self.history_manager.current_box_container();
+        let current_thermostat_epsilon = self.persistance_reset.history_manager().current_thermostat_epsilon();
+        let current_box_container = self.persistance_reset.history_manager().current_box_container();
 
         let current_desired_temperature: f64;
         let q_effective_mass: f64;
@@ -56,7 +56,7 @@ impl BoxedWorld {
                 current_desired_temperature)
         }
 
-        self.history_manager.add_thermostat_epsilon(new_thermostat_epsilon);
+        self.persistance_reset.history_manager_mut().add_thermostat_epsilon(new_thermostat_epsilon);
 
         let mut computation_collector = self.task_manager.force_step(
             Arc::clone(&integration_cache
@@ -83,7 +83,9 @@ impl BoxedWorld {
         _ => panic!("Wrong result type")
         }
 
-        self.history_manager.push_box_container(computation_collector.into_box_container());
+        self.persistance_reset
+          .history_manager_mut()
+          .push_box_container(computation_collector.into_box_container());
 
         self.iteration += 1;
         assert_eq!(self.iteration, next_iteration);

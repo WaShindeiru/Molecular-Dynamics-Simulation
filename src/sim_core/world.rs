@@ -49,9 +49,12 @@ impl World {
     }
   }
 
-  pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) {
+  pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) -> io::Result<()> {
     match self {
-      World::SimpleWorld(world) => world.update(algorithm, time_step, next_iteration),
+      World::SimpleWorld(world) => {
+        world.update(algorithm, time_step, next_iteration);
+        Ok(())
+      }
       World::BoxedWorld(world) => world.update(algorithm, time_step, next_iteration),
     }
   }

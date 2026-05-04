@@ -57,7 +57,7 @@ impl Engine {
         counter += 1;
       }
 
-      self.world.update(&self.config.integration_algorithm, time_step, self.current_iteration + 1);
+      self.world.update(&self.config.integration_algorithm, time_step, self.current_iteration + 1).unwrap();
 
       self.current_iteration += 1;
       self.current_time += self.config.time_step;

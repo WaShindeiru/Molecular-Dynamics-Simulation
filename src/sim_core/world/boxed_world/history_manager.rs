@@ -41,6 +41,19 @@ impl HistoryManager {
     self.history.last().unwrap().clone()
   }
 
+  pub fn current_index(&self) -> usize {
+    self.current_index
+  }
+
+  pub fn clone_for_cache(
+    &self,
+  ) -> (
+    Vec<Arc<BoxContainer<Arc<SimulationBox>>>>,
+    Vec<f64>,
+  ) {
+    (self.history.clone(), self.thermostat_epsilon.clone())
+  }
+
   pub fn current_thermostat_epsilon(&self) -> f64 { *self.thermostat_epsilon.last().unwrap() }
 
   pub fn thermostat_epsilon_of_iteration(&self, iteration: usize) -> f64 {

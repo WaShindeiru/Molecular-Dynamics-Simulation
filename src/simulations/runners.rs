@@ -8,25 +8,25 @@ use crate::utils::logging;
 use crate::utils::logging::get_save_path;
 use crate::simulations::examples::{dense_particles, one_particle_edge, sphere_particles, symmetric_triangle_test, triangle, two_particles_edge};
 
-const TIME_STEP: f64 = 1e-18 / TIME_U;
+const TIME_STEP: f64 = 1e-17 / TIME_U;
 const TEMPERATURE_CELCIUS: f64 = 1600.0;
 
 const TEMPERATURE_KELVIN: f64 = 1600.0;
-const Q_EFFECTIVE_MASS: f64 = 100.;
+const Q_EFFECTIVE_MASS: f64 = 1000.;
 
 pub fn dense_runner() {
   let save_path = get_save_path("../output/".to_string());
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 2000., distance: TimeIterationDistance::Iteration { value: 20000 }},
+    TemperatureInfo{desired_temperature: 1600., distance: TimeIterationDistance::Iteration { value: 20000 }},
     TemperatureInfo{desired_temperature: 200., distance: TimeIterationDistance::Iteration { value: 2000 }},
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
       distance: i.distance}).collect();
 
-  let num_iterations = (1e4) as usize;
+  let num_iterations = (8e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -34,13 +34,13 @@ pub fn dense_runner() {
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 
-  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 3.0 };
+  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 4.0 };
   let edge_condition = EdgeCondition::Periodic;
 
   let world_size = Vector3::new(50., 50., 50.);
   let offset = Vector3::new(1.7, 1.7, 1.7);
 
-  dense_particles(TIME_STEP, save, save_path, num_iterations, 5., world_size, offset, integration_algorithm, world_type, edge_condition);
+  dense_particles(TIME_STEP, save, save_path, num_iterations, 7., world_size, offset, integration_algorithm, world_type, edge_condition);
 }
 
 pub fn one_particle_edge_runner() {
