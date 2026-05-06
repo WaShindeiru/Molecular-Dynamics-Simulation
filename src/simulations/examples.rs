@@ -318,7 +318,7 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
                        particle_distance: f64, world_size: Vector3<f64>,  offset: Vector3<f64>,
                        integration_algorithm: IntegrationAlgorithm, world_type: WorldType,
                        edge_condition: EdgeCondition) {
-  let potential_gravity_max = 0.0;
+  let potential_gravity_max = 1.0;
   let atom_factory = SafeAtomFactory::new(potential_gravity_max, world_size.z);
 
   let mut atoms: Vec<Particle> = Vec::new();

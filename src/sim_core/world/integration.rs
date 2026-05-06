@@ -4,7 +4,7 @@ use crate::data::units::TEMPERATURE_U;
 
 const TEMP_THRESHOLD: f64 = 30.;
 const TEMP_THRESHOLD_UNITLESS: f64 = TEMP_THRESHOLD / TEMPERATURE_U;
-const ACCEPTANCE_TIME_UNITLESS: f64 = 2000. * 1e-18 / TIME_U;
+const ACCEPTANCE_TIME_UNITLESS: f64 = 200. * 1e-18 / TIME_U;
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
