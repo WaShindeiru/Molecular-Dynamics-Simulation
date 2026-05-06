@@ -50,10 +50,7 @@ pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge
   };
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo {
-      desired_temperature: 100.,
-      distance: TimeIterationDistance::Iteration { value: num_iterations },
-    }],
+    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
     q_effective_mass: 100.,
   };
 
@@ -191,10 +188,7 @@ pub fn test_reset_world_with_thermostat_runner(world_type: WorldType, edge_condi
     };
 
     let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-        desired_temperature: vec![TemperatureInfo {
-        desired_temperature: 300.,
-        distance: TimeIterationDistance::Iteration { value: num_iterations },
-        }],
+        desired_temperature: vec![TemperatureInfo::new(300., TimeIterationDistance::Iteration { value: num_iterations })],
         q_effective_mass: 1000.,
     };
 
@@ -268,10 +262,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
 
   // TODO: change back to verlet
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo {
-      desired_temperature: 100.,
-      distance: TimeIterationDistance::Iteration { value: num_iterations },
-    }],
+    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
     q_effective_mass: 100.,
   };
 
@@ -498,10 +489,7 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
 
   // TODO: go back to verlet
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo {
-      desired_temperature: 100.,
-      distance: TimeIterationDistance::Iteration { value: num_iterations },
-    }],
+    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
     q_effective_mass: 100.,
   };
 
@@ -596,10 +584,7 @@ pub fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition
   };
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo {
-      desired_temperature: 100.,
-      distance: TimeIterationDistance::Iteration { value: num_iterations },
-    }],
+    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
     q_effective_mass: 100.,
   };
 

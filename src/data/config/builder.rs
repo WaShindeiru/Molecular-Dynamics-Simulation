@@ -226,7 +226,7 @@ impl SimulationConfigBuilder {
 			}),
 			integration_algorithm: self.integration_algorithm.unwrap_or(IntegrationAlgorithm::NoseHooverVerlet {
 				q_effective_mass: 1.,
-				desired_temperature: vec![TemperatureInfo{desired_temperature: 2000., distance: TimeIterationDistance::Iteration { value: 20000 }}]
+				desired_temperature: vec![TemperatureInfo::new(2000., TimeIterationDistance::Iteration { value: 20000 })]
 			}),
 			world_type: self.world_type.unwrap_or(WorldType::BoxedWorld { task_worker_multiplier: 4.0 }),
 			edge_condition: self.edge_condition.unwrap_or(EdgeCondition::Periodic),

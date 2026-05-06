@@ -15,16 +15,17 @@ const TEMPERATURE_KELVIN: f64 = 1600.0;
 const Q_EFFECTIVE_MASS: f64 = 1000.;
 
 pub fn dense_runner() {
-  let save_path = get_save_path("../output/".to_string());
+  let save_path = get_save_path("/media/washindeiru/EE366BA9366B718F/md/output/".to_string());
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 1600., distance: TimeIterationDistance::Iteration { value: 20000 }},
-    TemperatureInfo{desired_temperature: 200., distance: TimeIterationDistance::Iteration { value: 2000 }},
+    TemperatureInfo::new(1600., TimeIterationDistance::Iteration { value: 20000 }),
+    TemperatureInfo::new(200., TimeIterationDistance::Iteration { value: 2000 }),
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
-      distance: i.distance}).collect();
+      ..i
+    }).collect();
 
   let num_iterations = (8e4) as usize;
   let save = true;
@@ -48,11 +49,12 @@ pub fn one_particle_edge_runner() {
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration { value: 1000 }},
+    TemperatureInfo::new(600., TimeIterationDistance::Iteration { value: 1000 }),
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
-      distance: i.distance}).collect();
+      ..i
+    }).collect();
 
   let num_iterations = (4e4) as usize;
   let save = true;
@@ -74,11 +76,12 @@ pub fn two_particles_edge_runner() {
   logging::init_logging(save_path.clone());
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 600., distance: TimeIterationDistance::Iteration { value: 1000 }},
+    TemperatureInfo::new(600., TimeIterationDistance::Iteration { value: 1000 }),
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
-      distance: i.distance}).collect();
+      ..i
+    }).collect();
 
   let num_iterations = (4e4) as usize;
   let save = true;
@@ -105,10 +108,7 @@ pub fn sphere_runner() {
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo {
-      desired_temperature: temperature_kelvin_unitless,
-      distance: TimeIterationDistance::Iteration { value: num_iterations },
-    }],
+    desired_temperature: vec![TemperatureInfo::new(temperature_kelvin_unitless, TimeIterationDistance::Iteration { value: num_iterations })],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
   let world_type = WorldType::BoxedWorld { task_worker_multiplier: 2.0 };
@@ -126,10 +126,7 @@ pub fn triangle_runner() {
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo {
-      desired_temperature: temperature_kelvin_unitless,
-      distance: TimeIterationDistance::Iteration { value: num_iterations },
-    }],
+    desired_temperature: vec![TemperatureInfo::new(temperature_kelvin_unitless, TimeIterationDistance::Iteration { value: num_iterations })],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
   let world_type = WorldType::BoxedWorld { task_worker_multiplier: 2.0 };
@@ -147,10 +144,7 @@ pub fn symmetric_triangle_test_runner() {
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo {
-      desired_temperature: temperature_kelvin_unitless,
-      distance: TimeIterationDistance::Iteration { value: num_iterations },
-    }],
+    desired_temperature: vec![TemperatureInfo::new(temperature_kelvin_unitless, TimeIterationDistance::Iteration { value: num_iterations })],
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 

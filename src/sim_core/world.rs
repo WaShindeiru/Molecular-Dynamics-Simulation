@@ -4,8 +4,8 @@ use crate::output::world::WorldDTO;
 use crate::particle::Particle;
 use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::BoxedWorld;
-use crate::sim_core::world::simple_world::SimpleWorld;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::simple_world::SimpleWorld;
 
 pub mod integration;
 pub mod simple_world;

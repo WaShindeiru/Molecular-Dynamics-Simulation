@@ -1,5 +1,6 @@
 use std::{fs, io};
 use std::fs::OpenOptions;
+use std::path::Path;
 
 use csv::Writer;
 use log::info;
@@ -12,7 +13,8 @@ use crate::sim_core::world::saver::PartialWorldSaver;
 impl PartialWorldSaver {
   pub fn persist_simple_world(&mut self, world: &SimpleWorldDTO) -> io::Result<()> {
     info!("Saving batch: {} ...", world.number_of_resets);
-    fs::create_dir_all(&format!("./{}", self.save_options.save_path))?;
+    let save_dir = Path::new(&self.save_options.save_path);
+    fs::create_dir_all(save_dir)?;
 
     self.append_energies_simple_world(world)?;
 
@@ -88,10 +90,11 @@ impl PartialWorldSaver {
       thermostat_work.push(self.thermostat_work_total);
     }
 
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/energy.csv", self.save_options.save_path))?;
+      .open(save_dir.join("energy.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 
@@ -130,9 +133,12 @@ impl PartialWorldSaver {
   fn save_laamps_simple_world(&mut self, world: &SimpleWorldDTO) -> io::Result<()> {
     let atoms = &world.atoms;
     let mut files_saved = 0;
+    let save_dir = Path::new(&self.save_options.save_path);
+    let laamps_dir = save_dir.join("laamps");
+    fs::create_dir_all(&laamps_dir)?;
 
     for i in 0..atoms.len() {
-      if self.frame_iteration_count_current_iteration % world.frame_iteration_count == 0 {
+      if self.laamps_frame_iteration_count_current_iteration % world.frame_iteration_count == 0 {
         let mut result_string = String::new();
         result_string.push_str(&"ITEM: TIMESTEP\n".to_string());
         result_string.push_str(&format!("{}\n", i));
@@ -154,11 +160,11 @@ impl PartialWorldSaver {
         }
 
         let file_number = i + world.number_of_resets * world.max_iteration_till_reset;
-        fs::write(&format!("./{}/output_{}.dump", self.save_options.save_path, file_number), result_string)?;
+        fs::write(laamps_dir.join(format!("output_{}.dump", file_number)), result_string)?;
         files_saved += 1;
       }
 
-      self.frame_iteration_count_current_iteration += 1
+      self.laamps_frame_iteration_count_current_iteration += 1
     }
 
     info!("Saved {} laamps output files.", {files_saved});
@@ -166,10 +172,11 @@ impl PartialWorldSaver {
   }
 
   fn append_forces_simple_world(&self, world: &SimpleWorldDTO, forces: &Vec<Vec<Vector3<f64>>>) -> io::Result<()> {
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/forces.csv", self.save_options.save_path))?;
+      .open(save_dir.join("forces.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 
@@ -195,10 +202,11 @@ impl PartialWorldSaver {
   }
 
   fn append_potential_energies_simple_world(&self, world: &SimpleWorldDTO, potential_energies: &Vec<Vec<f64>>) -> io::Result<()> {
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/potential_energies.csv", self.save_options.save_path))?;
+      .open(save_dir.join("potential_energies.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 
@@ -223,10 +231,11 @@ impl PartialWorldSaver {
 
   fn append_positions_in_one_file_simple_world(&self, world: &SimpleWorldDTO) -> io::Result<()> {
     let atoms = &world.atoms;
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/positions.csv", self.save_options.save_path))?;
+      .open(save_dir.join("positions.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 
