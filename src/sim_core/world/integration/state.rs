@@ -153,10 +153,10 @@ impl IntegrationAlgorithmState {
             *after_achieved_consecutive = 0;
 
             let next_temperature_index = *temperature_index + 1;
-            if next_temperature_index >= desired_temperature.len() {
-              *stage = NoseHooverStage::LastEntry;
-              return IntegrationAlgorithmState::response_nose_hoover(false, temp_info.desired_temperature);
-            }
+            debug_assert!(
+              next_temperature_index < desired_temperature.len(),
+              "Invalid NoseHoover state: switch requested from last temperature entry"
+            );
 
             *temperature_index = next_temperature_index;
             let next_temp_info = *desired_temperature.get(*temperature_index).unwrap();

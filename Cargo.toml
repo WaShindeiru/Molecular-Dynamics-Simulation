@@ -15,3 +15,6 @@ flexi_logger = { version = "0.28", features = ["colors"] }
 approx = "0.5.1"
 rand_distr = "0.6.0"
 
+[profile.release-checks]
+inherits = "release"
+debug-assertions = true

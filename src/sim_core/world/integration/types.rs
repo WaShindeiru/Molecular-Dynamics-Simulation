@@ -43,6 +43,20 @@ impl TemperatureInfo {
       threshold: default_temperature_threshold(),
     }
   }
+
+  pub fn with_params(
+    desired_temperature: f64,
+    acceptance_distance: TimeIterationDistance,
+    achieved_distance: TimeIterationDistance,
+    threshold: f64,
+  ) -> Self {
+    TemperatureInfo {
+      desired_temperature,
+      acceptance_distance,
+      achieved_distance,
+      threshold,
+    }
+  }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

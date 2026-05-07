@@ -27,7 +27,7 @@ pub fn dense_runner() {
       ..i
     }).collect();
 
-  let num_iterations = (8e4) as usize;
+  let num_iterations = (6e4) as usize;
   let save = true;
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -35,7 +35,7 @@ pub fn dense_runner() {
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
 
-  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 4.0 };
+  let world_type = WorldType::BoxedWorld { task_worker_multiplier: 6.0 };
   let edge_condition = EdgeCondition::Periodic;
 
   let world_size = Vector3::new(50., 50., 50.);
