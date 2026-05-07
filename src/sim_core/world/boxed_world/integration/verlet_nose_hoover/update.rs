@@ -69,11 +69,12 @@ impl BoxedWorld {
         let simulation_temperature = computation_collector.get_mean_temperature();
 
         let result = self.integration_algorithm_state.update_state(
+            next_iteration,
             self.config.time_step, 
             &self.config.integration_algorithm, 
             simulation_temperature);
         match result {
-        IntegrationStateUpdateResponse::NoseHooverVerlet { updated, temperature, .. } => {
+        IntegrationStateUpdateResponse::NoseHooverVerlet { updated, temperature } => {
             if updated {
             info!("Iteration: {}, Simulation temperature: {}, Temperature: {} achieved, switching to temperature: {}",
                 self.iteration, simulation_temperature * TEMPERATURE_U, current_desired_temperature * TEMPERATURE_U,

@@ -1,5 +1,6 @@
 use std::{fs, io};
 use std::fs::OpenOptions;
+use std::path::Path;
 
 use csv::Writer;
 use log::info;
@@ -12,7 +13,8 @@ use crate::sim_core::world::saver::PartialWorldSaver;
 impl PartialWorldSaver {
   pub fn persist_boxed_world(&mut self, world: &BoxedWorldDTO) -> io::Result<()> {
     info!("Saving batch: {} ...", world.number_of_resets);
-    fs::create_dir_all(&format!("./{}", self.save_options.save_path))?;
+    let save_dir = Path::new(&self.save_options.save_path);
+    fs::create_dir_all(save_dir)?;
 
     self.append_energies_boxed_world(world)?;
 
@@ -67,16 +69,24 @@ impl PartialWorldSaver {
       thermostat_work.push(self.thermostat_work_total);
     }
 
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/energy.csv", self.save_options.save_path))?;
+      .open(save_dir.join("energy.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 
     assert!(kinetic_energy.len() == potential_energy.len() && kinetic_energy.len() == total_energy.len());
 
     for i in 0..kinetic_energy.len() {
+      let should_save = self.energy_frame_iteration_count_current_iteration % world.frame_iteration_count == 0;
+      self.energy_frame_iteration_count_current_iteration += 1;
+
+      if !should_save {
+        continue;
+      }
+
       let iteration = world.number_of_resets * world.max_iteration_till_reset + i;
 
       match world.integration_algorithm {
@@ -111,9 +121,12 @@ impl PartialWorldSaver {
   fn save_laamps_boxed_world(&mut self, world: &BoxedWorldDTO) -> io::Result<()> {
     let box_containers = &world.history.box_container;
     let mut files_saved = 0;
+    let save_dir = Path::new(&self.save_options.save_path);
+    let laamps_dir = save_dir.join("laamps");
+    fs::create_dir_all(&laamps_dir)?;
 
     for i in 0..box_containers.len() {
-      if self.frame_iteration_count_current_iteration % world.frame_iteration_count == 0 {
+      if self.laamps_frame_iteration_count_current_iteration % world.frame_iteration_count == 0 {
         let iteration_number = i + world.number_of_resets * world.max_iteration_till_reset;
 
         let mut result_string = String::new();
@@ -136,11 +149,11 @@ impl PartialWorldSaver {
           result_string.push_str(&format!("{} {} {} {} {}\n", atom_dto.id, atom_dto.atom_type, atom_dto.x, atom_dto.y, atom_dto.z));
         }
 
-        fs::write(&format!("./{}/output_{}.dump", self.save_options.save_path, iteration_number), result_string)?;
+        fs::write(laamps_dir.join(format!("output_{}.dump", iteration_number)), result_string)?;
         files_saved += 1;
       }
 
-      self.frame_iteration_count_current_iteration += 1
+      self.laamps_frame_iteration_count_current_iteration += 1
     }
 
     info!("Saved {} laamps output files.", {files_saved});
@@ -174,10 +187,11 @@ impl PartialWorldSaver {
 
   // TODO: this method is exactly the same for simple world, refactor this please
   fn append_forces_boxed_world(&self, world: &BoxedWorldDTO, forces: &Vec<Vec<Vector3<f64>>>) -> io::Result<()> {
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/forces.csv", self.save_options.save_path))?;
+      .open(save_dir.join("forces.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 
@@ -204,10 +218,11 @@ impl PartialWorldSaver {
 
   // TODO: this method is the same as well
   fn append_potential_energies_boxed_world(&self, world: &BoxedWorldDTO, potential_energies: &Vec<Vec<f64>>) -> io::Result<()> {
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/potential_energies.csv", self.save_options.save_path))?;
+      .open(save_dir.join("potential_energies.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 
@@ -232,10 +247,11 @@ impl PartialWorldSaver {
 
   fn append_positions_in_one_file_boxed_world(&self, world: &BoxedWorldDTO) -> io::Result<()> {
     let box_containers = &world.history.box_container;
+    let save_dir = Path::new(&self.save_options.save_path);
     let file = OpenOptions::new()
       .create(true)
       .append(true)
-      .open(&format!("./{}/positions.csv", self.save_options.save_path))?;
+      .open(save_dir.join("positions.csv"))?;
 
     let mut wtr = Writer::from_writer(file);
 

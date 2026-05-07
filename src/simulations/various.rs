@@ -8,12 +8,13 @@ pub fn see_config_json() {
   let atoms = vec![atom_factory.get_atom(AtomType::Fe, Vector3::new(5., 5., 5.), Vector3::new(0.01, 0.01, 0.01))];
 
   let desired_temperatures = vec![
-    TemperatureInfo{desired_temperature: 2000., distance: TimeIterationDistance::Iteration { value: 20000 }},
-    TemperatureInfo{desired_temperature: 200., distance: TimeIterationDistance::Iteration { value: 2000 }},
+    TemperatureInfo::new(2000., TimeIterationDistance::Iteration { value: 20000 }),
+    TemperatureInfo::new(200., TimeIterationDistance::Iteration { value: 2000 }),
   ].into_iter().map(
     |i| TemperatureInfo{
       desired_temperature: i.desired_temperature / TEMPERATURE_U,
-      distance: i.distance}).collect();
+      ..i
+    }).collect();
 
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)

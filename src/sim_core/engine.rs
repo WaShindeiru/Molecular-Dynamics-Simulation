@@ -8,6 +8,7 @@ use std::io::Write;
 use std::time::{Duration, Instant};
 use chrono::prelude::*;
 use std::fs::File;
+use std::path::Path;
 use log::info;
 use crate::data::units::TIME_U;
 use crate::particle::Particle;
@@ -85,16 +86,18 @@ impl Engine {
 
   pub fn save(&mut self) -> io::Result<()> {
     self.world.save()?;
+    let save_dir = Path::new(&self.save_options.save_path);
 
     let now: DateTime<Local> = Local::now();
     let time_string: String = now.format("%Y-%m-%d_%H-%M-%S").to_string();
 
-    let mut file = File::create(&format!("./{}/info.txt", self.save_options.save_path))?;
+    let mut file = File::create(save_dir.join("info.txt"))?;
     writeln!(file, "Simulation date: {}", time_string)?;
     writeln!(file, "Number of iterations : {:?}", self.config.num_of_iterations)?;
     writeln!(file, "Simulation Time: {:?} seconds", self.simulation_time)?;
 
-    self.config.to_json_file(&format!("./{}/parameters.json", self.save_options.save_path))?;
+    let parameters_path = save_dir.join("parameters.json");
+    self.config.to_json_file(parameters_path.to_string_lossy().as_ref())?;
 
     // writeln!(file, "\n=== World Configuration ===")?;
     // writeln!(file, "World type: {}", self.world.get_world_info())?;

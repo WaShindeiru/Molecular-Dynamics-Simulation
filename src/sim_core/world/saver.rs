@@ -16,7 +16,8 @@ pub struct PartialWorldSaver {
   save_options: SaveOptions,
 
   thermostat_work_total: f64,
-  frame_iteration_count_current_iteration: usize, // for laamps purposes save only
+  laamps_frame_iteration_count_current_iteration: usize,
+  energy_frame_iteration_count_current_iteration: usize,
 }
 
 impl PartialWorldSaver {
@@ -24,7 +25,8 @@ impl PartialWorldSaver {
     PartialWorldSaver  {
       save_options,
       thermostat_work_total: 0.,
-      frame_iteration_count_current_iteration: 0,
+      laamps_frame_iteration_count_current_iteration: 0,
+      energy_frame_iteration_count_current_iteration: 0,
     }
   }
 
