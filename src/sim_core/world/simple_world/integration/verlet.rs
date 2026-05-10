@@ -1,10 +1,9 @@
-use nalgebra::Vector3;
-use crate::particle::{potential, Particle};
+use crate::particle::{Particle, potential};
 use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
 use crate::sim_core::world::simple_world::SimpleWorld;
+use nalgebra::Vector3;
 
 impl SimpleWorld {
-
   // TODO: Fix boundary conditions check, what's wrong about them?
   pub fn update_verlet(&mut self, time_step: f64, next_iteration: usize) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
@@ -12,12 +11,14 @@ impl SimpleWorld {
     assert_eq!(self.atoms.len() - 1, self.current_index);
     let previous_atom_container = self.atoms.get(self.current_index).unwrap();
 
-    let mut half_velocity_cache: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); self.atom_count];
+    let mut half_velocity_cache: Vec<Vector3<f64>> =
+      vec![Vector3::new(0., 0., 0.); self.atom_count];
     let mut new_position_atoms: Vec<Particle> = Vec::with_capacity(self.atom_count);
 
     for (i, atom_i) in previous_atom_container.get_atoms().iter().enumerate() {
       assert_eq!(i, atom_i.get_id());
-      let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + atom_i.get_acceleration() * (time_step / 2.0);
+      let half_velocity_i: Vector3<f64> =
+        atom_i.get_velocity() + atom_i.get_acceleration() * (time_step / 2.0);
       half_velocity_cache[i] = half_velocity_i;
 
       let next_position: Vector3<f64> = atom_i.get_position() + half_velocity_i * time_step;

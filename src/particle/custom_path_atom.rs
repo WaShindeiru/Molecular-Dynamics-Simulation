@@ -1,12 +1,12 @@
-use nalgebra::Vector3;
 use crate::data::types::AtomType;
-use crate::output::atom::AtomDTO;
+use crate::persistence::dto::atom::AtomDTO;
+use nalgebra::Vector3;
 
 impl CustomPathAtom {
   pub fn get_id(&self) -> usize {
     self.id
   }
-  
+
   pub fn get_iteration(&self) -> usize {
     self.iteration
   }
@@ -39,9 +39,13 @@ impl CustomPathAtom {
     self.potential_energy
   }
 
-  pub fn get_potential_gravity_energy(&self) -> f64 { self.potential_gravity_energy}
+  pub fn get_potential_gravity_energy(&self) -> f64 {
+    self.potential_gravity_energy
+  }
 
-  pub fn get_thermostat_work(&self) -> f64 { self.thermostat_work }
+  pub fn get_thermostat_work(&self) -> f64 {
+    self.thermostat_work
+  }
 
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     self.velocity = velocity_;
@@ -51,11 +55,10 @@ impl CustomPathAtom {
   pub fn set_potential_energy(&mut self, potential_energy_: f64) {
     self.potential_energy = potential_energy_;
   }
-  
+
   pub fn set_potential_gravity_energy(&mut self, potential_gravity_energy: f64) {
     self.potential_gravity_energy = potential_gravity_energy
   }
-
 
   pub fn set_force(&mut self, force_: Vector3<f64>) {
     self.force = force_;
@@ -80,6 +83,10 @@ impl CustomPathAtom {
     }
   }
 
+  pub fn set_position(&mut self, position_: Vector3<f64>) {
+    self.position = position_;
+  }
+
   // TODO: I don't know if this is correct btw
   pub fn reset_clone(&self) -> CustomPathAtom {
     CustomPathAtom {
@@ -98,7 +105,7 @@ impl CustomPathAtom {
       potential_energy: 0.,
       potential_gravity_energy: self.potential_gravity_energy,
       thermostat_work: 0.,
-      
+
       path: self.path.clone(),
       step: self.step,
     }

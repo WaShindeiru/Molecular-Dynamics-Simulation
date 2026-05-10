@@ -1,6 +1,6 @@
+use nalgebra::Vector3;
 use std::collections::HashMap;
 use std::sync::Arc;
-use nalgebra::Vector3;
 
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 
@@ -8,9 +8,9 @@ use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
-pub mod task_manager;
 mod force_task_box_container;
 mod handle_task;
+pub mod task_manager;
 
 pub enum BoxTask {
   VelocityBatchTask {
@@ -27,8 +27,8 @@ pub enum BoxTask {
     task_id: usize,
     boundary_condition: EdgeCondition,
     box_ids: Vec<usize>,
-    integration_cache: Arc<IntegrationCache>
-  }
+    integration_cache: Arc<IntegrationCache>,
+  },
 }
 
 pub struct VelocityTaskParticleData {
@@ -54,10 +54,10 @@ pub struct ForceTaskResult {
   pub potential_energy: f64,
   pub optimization_considered: usize,
   pub optimization_ignored: usize,
-  pub particles: HashMap<usize, ForceTaskParticleData>
+  pub particles: HashMap<usize, ForceTaskParticleData>,
 }
 
 pub enum BoxResult {
-  VelocityResult (VelocityTaskResult),
-  ForceResult (ForceTaskResult),
+  VelocityResult(VelocityTaskResult),
+  ForceResult(ForceTaskResult),
 }

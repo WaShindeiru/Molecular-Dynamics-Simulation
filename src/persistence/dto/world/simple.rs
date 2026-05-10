@@ -1,4 +1,4 @@
-use crate::output::atom::AtomDTO;
+use crate::persistence::dto::atom::AtomDTO;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 
 pub struct SimpleWorldDTO {
@@ -15,5 +15,6 @@ pub struct SimpleWorldDTO {
   pub number_of_resets: usize,
   pub max_iteration_till_reset: usize,
 
-  pub frame_iteration_count: usize,
+  pub laamps_frame_iteration_count: usize,
+  pub energy_frame_iteration_count: usize,
 }

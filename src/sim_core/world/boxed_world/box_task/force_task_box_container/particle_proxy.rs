@@ -1,14 +1,16 @@
-use std::sync::Arc;
-use nalgebra::Vector3;
 use crate::data::types::AtomType;
 use crate::particle::Particle;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{get_coordinates_from_simulation_box_id, SimBoxEdge};
+use crate::sim_core::world::boxed_world::box_container::sim_box::{
+  SimBoxEdge, get_coordinates_from_simulation_box_id,
+};
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
+use nalgebra::Vector3;
+use std::sync::Arc;
 
 #[derive(Copy, Clone)]
 pub enum AxisPlacement {
   Left,
-  Normal
+  Normal,
 }
 
 #[derive(Copy, Clone)]
@@ -23,8 +25,11 @@ pub struct ParticlePositionProxy {
   world_size: Vector3<f64>,
 }
 
-pub fn new_particle_position_proxy(particle: Arc<Particle>, particle_placement: ParticlePlacement,
-                                   world_size: Vector3<f64>) -> ParticlePositionProxy {
+pub fn new_particle_position_proxy(
+  particle: Arc<Particle>,
+  particle_placement: ParticlePlacement,
+  world_size: Vector3<f64>,
+) -> ParticlePositionProxy {
   ParticlePositionProxy {
     particle,
     particle_placement,

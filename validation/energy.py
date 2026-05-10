@@ -173,7 +173,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
 
   if thermostat:
     num_atoms = None
-    with open(path + '/output_0.dump', 'r') as f:
+    with open(path + '/laamps/output_0.dump', 'r') as f:
       for line in f:
         if line.strip() == 'ITEM: NUMBER OF ATOMS':
           num_atoms = int(f.readline().strip())
@@ -254,9 +254,10 @@ if __name__ == "__main__":
   # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check")
   # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check_v2/prog_check")
   import os
-  output_dir = "../../output"
-  # output_dir = "/media/washindeiru/EE366BA9366B718F/md/output"
+  # output_dir = "../../output"
+  output_dir = "/media/washindeiru/7E442D59442D1585/md"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-11_00-27-56"
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")

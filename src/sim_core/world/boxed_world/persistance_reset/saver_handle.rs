@@ -2,7 +2,7 @@ use std::io;
 use std::sync::mpsc::{self, TryRecvError};
 use std::thread::JoinHandle;
 
-use crate::output::world::boxed::BoxedWorldDTO;
+use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::sim_core::world::saver::PartialWorldSaver;
 
 use super::saver_worker::SaverWorker;

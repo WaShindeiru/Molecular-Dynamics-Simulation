@@ -1,5 +1,7 @@
 use crate::particle::Particle;
-use crate::sim_core::old::atom_wrapper::{AtomData, AtomDataContainer, AtomForceContainer, AtomForceData};
+use crate::sim_core::old::atom_wrapper::{
+  AtomData, AtomDataContainer, AtomForceContainer, AtomForceData,
+};
 
 pub struct SimpleAtomContainer {
   atoms: Vec<Particle>,
@@ -47,7 +49,7 @@ impl SimpleAtomContainer {
   pub fn get_atom(&self, id: usize) -> Option<&Particle> {
     self.atoms.get(id)
   }
-  
+
   pub fn create_parts(&self) -> (AtomDataContainer, AtomForceContainer) {
     let mut data_container = AtomDataContainer::new();
     let mut force_container = AtomForceContainer::new();
@@ -63,7 +65,7 @@ impl SimpleAtomContainer {
   pub fn set_potential_energy(&mut self, potential_energy: f64) {
     self.potential_energy = potential_energy;
   }
-  
+
   pub fn get_potential_energy(&self) -> f64 {
     self.potential_energy
   }

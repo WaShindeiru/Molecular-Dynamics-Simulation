@@ -63,7 +63,7 @@ impl<T> Cube<T> {
   pub fn get(&self, x: usize, y: usize, z: usize) -> Option<&T> {
     self.data.get(x)?.get(y)?.get(z)
   }
-  
+
   pub fn get_vec(&self, vec: &Vector3<usize>) -> Option<&T> {
     self.data.get(vec.x)?.get(vec.y)?.get(vec.z)
   }
@@ -133,21 +133,30 @@ impl<T> Cube<T> {
 
   /// Iterates over all elements in the cube (in x, y, z order)
   pub fn iter(&self) -> impl Iterator<Item = &T> {
-    self.data.iter().flat_map(|x| x.iter().flat_map(|y| y.iter()))
+    self
+      .data
+      .iter()
+      .flat_map(|x| x.iter().flat_map(|y| y.iter()))
   }
 
   /// Iterates over all elements in the cube with their coordinates
   pub fn iter_with_coords(&self) -> impl Iterator<Item = ((usize, usize, usize), &T)> {
     self.data.iter().enumerate().flat_map(|(x, x_vec)| {
       x_vec.iter().enumerate().flat_map(move |(y, y_vec)| {
-        y_vec.iter().enumerate().map(move |(z, item)| ((x, y, z), item))
+        y_vec
+          .iter()
+          .enumerate()
+          .map(move |(z, item)| ((x, y, z), item))
       })
     })
   }
 
   /// Mutably iterates over all elements in the cube (in x, y, z order)
   pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
-    self.data.iter_mut().flat_map(|x| x.iter_mut().flat_map(|y| y.iter_mut()))
+    self
+      .data
+      .iter_mut()
+      .flat_map(|x| x.iter_mut().flat_map(|y| y.iter_mut()))
   }
 
   /// Fills the entire cube with the given value

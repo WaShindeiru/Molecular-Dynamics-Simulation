@@ -1,17 +1,17 @@
-use std::io;
+use crate::data::types::AtomType;
+use crate::data::{ParticleConfig, SimulationConfig};
+use crate::persistence::dto::atom::AtomDTO;
+use crate::persistence::dto::world::WorldDTO;
+use crate::persistence::dto::world::simple::SimpleWorldDTO;
+use crate::particle::Particle;
+use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
+use crate::sim_core::world::get_index_for_iteration;
+use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::saver::PartialWorldSaver;
+use crate::sim_core::world::saver::SaveOptions;
 use log::info;
 use nalgebra::Vector3;
-use crate::sim_core::world::saver::PartialWorldSaver;
-use crate::particle::Particle;
-use crate::sim_core::world::get_index_for_iteration;
-use crate::sim_core::world::integration::{IntegrationAlgorithm};
-use crate::sim_core::world::saver::SaveOptions;
-use crate::data::types::AtomType;
-use crate::data::SimulationConfig;
-use crate::output::atom::AtomDTO;
-use crate::output::world::simple::SimpleWorldDTO;
-use crate::output::world::WorldDTO;
-use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
+use std::io;
 
 pub mod integration;
 
@@ -31,15 +31,23 @@ pub struct SimpleWorld {
   reset_counter: usize,
   number_of_resets: usize,
 
-  frame_iteration_count: usize,
+  laamps_frame_iteration_count: usize,
+  energy_frame_iteration_count: usize,
 
   save_options: SaveOptions,
   world_saver: PartialWorldSaver,
 }
 
 impl SimpleWorld {
-  pub fn new_from_atoms(atoms: Vec<Particle>, size: Vector3<f64>, max_iteration_till_reset: usize,
-                        frame_iteration_count: usize, integration_algorithm: IntegrationAlgorithm, save_options: SaveOptions) -> Self {
+  pub fn new_from_atoms(
+    atoms: Vec<Particle>,
+    size: Vector3<f64>,
+    max_iteration_till_reset: usize,
+    laamps_frame_iteration_count: usize,
+    energy_frame_iteration_count: usize,
+    integration_algorithm: IntegrationAlgorithm,
+    save_options: SaveOptions,
+  ) -> Self {
     let atom_count = atoms.len();
 
     let atom_container = SimpleAtomContainer::new_from_atoms(atoms);
@@ -65,7 +73,8 @@ impl SimpleWorld {
       reset_counter: 1,
       number_of_resets: 0,
 
-      frame_iteration_count,
+      laamps_frame_iteration_count,
+      energy_frame_iteration_count,
 
       save_options: save_options.clone(),
       world_saver: PartialWorldSaver::new(save_options),
@@ -73,8 +82,8 @@ impl SimpleWorld {
   }
 
   /// Create SimpleWorld from a SimulationConfig
-  pub fn with_config(mut config: SimulationConfig) -> Self {
-    let atoms = config.atoms.take().unwrap_or_default();
+  pub fn with_config(config: SimulationConfig, particle_config: ParticleConfig) -> Self {
+    let atoms = particle_config.atoms;
     let atom_count = atoms.len();
 
     let atom_container = SimpleAtomContainer::new_from_atoms(atoms);
@@ -83,12 +92,6 @@ impl SimpleWorld {
 
     let mut thermostat_epsilon: Vec<f64> = Vec::with_capacity(config.max_iteration_till_reset);
     thermostat_epsilon.push(0.);
-
-    let frame_iteration_count = if !config.save_all_iterations {
-      (config.one_frame_duration / config.time_step) as usize
-    } else {
-      1
-    };
 
     SimpleWorld {
       config: Some(config.clone()),
@@ -106,7 +109,8 @@ impl SimpleWorld {
       reset_counter: 1,
       number_of_resets: 0,
 
-      frame_iteration_count,
+      laamps_frame_iteration_count: config.save_options.laamps_sampling.frame_iteration_count,
+      energy_frame_iteration_count: config.save_options.energy_sampling.frame_iteration_count,
 
       save_options: config.save_options.clone(),
       world_saver: PartialWorldSaver::new(config.save_options.clone()),
@@ -121,7 +125,12 @@ impl SimpleWorld {
     Ok(())
   }
 
-  pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) {
+  pub fn update(
+    &mut self,
+    algorithm: &IntegrationAlgorithm,
+    time_step: f64,
+    next_iteration: usize,
+  ) {
     assert!(self.reset_counter <= self.max_iteration_till_reset);
     assert_eq!(self.atoms.len() - 1, self.current_index);
 
@@ -154,16 +163,22 @@ impl SimpleWorld {
     info!("Resetting world: {}", self.number_of_resets);
 
     let new_number_of_resets = self.number_of_resets + 1;
-    let new_index = get_index_for_iteration(self.current_iteration, self.max_iteration_till_reset, new_number_of_resets);
+    let new_index = get_index_for_iteration(
+      self.current_iteration,
+      self.max_iteration_till_reset,
+      new_number_of_resets,
+    );
 
-    let mut new_atoms: Vec<SimpleAtomContainer> = Vec::with_capacity(self.max_iteration_till_reset + 1);
+    let mut new_atoms: Vec<SimpleAtomContainer> =
+      Vec::with_capacity(self.max_iteration_till_reset + 1);
     if let Some(last_atom_container) = self.atoms.pop() {
       new_atoms.push(last_atom_container);
     } else {
       panic!("world is empty!");
     }
 
-    let mut new_thermostat_epsilon: Vec<f64> = Vec::with_capacity(self.max_iteration_till_reset + 1);
+    let mut new_thermostat_epsilon: Vec<f64> =
+      Vec::with_capacity(self.max_iteration_till_reset + 1);
     if let Some(last_epsilon) = self.thermostat_epsilon.pop() {
       new_thermostat_epsilon.push(last_epsilon);
     } else {
@@ -180,44 +195,92 @@ impl SimpleWorld {
   pub fn apply_boundary_constraint(&self, mut atom: Particle) -> Particle {
     atom = match atom.get_position().x {
       x if x < 0.0 => {
-        atom.set_velocity(Vector3::new(-atom.get_velocity().x, atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new(-atom.get_position().x, atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          -atom.get_velocity().x,
+          atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          -atom.get_position().x,
+          atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
       }
       x if x > self.size.x => {
-        atom.set_velocity(Vector3::new(-atom.get_velocity().x, atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new( 2. * self.size.x - atom.get_position().x, atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          -atom.get_velocity().x,
+          atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          2. * self.size.x - atom.get_position().x,
+          atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
-      },
-      _ => atom
+      }
+      _ => atom,
     };
 
     atom = match atom.get_position().y {
       y if y < 0.0 => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, -atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, -atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          -atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          -atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
       }
       y if y > self.size.y => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, -atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, 2. * self.size.y - atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          -atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          2. * self.size.y - atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
-      },
-      _ => atom
+      }
+      _ => atom,
     };
 
     atom = match atom.get_position().z {
       z if z < 0.0 => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, atom.get_velocity().y, -atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, atom.get_position().y, -atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          atom.get_velocity().y,
+          -atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          atom.get_position().y,
+          -atom.get_position().z,
+        ));
         atom
       }
       z if z > self.size.z => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, atom.get_velocity().y, -atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, atom.get_position().y, 2. * self.size.z - atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          atom.get_velocity().y,
+          -atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          atom.get_position().y,
+          2. * self.size.z - atom.get_position().z,
+        ));
         atom
-      },
-      _ => atom
+      }
+      _ => atom,
     };
 
     atom
@@ -246,24 +309,23 @@ impl SimpleWorld {
       potential_energies.push(atom_container.get_potential_energy());
     }
 
-    WorldDTO::SimpleWorldDTO(
-      SimpleWorldDTO {
-        num_of_atoms: self.atom_count,
-        atoms: all_atoms_dto,
-        potential_energy: potential_energies,
-        thermostat_epsilon: self.thermostat_epsilon.clone(),
-        box_x: self.size.x,
-        box_y: self.size.y,
-        box_z: self.size.z,
-        integration_algorithm: self.integration_algorithm.clone(),
+    WorldDTO::SimpleWorldDTO(SimpleWorldDTO {
+      num_of_atoms: self.atom_count,
+      atoms: all_atoms_dto,
+      potential_energy: potential_energies,
+      thermostat_epsilon: self.thermostat_epsilon.clone(),
+      box_x: self.size.x,
+      box_y: self.size.y,
+      box_z: self.size.z,
+      integration_algorithm: self.integration_algorithm.clone(),
 
-        num_of_world_iterations: self.reset_counter,
-        number_of_resets: self.number_of_resets,
-        max_iteration_till_reset: self.max_iteration_till_reset,
+      num_of_world_iterations: self.reset_counter,
+      number_of_resets: self.number_of_resets,
+      max_iteration_till_reset: self.max_iteration_till_reset,
 
-        frame_iteration_count: self.frame_iteration_count,
-      }
-    )
+      laamps_frame_iteration_count: self.laamps_frame_iteration_count,
+      energy_frame_iteration_count: self.energy_frame_iteration_count,
+    })
   }
 
   pub fn get_particle_counts(&self) -> (usize, usize, usize) {

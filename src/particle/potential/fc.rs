@@ -1,10 +1,9 @@
-use nalgebra::{Vector3};
+use nalgebra::Vector3;
 use std::f64::consts::PI;
 
 pub fn fc(r_mag: f64, R: f64, D: f64) -> f64 {
-
-  let R1 = (R-D).abs();
-  let R2 = (R+D).abs();
+  let R1 = (R - D).abs();
+  let R2 = (R + D).abs();
 
   match r_mag {
     r_ if r_ <= R1 => 1.,
@@ -14,8 +13,8 @@ pub fn fc(r_mag: f64, R: f64, D: f64) -> f64 {
 }
 
 pub fn fc_gradient(r_ij_vec: &Vector3<f64>, r_ij_mag: f64, R: f64, D: f64) -> Vector3<f64> {
-  let R1 = (R-D).abs();
-  let R2 = (R+D).abs();
+  let R1 = (R - D).abs();
+  let R2 = (R + D).abs();
 
   match r_ij_mag {
     rij_ if rij_ <= R1 => Vector3::new(0., 0., 0.),
@@ -25,7 +24,8 @@ pub fn fc_gradient(r_ij_vec: &Vector3<f64>, r_ij_mag: f64, R: f64, D: f64) -> Ve
       Vector3::new(
         common * r_ij_vec.x / rij_,
         common * r_ij_vec.y / rij_,
-        common * r_ij_vec.z / rij_)
+        common * r_ij_vec.z / rij_,
+      )
     }
   }
 }

@@ -1,6 +1,6 @@
+use nalgebra::Vector3;
 use std::collections::HashMap;
 use std::sync::Arc;
-use nalgebra::Vector3;
 
 use crate::data::SimulationConfig;
 use crate::data::units::K_B;
@@ -8,14 +8,13 @@ use crate::data::units::K_B;
 use crate::particle::Particle;
 
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
-use crate::sim_core::world::boundary_constraint::simple::apply_velocity_constraint_simple;
 use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
+use crate::sim_core::world::boundary_constraint::simple::apply_velocity_constraint_simple;
 
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::box_task::ForceTaskParticleData;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
-
 
 pub struct ComputationCollector {
   config: SimulationConfig,
@@ -47,9 +46,12 @@ impl ComputationCollector {
       if let Some(particle) = self.particles_modified.get_mut(particle_id) {
         let acceleration = force_data.force / particle.get_mass();
         particle.set_force(particle.get_force() + force_data.force);
-        particle.set_potential_energy(particle.get_potential_energy() + force_data.potential_energy);
+        particle
+          .set_potential_energy(particle.get_potential_energy() + force_data.potential_energy);
         particle.set_acceleration(particle.get_acceleration() + acceleration);
-        self.force_visited.entry(*particle_id)
+        self
+          .force_visited
+          .entry(*particle_id)
           .and_modify(|count| *count += 1)
           .or_insert(1);
       }
@@ -61,8 +63,8 @@ impl ComputationCollector {
     let z_max = self.integration_cache.box_cache().config().world_size.z;
 
     for particle in self.particles_modified.values_mut() {
-      let new_force = particle.get_force() - Vector3::new(0., 0., 1.)
-        * potential_gravity_max * particle.get_mass() / z_max;
+      let new_force = particle.get_force()
+        - Vector3::new(0., 0., 1.) * potential_gravity_max * particle.get_mass() / z_max;
       particle.set_force(new_force);
       particle.set_acceleration(new_force / particle.get_mass());
       particle.set_potential_gravity_energy(
@@ -96,7 +98,9 @@ impl ComputationCollector {
 
   pub fn get_mean_temperature(&self) -> f64 {
     let count = self.particles_modified.len();
-    let temperature: f64 = self.particles_modified.values()
+    let temperature: f64 = self
+      .particles_modified
+      .values()
       .map(|p| p.get_mass() * p.get_velocity().magnitude().powi(2) / (3. * K_B))
       .sum();
     temperature / count as f64

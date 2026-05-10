@@ -1,8 +1,8 @@
 pub mod box_container;
 
-use nalgebra::Vector3;
-use crate::output::world::history::HistoryDTO;
+use crate::persistence::dto::world::history::HistoryDTO;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
+use nalgebra::Vector3;
 
 pub struct BoxedWorldDTO {
   pub num_of_atoms: usize,
@@ -14,5 +14,6 @@ pub struct BoxedWorldDTO {
   pub number_of_resets: usize,
   pub max_iteration_till_reset: usize,
 
-  pub frame_iteration_count: usize,
+  pub laamps_frame_iteration_count: usize,
+  pub energy_frame_iteration_count: usize,
 }

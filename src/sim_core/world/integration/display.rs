@@ -12,7 +12,7 @@ impl fmt::Display for IntegrationAlgorithm {
         q_effective_mass: _q,
       } => {
         write!(f, "NoseHooverVerlet")
-      },
+      }
     }
   }
 }

@@ -1,18 +1,18 @@
-use std::collections::HashMap;
-use nalgebra::Vector3;
 use crate::data::Constant;
 use crate::data::constants::get_constant;
-use crate::data::types::{get_interaction_type, AtomType};
+use crate::data::types::{AtomType, get_interaction_type};
+use crate::particle::Particle;
 use crate::particle::potential::b::g;
-use crate::particle::potential::{b, fc};
 use crate::particle::potential::fc::{fc, fc_gradient};
 use crate::particle::potential::va::{va, va_gradient};
 use crate::particle::potential::vr::{vr, vr_gradient};
-use crate::particle::Particle;
-use crate::utils::math::cos_from_vec;
-use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
+use crate::particle::potential::{b, fc};
 use crate::sim_core::world::boundary_constraint::periodic::check_position_constraint_periodic;
 use crate::sim_core::world::boundary_constraint::simple::check_position_constraint_simple;
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
+use crate::utils::math::cos_from_vec;
+use nalgebra::Vector3;
+use std::collections::HashMap;
 
 const OPTIMIZATION: bool = true;
 
@@ -23,11 +23,15 @@ pub struct HalfVelocityResult {
   pub compliance: HashMap<usize, ParticleCompliance>,
 }
 
-pub fn verlet_noose_hoover_half_velocity_position<I>(previous_atom_container: I, time_step: f64,
-                                                     previous_thermostat_epsilon: f64,
-                                                     atom_count: usize, current_iteration: usize,
-                                                     container_size: &Vector3<f64>, edge_condition: EdgeCondition)
-  -> HalfVelocityResult
+pub fn verlet_noose_hoover_half_velocity_position<I>(
+  previous_atom_container: I,
+  time_step: f64,
+  previous_thermostat_epsilon: f64,
+  atom_count: usize,
+  current_iteration: usize,
+  container_size: &Vector3<f64>,
+  edge_condition: EdgeCondition,
+) -> HalfVelocityResult
 where
   I: IntoIterator,
   I::Item: AsRef<Particle>,
@@ -41,10 +45,10 @@ where
     let atom_i = temp_i.as_ref();
     let i_id = atom_i.get_id();
 
-    let thermostat_difference = atom_i.get_acceleration() -
-      previous_thermostat_epsilon * atom_i.get_velocity();
-    let half_velocity_i: Vector3<f64> = atom_i.get_velocity() + thermostat_difference *
-      (time_step / 2.0);
+    let thermostat_difference =
+      atom_i.get_acceleration() - previous_thermostat_epsilon * atom_i.get_velocity();
+    let half_velocity_i: Vector3<f64> =
+      atom_i.get_velocity() + thermostat_difference * (time_step / 2.0);
     half_velocity_cache.insert(i_id, half_velocity_i);
 
     let previous_position = atom_i.get_position();
@@ -52,7 +56,7 @@ where
 
     let (validated_position, compliance) = match edge_condition {
       EdgeCondition::Simple => check_position_constraint_simple(next_position, container_size),
-      EdgeCondition::Periodic => check_position_constraint_periodic(next_position, container_size)
+      EdgeCondition::Periodic => check_position_constraint_periodic(next_position, container_size),
     };
 
     let thermostat_work;
@@ -60,10 +64,11 @@ where
     if current_iteration == 0 {
       thermostat_work = 0.;
     } else {
-      let thermostat_force = previous_thermostat_epsilon * atom_i.get_mass() *
-        atom_i.get_velocity();
+      let thermostat_force =
+        previous_thermostat_epsilon * atom_i.get_mass() * atom_i.get_velocity();
       let thermostat_path = next_position - previous_position;
-      thermostat_work = thermostat_force.magnitude() * thermostat_path.magnitude()
+      thermostat_work = thermostat_force.magnitude()
+        * thermostat_path.magnitude()
         * cos_from_vec(&thermostat_force, &thermostat_path);
     }
 
@@ -101,19 +106,16 @@ pub trait ForceComputationOperations {
   fn prototype_clone(&self) -> Box<dyn ForceComputationOperations>;
 }
 
-pub fn compute_forces_potential<I>(particles_i: I, particles_j: I)
-                                       -> FPInfoBoxed
+pub fn compute_forces_potential<I>(particles_i: I, particles_j: I) -> FPInfoBoxed
 where
   I: IntoIterator + Clone,
   I::Item: AsRef<dyn ForceComputationOperations>,
 {
   let mut fp: HashMap<usize, FP> = HashMap::new();
 
-  let defaultFP = || {
-    FP {
-      force: Vector3::new(0., 0., 0.),
-      potential_energy: 0.
-    }
+  let defaultFP = || FP {
+    force: Vector3::new(0., 0., 0.),
+    potential_energy: 0.,
   };
 
   for temp_j in particles_j.clone().into_iter() {
@@ -141,22 +143,21 @@ where
         let particle_j = temp_j.as_ref();
         let j_id = particle_j.get_id();
         if i_id == j_id {
-          continue
+          continue;
         }
 
         let r_ij_vec = particle_j.get_position() - particle_i.get_position();
         let r_ij_mag = r_ij_vec.magnitude();
-        let interaction_type_ij = get_interaction_type(&particle_i.get_type(),
-                                                       &particle_j.get_type());
+        let interaction_type_ij =
+          get_interaction_type(&particle_i.get_type(), &particle_j.get_type());
 
         let R_ij = get_constant(&interaction_type_ij, Constant::R);
         let D_ij = get_constant(&interaction_type_ij, Constant::D);
         let fc_ij = fc::fc(r_ij_mag, R_ij, D_ij);
         if fc_ij < 1e-10 {
           optimization_ignored += 1;
-          continue
-        }
-        else {
+          continue;
+        } else {
           optimization_considered += 1;
           neighbours.push(j_id);
           particles_j_cache.insert(j_id, particle_j.prototype_clone());
@@ -167,7 +168,9 @@ where
         optimization_considered += 1;
         let particle_j = temp_j.as_ref();
         let j_id = particle_j.get_id();
-        if i_id == j_id { continue }
+        if i_id == j_id {
+          continue;
+        }
         neighbours.push(j_id);
         particles_j_cache.insert(j_id, particle_j.prototype_clone());
       }
@@ -180,8 +183,8 @@ where
       gradients_cache = HashMap::new();
 
       let particle_j = particles_j_cache.get(j_id_).unwrap();
-      let interaction_type_ij = get_interaction_type(&particle_i.get_type(),
-                                                     &particle_j.get_type());
+      let interaction_type_ij =
+        get_interaction_type(&particle_i.get_type(), &particle_j.get_type());
 
       let R_ij = get_constant(&interaction_type_ij, Constant::R);
       let D_ij = get_constant(&interaction_type_ij, Constant::D);
@@ -217,8 +220,8 @@ where
         let r_ik_vec = particle_k.get_position() - particle_i.get_position();
         let r_ik_mag = r_ik_vec.magnitude();
 
-        let interaction_type_ik = get_interaction_type(&particle_i.get_type(),
-                                                       &particle_k.get_type());
+        let interaction_type_ik =
+          get_interaction_type(&particle_i.get_type(), &particle_k.get_type());
         let R_ik = get_constant(&interaction_type_ik, Constant::R);
         let D_ik = get_constant(&interaction_type_ik, Constant::D);
         let gamma_ik = get_constant(&interaction_type_ik, Constant::Gamma);
@@ -231,8 +234,17 @@ where
         let g_ik = g(cos_theta_ijk, gamma_ik, c_ik, d_ik, h_ik);
         let fc_ik_grad_i = fc_gradient(&r_ik_vec, r_ik_mag, R_ik, D_ik);
         let fc_ik_grad_k = -&fc_ik_grad_i;
-        let g_ik_grads = b::g_ik_gradient(&r_ij_vec, r_ij_mag, &r_ik_vec, r_ik_mag,
-                                          cos_theta_ijk, gamma_ik, c_ik, d_ik, h_ik);
+        let g_ik_grads = b::g_ik_gradient(
+          &r_ij_vec,
+          r_ij_mag,
+          &r_ik_vec,
+          r_ik_mag,
+          cos_theta_ijk,
+          gamma_ik,
+          c_ik,
+          d_ik,
+          h_ik,
+        );
 
         bij_grad_i += fc_ik * g_ik_grads.grad_i + g_ik * fc_ik_grad_i;
         bij_grad_j += fc_ik * g_ik_grads.grad_j;
@@ -258,20 +270,24 @@ where
       }
 
       let force_i: Vector3<f64> = (fc_ij_grad_i * (vr_ij - b_ij * va_ij)
-        + fc_ij * (vr_ij_grad_i - bij_grad_i * va_ij - b_ij * va_ij_grad_i)) * -0.5;
+        + fc_ij * (vr_ij_grad_i - bij_grad_i * va_ij - b_ij * va_ij_grad_i))
+        * -0.5;
       let fp_i = fp.get_mut(&i_id).unwrap();
       assert!(!force_i.x.is_nan() && !force_i.y.is_nan() && !force_i.z.is_nan());
       fp_i.force += force_i;
 
       let force_j = (-fc_ij_grad_i * (vr_ij - b_ij * va_ij)
-        + fc_ij * (-vr_ij_grad_i - bij_grad_j * va_ij - b_ij * (-va_ij_grad_i))) * -0.5;
+        + fc_ij * (-vr_ij_grad_i - bij_grad_j * va_ij - b_ij * (-va_ij_grad_i)))
+        * -0.5;
       let fp_j = fp.get_mut(&j_id).unwrap();
       assert!(!force_j.x.is_nan() && !force_j.y.is_nan() && !force_j.z.is_nan());
       fp_j.force += force_j;
 
       for k_id_ in neighbours.iter() {
         let k_id = *k_id_;
-        if k_id == j_id || k_id == i_id {continue};
+        if k_id == j_id || k_id == i_id {
+          continue;
+        };
         let force_k = (-fc_ij * gradients_cache.get(k_id_).unwrap() * va_ij) * -0.5;
         let fp_k = fp.get_mut(&k_id).unwrap();
         assert!(!force_k.x.is_nan() && !force_k.y.is_nan() && !force_k.z.is_nan());

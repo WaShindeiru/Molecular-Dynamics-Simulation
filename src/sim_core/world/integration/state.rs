@@ -1,11 +1,6 @@
 use super::types::{
-  IntegrationAlgorithm,
-  IntegrationStateUpdateResponse,
-  NoseHooverStage,
-  TemperatureHistoryEntry,
-  TemperatureInfo,
-  TemperatureIteration,
-  TimeIterationDistance,
+  IntegrationAlgorithm, IntegrationStateUpdateResponse, NoseHooverStage, TemperatureHistoryEntry,
+  TemperatureInfo, TemperatureIteration, TimeIterationDistance,
 };
 
 pub enum IntegrationAlgorithmState {
@@ -17,14 +12,19 @@ pub enum IntegrationAlgorithmState {
     acceptance_consecutive: usize,
     after_achieved_consecutive: usize,
     history: Vec<TemperatureHistoryEntry>,
-  }
+  },
 }
 
-pub fn new_integration_algorithm_state(integration_algorithm: &IntegrationAlgorithm) -> IntegrationAlgorithmState {
+pub fn new_integration_algorithm_state(
+  integration_algorithm: &IntegrationAlgorithm,
+) -> IntegrationAlgorithmState {
   match integration_algorithm {
     IntegrationAlgorithm::SemiImplicitEuler => IntegrationAlgorithmState::SemiImplicitEuler,
     IntegrationAlgorithm::VelocityVerlet => IntegrationAlgorithmState::VelocityVerlet,
-    IntegrationAlgorithm::NoseHooverVerlet { desired_temperature, .. } => {
+    IntegrationAlgorithm::NoseHooverVerlet {
+      desired_temperature,
+      ..
+    } => {
       let mut history = vec![TemperatureHistoryEntry::default(); desired_temperature.len()];
       if let Some(first_temp) = desired_temperature.first() {
         history[0].temperature_started = Some(TemperatureIteration {
@@ -66,10 +66,18 @@ impl IntegrationAlgorithmState {
   }
 
   fn response_nose_hoover(updated: bool, temperature: f64) -> IntegrationStateUpdateResponse {
-    IntegrationStateUpdateResponse::NoseHooverVerlet { updated, temperature }
+    IntegrationStateUpdateResponse::NoseHooverVerlet {
+      updated,
+      temperature,
+    }
   }
 
-  fn record_started_if_missing(history: &mut [TemperatureHistoryEntry], index: usize, iteration: usize, temp: &TemperatureInfo) {
+  fn record_started_if_missing(
+    history: &mut [TemperatureHistoryEntry],
+    index: usize,
+    iteration: usize,
+    temp: &TemperatureInfo,
+  ) {
     if history[index].temperature_started.is_none() {
       history[index].temperature_started = Some(TemperatureIteration {
         iteration,
@@ -78,22 +86,37 @@ impl IntegrationAlgorithmState {
     }
   }
 
-  fn record_achieved(history: &mut [TemperatureHistoryEntry], index: usize, iteration: usize, temp: &TemperatureInfo) {
+  fn record_achieved(
+    history: &mut [TemperatureHistoryEntry],
+    index: usize,
+    iteration: usize,
+    temp: &TemperatureInfo,
+  ) {
     history[index].temperature_achieved = Some(TemperatureIteration {
       iteration,
       temperature: temp.desired_temperature,
     });
   }
 
-  fn record_switched(history: &mut [TemperatureHistoryEntry], index: usize, iteration: usize, temp: &TemperatureInfo) {
+  fn record_switched(
+    history: &mut [TemperatureHistoryEntry],
+    index: usize,
+    iteration: usize,
+    temp: &TemperatureInfo,
+  ) {
     history[index].temperature_switched = Some(TemperatureIteration {
       iteration,
       temperature: temp.desired_temperature,
     });
   }
 
-  pub fn update_state(&mut self, current_iteration: usize, time_step: f64, integration_algorithm: &IntegrationAlgorithm,
-                      simulation_temperature_unitless: f64) -> IntegrationStateUpdateResponse {
+  pub fn update_state(
+    &mut self,
+    current_iteration: usize,
+    time_step: f64,
+    integration_algorithm: &IntegrationAlgorithm,
+    simulation_temperature_unitless: f64,
+  ) -> IntegrationStateUpdateResponse {
     match (self, integration_algorithm) {
       (IntegrationAlgorithmState::SemiImplicitEuler, IntegrationAlgorithm::SemiImplicitEuler) => {
         IntegrationStateUpdateResponse::SemiImplicitEuler
@@ -111,23 +134,42 @@ impl IntegrationAlgorithmState {
           after_achieved_consecutive,
           history,
         },
-        IntegrationAlgorithm::NoseHooverVerlet { desired_temperature, q_effective_mass: _q_effective_mass },
+        IntegrationAlgorithm::NoseHooverVerlet {
+          desired_temperature,
+          q_effective_mass: _q_effective_mass,
+        },
       ) => {
         let temp_info = *desired_temperature.get(*temperature_index).unwrap();
-        IntegrationAlgorithmState::record_started_if_missing(history, *temperature_index, current_iteration, &temp_info);
+        IntegrationAlgorithmState::record_started_if_missing(
+          history,
+          *temperature_index,
+          current_iteration,
+          &temp_info,
+        );
 
         match *stage {
           NoseHooverStage::LastEntry => {
             IntegrationAlgorithmState::response_nose_hoover(false, temp_info.desired_temperature)
           }
           NoseHooverStage::StabilizeTemperature => {
-            if (simulation_temperature_unitless - temp_info.desired_temperature).abs() < temp_info.threshold {
+            if (simulation_temperature_unitless - temp_info.desired_temperature).abs()
+              < temp_info.threshold
+            {
               *acceptance_consecutive += 1;
 
-              if IntegrationAlgorithmState::distance_reached(temp_info.acceptance_distance, time_step, *acceptance_consecutive) {
+              if IntegrationAlgorithmState::distance_reached(
+                temp_info.acceptance_distance,
+                time_step,
+                *acceptance_consecutive,
+              ) {
                 *stage = NoseHooverStage::TemperatureAchieved;
                 *after_achieved_consecutive = 0;
-                IntegrationAlgorithmState::record_achieved(history, *temperature_index, current_iteration, &temp_info);
+                IntegrationAlgorithmState::record_achieved(
+                  history,
+                  *temperature_index,
+                  current_iteration,
+                  &temp_info,
+                );
               }
             } else {
               *acceptance_consecutive = 0;
@@ -145,10 +187,18 @@ impl IntegrationAlgorithmState {
             );
 
             if !should_switch {
-              return IntegrationAlgorithmState::response_nose_hoover(false, temp_info.desired_temperature);
+              return IntegrationAlgorithmState::response_nose_hoover(
+                false,
+                temp_info.desired_temperature,
+              );
             }
 
-            IntegrationAlgorithmState::record_switched(history, *temperature_index, current_iteration, &temp_info);
+            IntegrationAlgorithmState::record_switched(
+              history,
+              *temperature_index,
+              current_iteration,
+              &temp_info,
+            );
             *acceptance_consecutive = 0;
             *after_achieved_consecutive = 0;
 
@@ -160,7 +210,12 @@ impl IntegrationAlgorithmState {
 
             *temperature_index = next_temperature_index;
             let next_temp_info = *desired_temperature.get(*temperature_index).unwrap();
-            IntegrationAlgorithmState::record_started_if_missing(history, *temperature_index, current_iteration, &next_temp_info);
+            IntegrationAlgorithmState::record_started_if_missing(
+              history,
+              *temperature_index,
+              current_iteration,
+              &next_temp_info,
+            );
 
             *stage = if *temperature_index == desired_temperature.len() - 1 {
               NoseHooverStage::LastEntry
@@ -168,7 +223,10 @@ impl IntegrationAlgorithmState {
               NoseHooverStage::StabilizeTemperature
             };
 
-            IntegrationAlgorithmState::response_nose_hoover(true, next_temp_info.desired_temperature)
+            IntegrationAlgorithmState::response_nose_hoover(
+              true,
+              next_temp_info.desired_temperature,
+            )
           }
         }
       }

@@ -1,11 +1,14 @@
 use crate::data::units::TEMPERATURE_U;
 use crate::data::units::TIME_U;
+use crate::data::units::ValueUnits;
 
 pub const DEFAULT_TEMP_THRESHOLD_UNITLESS: f64 = 30. / TEMPERATURE_U;
 pub const DEFAULT_ACCEPTANCE_TIME_UNITLESS: f64 = 2000. * 1e-18 / TIME_U;
 
 fn default_acceptance_distance() -> TimeIterationDistance {
-  TimeIterationDistance::Time { value: DEFAULT_ACCEPTANCE_TIME_UNITLESS }
+  TimeIterationDistance::Time {
+    value: DEFAULT_ACCEPTANCE_TIME_UNITLESS,
+  }
 }
 
 fn default_achieved_distance() -> TimeIterationDistance {
@@ -21,6 +24,19 @@ fn default_temperature_threshold() -> f64 {
 pub enum TimeIterationDistance {
   Time { value: f64 },
   Iteration { value: usize },
+}
+
+impl TimeIterationDistance {
+  pub fn to_value_units(&self, source: ValueUnits, target: ValueUnits) -> Self {
+    match self {
+      TimeIterationDistance::Time { value } => TimeIterationDistance::Time {
+        value: value * ValueUnits::scale_between(source, target, TIME_U),
+      },
+      TimeIterationDistance::Iteration { value } => {
+        TimeIterationDistance::Iteration { value: *value }
+      }
+    }
+  }
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -57,6 +73,16 @@ impl TemperatureInfo {
       threshold,
     }
   }
+
+  pub fn to_value_units(&self, source: ValueUnits, target: ValueUnits) -> Self {
+    TemperatureInfo {
+      desired_temperature: self.desired_temperature
+        * ValueUnits::scale_between(source, target, TEMPERATURE_U),
+      acceptance_distance: self.acceptance_distance.to_value_units(source, target),
+      achieved_distance: self.achieved_distance.to_value_units(source, target),
+      threshold: self.threshold * ValueUnits::scale_between(source, target, TEMPERATURE_U),
+    }
+  }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -68,6 +94,25 @@ pub enum IntegrationAlgorithm {
     desired_temperature: Vec<TemperatureInfo>,
     q_effective_mass: f64,
   },
+}
+
+impl IntegrationAlgorithm {
+  pub fn to_value_units(&self, source: ValueUnits, target: ValueUnits) -> Self {
+    match self {
+      IntegrationAlgorithm::SemiImplicitEuler => IntegrationAlgorithm::SemiImplicitEuler,
+      IntegrationAlgorithm::VelocityVerlet => IntegrationAlgorithm::VelocityVerlet,
+      IntegrationAlgorithm::NoseHooverVerlet {
+        desired_temperature,
+        q_effective_mass,
+      } => IntegrationAlgorithm::NoseHooverVerlet {
+        desired_temperature: desired_temperature
+          .iter()
+          .map(|t| t.to_value_units(source, target))
+          .collect(),
+        q_effective_mass: *q_effective_mass,
+      },
+    }
+  }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,8 +139,5 @@ pub struct TemperatureHistoryEntry {
 pub enum IntegrationStateUpdateResponse {
   SemiImplicitEuler,
   VelocityVerlet,
-  NoseHooverVerlet {
-    updated: bool,
-    temperature: f64,
-  }
+  NoseHooverVerlet { updated: bool, temperature: f64 },
 }

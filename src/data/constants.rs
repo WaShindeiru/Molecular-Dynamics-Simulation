@@ -9,7 +9,7 @@ pub const ATOMIC_MASS_C: f64 = 12.;
 fn fefe_constants() -> &'static HashMap<Constant, f64> {
   static MAP_FEFE: OnceLock<HashMap<Constant, f64>> = OnceLock::new();
   MAP_FEFE.get_or_init(|| {
-    let mut map : HashMap<Constant, f64> = HashMap::new();
+    let mut map: HashMap<Constant, f64> = HashMap::new();
     map.insert(Constant::D0, 1.5);
     map.insert(Constant::r0, 2.29);
     map.insert(Constant::Beta, 1.4);
@@ -30,7 +30,7 @@ fn fefe_constants() -> &'static HashMap<Constant, f64> {
 fn cc_constants() -> &'static HashMap<Constant, f64> {
   static MAP_CC: OnceLock<HashMap<Constant, f64>> = OnceLock::new();
   MAP_CC.get_or_init(|| {
-    let mut map : HashMap<Constant, f64> = HashMap::new();
+    let mut map: HashMap<Constant, f64> = HashMap::new();
     map.insert(Constant::D0, 6.);
     map.insert(Constant::r0, 1.39);
     map.insert(Constant::Beta, 2.1);
@@ -51,7 +51,7 @@ fn cc_constants() -> &'static HashMap<Constant, f64> {
 fn fec_constants() -> &'static HashMap<Constant, f64> {
   static MAP_FEC: OnceLock<HashMap<Constant, f64>> = OnceLock::new();
   MAP_FEC.get_or_init(|| {
-    let mut map : HashMap<Constant, f64> = HashMap::new();
+    let mut map: HashMap<Constant, f64> = HashMap::new();
     map.insert(Constant::D0, 4.82645134);
     map.insert(Constant::r0, 1.47736510);
     map.insert(Constant::Beta, 1.63208170);
@@ -83,8 +83,12 @@ fn constants() -> &'static HashMap<InteractionType, &'static HashMap<Constant, f
 
 pub fn get_constant(interaction: &InteractionType, constant: Constant) -> f64 {
   let map = constants();
-  let inner_map = map.get(interaction).expect("Wrong interaction type somehow!");
-  *inner_map.get(&constant).expect("Wrong constant type somehow!")
+  let inner_map = map
+    .get(interaction)
+    .expect("Wrong interaction type somehow!");
+  *inner_map
+    .get(&constant)
+    .expect("Wrong constant type somehow!")
 }
 
 pub fn get_box_size(interaction: &InteractionType) -> f64 {

@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use nalgebra::Vector3;
 use crate::data::types::AtomType;
+use nalgebra::Vector3;
+use std::collections::HashMap;
 
 pub trait AtomMetadata {
   fn get_id(&self) -> usize;

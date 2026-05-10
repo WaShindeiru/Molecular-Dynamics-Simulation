@@ -7,10 +7,10 @@ use std::sync::Arc;
 use log::info;
 
 use crate::data::SimulationConfig;
-use crate::output::world::boxed::BoxedWorldDTO;
-use crate::output::world::history::HistoryDTO;
-use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
+use crate::persistence::dto::world::boxed::BoxedWorldDTO;
+use crate::persistence::dto::world::history::HistoryDTO;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
 
@@ -20,7 +20,9 @@ pub struct PersistanceReset {
   history_manager: HistoryManager,
   save_options: SaveOptions,
   config: SimulationConfig,
-  frame_iteration_count: usize,
+  num_of_atoms: usize,
+  laamps_frame_iteration_count: usize,
+  energy_frame_iteration_count: usize,
   reset_counter: usize,
   number_of_resets: usize,
   saver_handle: SaverHandle,
@@ -30,7 +32,9 @@ impl PersistanceReset {
   pub fn new(
     history_manager: HistoryManager,
     config: SimulationConfig,
-    frame_iteration_count: usize,
+    num_of_atoms: usize,
+    laamps_frame_iteration_count: usize,
+    energy_frame_iteration_count: usize,
     saver: PartialWorldSaver,
   ) -> Self {
     let save_enabled = config.save_options.save;
@@ -39,7 +43,9 @@ impl PersistanceReset {
       history_manager,
       save_options,
       config,
-      frame_iteration_count,
+      num_of_atoms,
+      laamps_frame_iteration_count,
+      energy_frame_iteration_count,
       reset_counter: 1,
       number_of_resets: 0,
       saver_handle: SaverHandle::spawn(saver, save_enabled),
@@ -58,8 +64,12 @@ impl PersistanceReset {
     self.number_of_resets
   }
 
-  pub fn frame_iteration_count(&self) -> usize {
-    self.frame_iteration_count
+  pub fn laamps_frame_iteration_count(&self) -> usize {
+    self.laamps_frame_iteration_count
+  }
+
+  pub fn energy_frame_iteration_count(&self) -> usize {
+    self.energy_frame_iteration_count
   }
 
   fn build_boxed_snapshot_dto(&self, num_of_world_iterations: usize) -> BoxedWorldDTO {
@@ -68,14 +78,15 @@ impl PersistanceReset {
     let history = history_dto_from_snapshot(containers, thermostat_epsilon, lower_index);
 
     BoxedWorldDTO {
-      num_of_atoms: self.config.num_of_atoms,
+      num_of_atoms: self.num_of_atoms,
       size: self.config.world_size,
       history,
       integration_algorithm: self.config.integration_algorithm.clone(),
       num_of_world_iterations,
       number_of_resets: self.number_of_resets,
       max_iteration_till_reset: self.config.max_iteration_till_reset,
-      frame_iteration_count: self.frame_iteration_count,
+      laamps_frame_iteration_count: self.laamps_frame_iteration_count,
+      energy_frame_iteration_count: self.energy_frame_iteration_count,
     }
   }
 

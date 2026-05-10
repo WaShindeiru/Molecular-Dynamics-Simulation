@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::output::world::boxed::BoxedWorldDTO;
+use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::sim_core::world::saver::PartialWorldSaver;
 
 pub(crate) struct SaverWorker {

@@ -1,10 +1,12 @@
-use std::collections::HashMap;
-use nalgebra::Vector3;
 use crate::data::units::K_B;
 use crate::particle::Particle;
+use nalgebra::Vector3;
+use std::collections::HashMap;
 
-fn compute_half_velocity_kinetic_energy<I>(half_velocity_cache: &HashMap<usize, Vector3<f64>>,
-                                           new_position_atoms: I) -> f64
+fn compute_half_velocity_kinetic_energy<I>(
+  half_velocity_cache: &HashMap<usize, Vector3<f64>>,
+  new_position_atoms: I,
+) -> f64
 where
   I: IntoIterator,
   I::Item: AsRef<Particle>,
@@ -23,22 +25,27 @@ where
   kinetic_energy
 }
 
-pub fn compute_new_thermostat_epsilon<I>(thermostat_epsilon: f64,
-                                     half_velocity_cache: &HashMap<usize, Vector3<f64>>,
-                                     new_position_atoms: I, time_step: f64,
-                                     q_effective_mass: f64, desired_temperature: f64) -> f64
+pub fn compute_new_thermostat_epsilon<I>(
+  thermostat_epsilon: f64,
+  half_velocity_cache: &HashMap<usize, Vector3<f64>>,
+  new_position_atoms: I,
+  time_step: f64,
+  q_effective_mass: f64,
+  desired_temperature: f64,
+) -> f64
 where
   I: IntoIterator,
   I::Item: AsRef<Particle>,
 {
   let mut new_thermostat_epsilon = thermostat_epsilon;
 
-  let half_velocity_kinetic_energy = compute_half_velocity_kinetic_energy(half_velocity_cache,
-                                                                          new_position_atoms);
+  let half_velocity_kinetic_energy =
+    compute_half_velocity_kinetic_energy(half_velocity_cache, new_position_atoms);
   let num_of_particles = half_velocity_cache.len();
 
   new_thermostat_epsilon += time_step / q_effective_mass
-    * (half_velocity_kinetic_energy - 3. / 2. * K_B * desired_temperature * num_of_particles as f64);
+    * (half_velocity_kinetic_energy
+      - 3. / 2. * K_B * desired_temperature * num_of_particles as f64);
 
   new_thermostat_epsilon
 }

@@ -1,13 +1,13 @@
-use std::sync::Mutex;
 use nalgebra::base::Vector3;
 use rand::distr::Uniform;
-use rand_distr::{Distribution};
+use rand_distr::Distribution;
+use std::sync::{Mutex, OnceLock};
 
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
-use crate::output::atom::AtomDTO;
-use crate::particle::custom_path_atom::CustomPathAtom;
+use crate::persistence::dto::atom::AtomDTO;
 use crate::particle::Particle;
+use crate::particle::custom_path_atom::CustomPathAtom;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Atom {
@@ -33,7 +33,7 @@ impl Atom {
   pub fn get_id(&self) -> usize {
     self.id
   }
-  
+
   pub fn get_iteration(&self) -> usize {
     self.iteration
   }
@@ -49,7 +49,7 @@ impl Atom {
   pub fn get_velocity(&self) -> &Vector3<f64> {
     &self.velocity
   }
-  
+
   pub fn get_acceleration(&self) -> &Vector3<f64> {
     &self.acceleration
   }
@@ -66,9 +66,13 @@ impl Atom {
     self.potential_energy
   }
 
-  pub fn get_potential_gravity_energy(&self) -> f64 { self.potential_gravity_energy }
-  
-  pub fn get_thermostat_work(&self) -> f64 { self.thermostat_work }
+  pub fn get_potential_gravity_energy(&self) -> f64 {
+    self.potential_gravity_energy
+  }
+
+  pub fn get_thermostat_work(&self) -> f64 {
+    self.thermostat_work
+  }
 
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     self.velocity = velocity_;
@@ -90,7 +94,7 @@ impl Atom {
   pub fn set_acceleration(&mut self, acceleration_: Vector3<f64>) {
     self.acceleration = acceleration_;
   }
-  
+
   pub fn set_thermostat_work(&mut self, thermostat_work: f64) {
     self.thermostat_work = thermostat_work
   }
@@ -100,6 +104,10 @@ impl Atom {
   }
 
   pub fn update_position(&mut self, position_: Vector3<f64>) {
+    self.position = position_;
+  }
+
+  pub fn set_position(&mut self, position_: Vector3<f64>) {
     self.position = position_;
   }
 
@@ -212,9 +220,14 @@ impl AtomFactory {
     }
   }
 
-  fn get_atom(&mut self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Particle {
+  fn get_atom(
+    &mut self,
+    atom: AtomType,
+    position_: Vector3<f64>,
+    velocity_: Vector3<f64>,
+  ) -> Particle {
     let result = match atom {
-      AtomType::C => Atom{
+      AtomType::C => Atom {
         id: self.counter,
         iteration: 0,
         type_: AtomType::C,
@@ -226,9 +239,10 @@ impl AtomFactory {
         kinetic_energy: ATOMIC_MASS_C * velocity_.magnitude_squared() / 2.0,
         potential_energy: 0.0,
         thermostat_work: 0.0,
-        potential_gravity_energy: self.potential_gravity_max * position_.z * ATOMIC_MASS_C / self.z_max
+        potential_gravity_energy: self.potential_gravity_max * position_.z * ATOMIC_MASS_C
+          / self.z_max,
       },
-      AtomType::Fe => Atom{
+      AtomType::Fe => Atom {
         type_: AtomType::Fe,
         iteration: 0,
         id: self.counter,
@@ -240,8 +254,9 @@ impl AtomFactory {
         kinetic_energy: ATOMIC_MASS_FE * velocity_.magnitude_squared() / 2.0,
         potential_energy: 0.0,
         thermostat_work: 0.0,
-        potential_gravity_energy: self.potential_gravity_max * position_.z * ATOMIC_MASS_FE / self.z_max
-      }
+        potential_gravity_energy: self.potential_gravity_max * position_.z * ATOMIC_MASS_FE
+          / self.z_max,
+      },
     };
     self.counter = self.counter + 1;
 
@@ -274,17 +289,39 @@ impl AtomFactory {
 }
 
 pub struct SafeAtomFactory {
-  inner: Mutex<AtomFactory>
+  potential_gravity_max: f64,
+  z_max: f64,
+  inner: Mutex<AtomFactory>,
 }
 
 impl SafeAtomFactory {
-  pub fn new(potential_gravity_max: f64, z_max: f64) -> Self {
-    Self {
+  pub fn new(potential_gravity_max: f64, z_max: f64) -> &'static Self {
+    static INSTANCE: OnceLock<SafeAtomFactory> = OnceLock::new();
+    let instance = INSTANCE.get_or_init(|| Self {
+      potential_gravity_max,
+      z_max,
       inner: Mutex::new(AtomFactory::new(potential_gravity_max, z_max)),
-    }
+    });
+
+    assert!(
+      (instance.potential_gravity_max - potential_gravity_max).abs() <= f64::EPSILON
+        && (instance.z_max - z_max).abs() <= f64::EPSILON,
+      "SafeAtomFactory singleton already initialized with potential_gravity_max={} and z_max={}, but requested potential_gravity_max={} and z_max={}",
+      instance.potential_gravity_max,
+      instance.z_max,
+      potential_gravity_max,
+      z_max
+    );
+
+    instance
   }
 
-  pub fn get_atom(&self, atom: AtomType, position_: Vector3<f64>, velocity_: Vector3<f64>) -> Particle {
+  pub fn get_atom(
+    &self,
+    atom: AtomType,
+    position_: Vector3<f64>,
+    velocity_: Vector3<f64>,
+  ) -> Particle {
     let mut factory = self.inner.lock().unwrap();
     factory.get_atom(atom, position_, velocity_)
   }

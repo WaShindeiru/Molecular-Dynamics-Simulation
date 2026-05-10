@@ -3,7 +3,6 @@ use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
 use crate::sim_core::world::simple_world::SimpleWorld;
 
 impl SimpleWorld {
-
   pub fn update_semi_implicit_euler(&mut self, time_step: f64, next_iteration: usize) {
     let mut next_iteration_atom_container = SimpleAtomContainer::new_fixed_cap(self.atom_count);
 

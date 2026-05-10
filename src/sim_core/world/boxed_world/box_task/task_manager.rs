@@ -1,17 +1,19 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::thread::JoinHandle;
-use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
-use std::time::Duration;
 use log::debug;
 use nalgebra::Vector3;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
+use std::thread::JoinHandle;
+use std::time::Duration;
 
 use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{SimulationBox, get_id_simulation_box};
-use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
+use crate::sim_core::world::boxed_world::box_container::sim_box::{
+  SimulationBox, get_id_simulation_box,
+};
 use crate::sim_core::world::boxed_world::box_task::task_manager::threads::create_threads;
+use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::computation_collector::ComputationCollector;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 use crate::sim_core::world::boxed_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
@@ -28,13 +30,13 @@ pub struct TaskManager {
   num_workers: usize,
   task_worker_multiplier: f64,
 
-  task_box_mapping: Option<HashMap<usize, Vec<usize>>>
+  task_box_mapping: Option<HashMap<usize, Vec<usize>>>,
 }
 
 impl TaskManager {
   pub fn new(
-    debug: bool, 
-    simulation_config: SimulationConfig, 
+    debug: bool,
+    simulation_config: SimulationConfig,
     container_config: BoxContainerConfig,
     task_worker_multiplier: f64,
   ) -> Self {
@@ -77,9 +79,12 @@ impl TaskManager {
       let z_end = z_start + z_count;
 
       let box_ids = (z_start..z_end)
-        .flat_map(|z| (0..ny).flat_map(move |y| (0..nx).map(move |x| {
-          get_id_simulation_box(&Vector3::new(x, y, z), &config.box_count_dim)
-        })))
+        .flat_map(|z| {
+          (0..ny).flat_map(move |y| {
+            (0..nx)
+              .map(move |x| get_id_simulation_box(&Vector3::new(x, y, z), &config.box_count_dim))
+          })
+        })
         .collect();
 
       mapping.insert(task_id, box_ids);
@@ -91,8 +96,8 @@ impl TaskManager {
 
   pub fn split_into_tasks_multiplier(&mut self, config: &BoxContainerConfig) {
     self.split_into_tasks(
-      (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize, 
-      config
+      (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize,
+      config,
     );
   }
 
@@ -106,7 +111,9 @@ impl TaskManager {
     thermostat_epsilon: f64,
     current_iteration: usize,
   ) -> Arc<IntegrationCache> {
-    let mapping = self.task_box_mapping.as_ref()
+    let mapping = self
+      .task_box_mapping
+      .as_ref()
       .expect("split_into_tasks must be called before half_velocity_step");
 
     let num_tasks = mapping.len();
@@ -135,23 +142,31 @@ impl TaskManager {
           builder.add_velocity_results(result.particles);
         }
         Ok(_) => panic!("Expected VelocityResult, got wrong result type"),
-        Err(RecvTimeoutError::Timeout) => panic!("Velocity step timed out after 20 seconds"),
+        Err(RecvTimeoutError::Timeout) => {
+          panic!("Velocity step timed out after 20 seconds")
+        }
         Err(RecvTimeoutError::Disconnected) => panic!("Worker channel disconnected"),
       }
     }
 
-    Arc::new(builder.build().expect("Not all particles received velocity results"))
+    Arc::new(
+      builder
+        .build()
+        .expect("Not all particles received velocity results"),
+    )
   }
 
-  pub fn force_step(
-    &self,
-    integration_cache: Arc<IntegrationCache>,
-  ) -> ComputationCollector {
-    let mapping = self.task_box_mapping.as_ref()
+  pub fn force_step(&self, integration_cache: Arc<IntegrationCache>) -> ComputationCollector {
+    let mapping = self
+      .task_box_mapping
+      .as_ref()
       .expect("split_into_tasks must be called before force_step");
 
     let num_tasks = mapping.len();
-    let mut collector = ComputationCollector::from_integration_cache(self.simulation_config.clone(), Arc::clone(&integration_cache));
+    let mut collector = ComputationCollector::from_integration_cache(
+      self.simulation_config.clone(),
+      Arc::clone(&integration_cache),
+    );
 
     for (task_id, box_ids) in mapping {
       let task = BoxTask::ForceBatchTask {

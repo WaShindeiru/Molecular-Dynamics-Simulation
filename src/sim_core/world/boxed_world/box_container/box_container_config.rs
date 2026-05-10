@@ -1,9 +1,9 @@
-use nalgebra::Vector3;
-use crate::data::constants::get_box_size;
 use crate::data::InteractionType;
+use crate::data::constants::get_box_size;
 use crate::data::types::AtomType;
 use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
+use nalgebra::Vector3;
 
 pub type SimulationBoxType = InteractionType;
 
@@ -40,7 +40,10 @@ impl BoxContainerConfig {
   }
 
   pub fn box_id_for_position(&self, position: &Vector3<f64>) -> usize {
-    get_id_simulation_box(&self.box_coordinates_for_position(position), &self.box_count_dim)
+    get_id_simulation_box(
+      &self.box_coordinates_for_position(position),
+      &self.box_count_dim,
+    )
   }
 }
 
@@ -67,20 +70,24 @@ pub fn detect_box_type(atoms: &[Particle]) -> SimulationBoxType {
 
 pub fn new_config(atoms: &[Particle], world_size: Vector3<f64>) -> BoxContainerConfig {
   let box_type = detect_box_type(atoms);
-  
+
   let box_length_ = get_box_size(&box_type);
   let box_count_x = (world_size.x / box_length_).floor();
   let box_count_y = (world_size.y / box_length_).floor();
   let box_count_z = (world_size.z / box_length_).floor();
 
-  let box_count_dim = Vector3::new(box_count_x as usize, box_count_y as usize, box_count_z as usize);
+  let box_count_dim = Vector3::new(
+    box_count_x as usize,
+    box_count_y as usize,
+    box_count_z as usize,
+  );
   let box_count = box_count_dim.x * box_count_dim.y * box_count_dim.z;
 
   let box_length_x = world_size.x / box_count_x;
   let box_length_y = world_size.y / box_count_y;
   let box_length_z = world_size.z / box_count_z;
   let box_length = Vector3::new(box_length_x, box_length_y, box_length_z);
-  
+
   BoxContainerConfig {
     box_type,
     box_count,

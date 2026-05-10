@@ -1,4 +1,4 @@
-use crate::output::world::WorldDTO;
+use crate::persistence::dto::world::WorldDTO;
 
 pub struct EngineDTO {
   pub num_of_iterations: usize,

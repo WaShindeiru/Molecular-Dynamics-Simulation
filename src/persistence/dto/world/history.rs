@@ -1,4 +1,4 @@
-use crate::output::world::boxed::box_container::BoxContainerDTO;
+use crate::persistence::dto::world::boxed::box_container::BoxContainerDTO;
 
 pub struct HistoryDTO {
   pub box_container: Vec<BoxContainerDTO>,

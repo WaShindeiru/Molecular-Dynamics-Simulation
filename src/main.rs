@@ -1,13 +1,21 @@
-use crate::simulations::runners::{dense_runner, one_particle_edge_runner, triangle_runner, two_particles_edge_runner};
-use crate::simulations::various::see_config_json;
+use crate::simulations::various::see_dense_generator_configuration;
+use crate::simulations::runners::dense_runner;
 
 mod data;
 mod particle;
-mod utils;
+mod persistence;
 mod sim_core;
-mod output;
 mod simulations;
+mod utils;
+mod cmd;
 
 fn main() {
-  dense_runner();
+  // dense_runner()
+  
+  if let Err(e) = cmd::run() {
+    eprintln!("{e}");
+    std::process::exit(1);
+  }
+
+  // see_dense_generator_configuration()
 }

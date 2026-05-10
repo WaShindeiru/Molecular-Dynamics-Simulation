@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use nalgebra::Vector3;
 use crate::data::types::AtomType;
-use crate::particle::{AtomCollection, Particle};
 use crate::particle::atom_collection::AtomMetadata;
+use crate::particle::{AtomCollection, Particle};
+use nalgebra::Vector3;
+use std::collections::HashMap;
 
 pub struct AtomData {
   id: usize,
@@ -20,7 +20,7 @@ impl AtomData {
       position,
     }
   }
-  
+
   pub fn new_from_atom(atom: &Particle) -> Self {
     AtomData {
       id: atom.get_id(),
@@ -80,19 +80,26 @@ impl AtomDataContainer {
 
 impl AtomCollection for AtomDataContainer {
   fn get_atom_by_id(&self, id: usize) -> Option<&dyn AtomMetadata> {
-    self.atom_map.get(&id).map(|atom| atom.as_ref() as &dyn AtomMetadata)
+    self
+      .atom_map
+      .get(&id)
+      .map(|atom| atom.as_ref() as &dyn AtomMetadata)
   }
 
   fn get_all_atoms(&self) -> HashMap<usize, Box<dyn AtomMetadata>> {
-    let mut metadata_map: HashMap<usize, Box<dyn AtomMetadata>> = HashMap::with_capacity(self.atom_map.len());
+    let mut metadata_map: HashMap<usize, Box<dyn AtomMetadata>> =
+      HashMap::with_capacity(self.atom_map.len());
 
     for (id, atom_data) in &self.atom_map {
-      metadata_map.insert(*id, Box::new(AtomData {
-        id: atom_data.id,
-        type_: atom_data.type_.clone(),
-        mass: atom_data.mass,
-        position: atom_data.position.clone(),
-      }) as Box<dyn AtomMetadata>);
+      metadata_map.insert(
+        *id,
+        Box::new(AtomData {
+          id: atom_data.id,
+          type_: atom_data.type_.clone(),
+          mass: atom_data.mass,
+          position: atom_data.position.clone(),
+        }) as Box<dyn AtomMetadata>,
+      );
     }
 
     metadata_map
@@ -104,13 +111,18 @@ pub struct AtomForceData {
   velocity: Vector3<f64>,
   acceleration: Vector3<f64>,
   force: Vector3<f64>,
-  
+
   potential_energy: f64,
 }
 
 impl AtomForceData {
-  pub fn new(id: usize, velocity: Vector3<f64>, acceleration: Vector3<f64>, force: Vector3<f64>,
-             potential_energy: f64) -> Self {
+  pub fn new(
+    id: usize,
+    velocity: Vector3<f64>,
+    acceleration: Vector3<f64>,
+    force: Vector3<f64>,
+    potential_energy: f64,
+  ) -> Self {
     AtomForceData {
       id,
       velocity,
@@ -119,7 +131,7 @@ impl AtomForceData {
       potential_energy,
     }
   }
-  
+
   pub fn new_from_atom(atom: &Particle) -> Self {
     AtomForceData {
       id: atom.get_id(),
@@ -145,19 +157,19 @@ impl AtomForceData {
   pub fn get_force(&self) -> &Vector3<f64> {
     &self.force
   }
-  
+
   pub fn get_potential_energy(&self) -> f64 {
     self.potential_energy
   }
-  
+
   pub fn set_force(&mut self, force: Vector3<f64>) {
     self.force = force;
   }
-  
+
   pub fn set_acceleration(&mut self, acceleration: Vector3<f64>) {
     self.acceleration = acceleration;
   }
-  
+
   pub fn set_potential_energy(&mut self, potential_energy: f64) {
     self.potential_energy = potential_energy;
   }
@@ -186,7 +198,7 @@ impl AtomForceContainer {
   pub fn get_atom_force(&self, id: usize) -> Option<&AtomForceData> {
     self.force_map.get(&id)
   }
-  
+
   pub fn get_atom_force_mut(&mut self, id: usize) -> Option<&mut AtomForceData> {
     self.force_map.get_mut(&id)
   }

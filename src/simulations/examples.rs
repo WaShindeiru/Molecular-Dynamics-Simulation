@@ -1,23 +1,29 @@
-use log::info;
-use nalgebra::Vector3;
-use rand::distr::Uniform;
 use crate::data::types::AtomType;
 use crate::data::units::TIME_U;
 use crate::particle::{Particle, SafeAtomFactory};
 use crate::sim_core::Engine;
-use crate::sim_core::world::integration::{IntegrationAlgorithm};
-use crate::sim_core::world::saver::SaveOptions;
 use crate::sim_core::world::WorldType;
+use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::saver::SaveOptions;
+use log::info;
+use nalgebra::Vector3;
+use rand::distr::Uniform;
 
+use crate::data::SimulationConfig;
+use crate::data::config::builder::SimulationConfigBuilder;
+use crate::data::types::AtomType::{C, Fe};
+use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use rand::prelude::*;
 use rand_distr::Normal;
-use crate::data::SimulationConfig;
-use crate::data::types::AtomType::{Fe, C};
-use crate::sim_core::world::boundary_constraint::EdgeCondition;
-use crate::data::config::builder::SimulationConfigBuilder;
 
-pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                               integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
+pub fn symmetric_triangle_test(
+  time_step: f64,
+  save: bool,
+  save_path: String,
+  num_iterations: usize,
+  integration_algorithm: IntegrationAlgorithm,
+  world_type: WorldType,
+) {
   let potential_gravity_max = 1.0;
   let simulation_size = Vector3::new(50., 50., 50.);
   let atom_factory = SafeAtomFactory::new(potential_gravity_max, simulation_size.z);
@@ -49,13 +55,14 @@ pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, nu
 
   let save_options = SaveOptions {
     save,
+    save_path,
     save_laamps,
     save_verbose,
-    save_path,
+    ..SaveOptions::default()
   };
 
   let edge_condition = EdgeCondition::Simple;
-  
+
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)
     .world_size(simulation_size)
@@ -69,22 +76,43 @@ pub fn symmetric_triangle_test(time_step: f64, save: bool, save_path: String, nu
     .edge_condition(edge_condition)
     .potential_gravity_max(potential_gravity_max)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .assert_all_set().unwrap().build().unwrap();
+    .assert_all_set()
+    .unwrap()
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(time_step);
+  engine.run();
 }
 
-pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                integration_algorithm: IntegrationAlgorithm, world_type: WorldType) {
+pub fn triangle(
+  time_step: f64,
+  save: bool,
+  save_path: String,
+  num_iterations: usize,
+  integration_algorithm: IntegrationAlgorithm,
+  world_type: WorldType,
+) {
   let simulation_size = Vector3::new(50., 50., 50.);
   let potential_gravity_max = 1.0;
 
   let atom_factory = SafeAtomFactory::new(potential_gravity_max, simulation_size.z);
-  let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(0., 0., 0.));
-  let atom_1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 12.8, 10.), Vector3::new(0., 0., 0.));
-  let atom_2 = atom_factory.get_atom(AtomType::Fe, Vector3::new(12.4248, 11.4, 10.), Vector3::new(0., 0., 0.));
+  let atom_0 = atom_factory.get_atom(
+    AtomType::Fe,
+    Vector3::new(10., 10., 10.),
+    Vector3::new(0., 0., 0.),
+  );
+  let atom_1 = atom_factory.get_atom(
+    AtomType::Fe,
+    Vector3::new(10., 12.8, 10.),
+    Vector3::new(0., 0., 0.),
+  );
+  let atom_2 = atom_factory.get_atom(
+    AtomType::Fe,
+    Vector3::new(12.4248, 11.4, 10.),
+    Vector3::new(0., 0., 0.),
+  );
   let atoms: Vec<Particle> = vec![atom_0, atom_1, atom_2];
 
   let max_iteration_till_reset = 1e4 as usize;
@@ -95,9 +123,10 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
 
   let save_options = SaveOptions {
     save,
+    save_path,
     save_laamps,
     save_verbose,
-    save_path,
+    ..SaveOptions::default()
   };
 
   let edge_condition = EdgeCondition::Simple;
@@ -115,20 +144,34 @@ pub fn triangle(time_step: f64, save: bool, save_path: String, num_iterations: u
     .edge_condition(edge_condition)
     .potential_gravity_max(potential_gravity_max)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .assert_all_set().unwrap().build().unwrap();
+    .assert_all_set()
+    .unwrap()
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(time_step);
+  engine.run();
 }
 
-pub fn one_particle_edge(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                integration_algorithm: IntegrationAlgorithm, world_type: WorldType, edge_condition: EdgeCondition) {
+pub fn one_particle_edge(
+  time_step: f64,
+  save: bool,
+  save_path: String,
+  num_iterations: usize,
+  integration_algorithm: IntegrationAlgorithm,
+  world_type: WorldType,
+  edge_condition: EdgeCondition,
+) {
   let simulation_size = Vector3::new(50., 50., 50.);
   let potential_gravity_max = 1.0;
 
   let atom_factory = SafeAtomFactory::new(potential_gravity_max, simulation_size.z);
-  let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(10., 10., 10.), Vector3::new(-10., 0., 0.));
+  let atom_0 = atom_factory.get_atom(
+    AtomType::Fe,
+    Vector3::new(10., 10., 10.),
+    Vector3::new(-10., 0., 0.),
+  );
   let atoms: Vec<Particle> = vec![atom_0];
 
   let max_iteration_till_reset = 2e3 as usize;
@@ -139,9 +182,10 @@ pub fn one_particle_edge(time_step: f64, save: bool, save_path: String, num_iter
 
   let save_options = SaveOptions {
     save,
+    save_path,
     save_laamps,
     save_verbose,
-    save_path,
+    ..SaveOptions::default()
   };
 
   let config = SimulationConfigBuilder::new()
@@ -157,21 +201,39 @@ pub fn one_particle_edge(time_step: f64, save: bool, save_path: String, num_iter
     .edge_condition(edge_condition)
     .potential_gravity_max(potential_gravity_max)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .assert_all_set().unwrap().build().unwrap();
+    .assert_all_set()
+    .unwrap()
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(time_step);
+  engine.run();
 }
 
-pub fn two_particles_edge(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                         integration_algorithm: IntegrationAlgorithm, world_type: WorldType, edge_condition: EdgeCondition) {
+pub fn two_particles_edge(
+  time_step: f64,
+  save: bool,
+  save_path: String,
+  num_iterations: usize,
+  integration_algorithm: IntegrationAlgorithm,
+  world_type: WorldType,
+  edge_condition: EdgeCondition,
+) {
   let simulation_size = Vector3::new(50., 50., 50.);
   let potential_gravity_max = 1.0;
 
   let atom_factory = SafeAtomFactory::new(potential_gravity_max, simulation_size.z);
-  let atom_0 = atom_factory.get_atom(AtomType::Fe, Vector3::new(1.5, 10., 10.), Vector3::new(0., 0., 0.));
-  let atom_1 = atom_factory.get_atom(AtomType::Fe, Vector3::new(50. - 1.5, 10., 10.), Vector3::new(0., 0., 0.));
+  let atom_0 = atom_factory.get_atom(
+    AtomType::Fe,
+    Vector3::new(1.5, 10., 10.),
+    Vector3::new(0., 0., 0.),
+  );
+  let atom_1 = atom_factory.get_atom(
+    AtomType::Fe,
+    Vector3::new(50. - 1.5, 10., 10.),
+    Vector3::new(0., 0., 0.),
+  );
   let atoms: Vec<Particle> = vec![atom_0, atom_1];
 
   let max_iteration_till_reset = 2e3 as usize;
@@ -182,9 +244,10 @@ pub fn two_particles_edge(time_step: f64, save: bool, save_path: String, num_ite
 
   let save_options = SaveOptions {
     save,
+    save_path,
     save_laamps,
     save_verbose,
-    save_path,
+    ..SaveOptions::default()
   };
 
   let config = SimulationConfigBuilder::new()
@@ -200,11 +263,14 @@ pub fn two_particles_edge(time_step: f64, save: bool, save_path: String, num_ite
     .edge_condition(edge_condition)
     .potential_gravity_max(potential_gravity_max)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .assert_all_set().unwrap().build().unwrap();
+    .assert_all_set()
+    .unwrap()
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(time_step);
+  engine.run();
 }
 
 // fn two_particles(save: bool, num_iterations: usize, use_thermostat: bool, verbose: bool) {
@@ -236,9 +302,15 @@ pub fn two_particles_edge(time_step: f64, save: bool, save_path: String, num_ite
 //   engine.run(save, use_thermostat, TEMPERATURE_CELCIUS, Q_EFFECTIVE_MASS, verbose);
 // }
 
-pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                        num_particles: usize, integration_algorithm: IntegrationAlgorithm,
-                    world_type: WorldType) {
+pub fn sphere_particles(
+  time_step: f64,
+  save: bool,
+  save_path: String,
+  num_iterations: usize,
+  num_particles: usize,
+  integration_algorithm: IntegrationAlgorithm,
+  world_type: WorldType,
+) {
   let simulation_size = Vector3::new(16., 16., 16.);
   let potential_gravity_max = 1.0;
 
@@ -287,9 +359,10 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
 
   let save_options = SaveOptions {
     save,
+    save_path,
     save_laamps,
     save_verbose,
-    save_path,
+    ..SaveOptions::default()
   };
 
   let edge_condition = EdgeCondition::Simple;
@@ -307,18 +380,29 @@ pub fn sphere_particles(time_step: f64, save: bool, save_path: String, num_itera
     .edge_condition(edge_condition)
     .potential_gravity_max(potential_gravity_max)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .assert_all_set().unwrap().build().unwrap();
+    .assert_all_set()
+    .unwrap()
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(time_step);
+  engine.run();
 }
 
-pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterations: usize,
-                       particle_distance: f64, world_size: Vector3<f64>,  offset: Vector3<f64>,
-                       integration_algorithm: IntegrationAlgorithm, world_type: WorldType,
-                       edge_condition: EdgeCondition) {
-  let potential_gravity_max = 0.0;
+pub fn dense_particles(
+  time_step: f64,
+  save: bool,
+  save_path: String,
+  num_iterations: usize,
+  particle_distance: f64,
+  world_size: Vector3<f64>,
+  offset: Vector3<f64>,
+  integration_algorithm: IntegrationAlgorithm,
+  world_type: WorldType,
+  edge_condition: EdgeCondition,
+) {
+  let potential_gravity_max = 1.0;
   let atom_factory = SafeAtomFactory::new(potential_gravity_max, world_size.z);
 
   let mut atoms: Vec<Particle> = Vec::new();
@@ -370,11 +454,11 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
           x if x < 0.75 => {
             fe_count += 1;
             Fe
-          },
+          }
           x if x >= 0.75 => {
             c_count += 1;
             C
-          },
+          }
           _ => panic!("what's that?"),
         };
 
@@ -402,9 +486,10 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
 
   let save_options = SaveOptions {
     save,
+    save_path,
     save_laamps,
     save_verbose,
-    save_path,
+    ..SaveOptions::default()
   };
 
   let config = SimulationConfigBuilder::new()
@@ -420,9 +505,12 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
     .edge_condition(edge_condition)
     .potential_gravity_max(potential_gravity_max)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .assert_all_set().unwrap().build().unwrap();
+    .assert_all_set()
+    .unwrap()
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
   info!("Starting simulation with {count} particles.");
   let fe_frac = fe_count as f64 / count as f64;
@@ -430,7 +518,7 @@ pub fn dense_particles(time_step: f64, save: bool, save_path: String, num_iterat
   info!("Fe particles, count: {fe_count}, frac: {fe_frac}");
   info!("C particles, count: {c_count}, frac: {c_frac}");
 
-  engine.run(time_step);
+  engine.run();
 }
 
 // fn small_box_one_particle(save: bool, num_iterations: usize) {

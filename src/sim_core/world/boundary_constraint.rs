@@ -1,5 +1,5 @@
-pub mod simple;
 pub mod periodic;
+pub mod simple;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct ParticleCompliance {

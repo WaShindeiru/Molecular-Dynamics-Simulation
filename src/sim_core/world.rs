@@ -1,19 +1,23 @@
-use std::io;
-use nalgebra::Vector3;
-use crate::output::world::WorldDTO;
+use crate::data::{ParticleConfig, SimulationConfig};
+use crate::persistence::dto::world::WorldDTO;
 use crate::particle::Particle;
-use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 use crate::sim_core::world::simple_world::SimpleWorld;
+use nalgebra::Vector3;
+use std::io;
 
-pub mod integration;
-pub mod simple_world;
-pub mod boxed_world;
-pub mod saver;
 pub mod boundary_constraint;
+pub mod boxed_world;
+pub mod integration;
+pub mod saver;
+pub mod simple_world;
 
-fn get_index_for_iteration(current_iteration: usize, max_iteration_till_reset: usize, reset_count: usize) -> usize {
+fn get_index_for_iteration(
+  current_iteration: usize,
+  max_iteration_till_reset: usize,
+  reset_count: usize,
+) -> usize {
   let mut index = current_iteration;
   if reset_count > 0 {
     index = index - (max_iteration_till_reset - 1);
@@ -26,7 +30,7 @@ fn get_index_for_iteration(current_iteration: usize, max_iteration_till_reset: u
 #[serde(tag = "type")]
 pub enum WorldType {
   SimpleWorld,
-  BoxedWorld {task_worker_multiplier: f64},
+  BoxedWorld { task_worker_multiplier: f64 },
 }
 
 pub enum World {
@@ -35,13 +39,17 @@ pub enum World {
 }
 
 impl World {
-  pub fn from_config(config: SimulationConfig) -> Self {
+  pub fn from_configs(config: SimulationConfig, particle_config: ParticleConfig) -> Self {
     match config.world_type {
-      WorldType::SimpleWorld => World::SimpleWorld(SimpleWorld::with_config(config)),
-      WorldType::BoxedWorld { .. } => World::BoxedWorld(BoxedWorld::with_config(config)),
+      WorldType::SimpleWorld => {
+        World::SimpleWorld(SimpleWorld::with_config(config, particle_config))
+      }
+      WorldType::BoxedWorld { .. } => {
+        World::BoxedWorld(BoxedWorld::with_config(config, particle_config))
+      }
     }
   }
-  
+
   pub fn save(&mut self) -> io::Result<()> {
     match self {
       World::SimpleWorld(world) => world.save(),
@@ -49,7 +57,12 @@ impl World {
     }
   }
 
-  pub fn update(&mut self, algorithm: &IntegrationAlgorithm, time_step: f64, next_iteration: usize) -> io::Result<()> {
+  pub fn update(
+    &mut self,
+    algorithm: &IntegrationAlgorithm,
+    time_step: f64,
+    next_iteration: usize,
+  ) -> io::Result<()> {
     match self {
       World::SimpleWorld(world) => {
         world.update(algorithm, time_step, next_iteration);
@@ -75,47 +88,95 @@ impl World {
 
   pub fn apply_boundary_constraint(&self, mut atom: Particle) -> Particle {
     let size = self.get_size();
-    
+
     atom = match atom.get_position().x {
       x if x < 0.0 => {
-        atom.set_velocity(Vector3::new(-atom.get_velocity().x, atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new(-atom.get_position().x, atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          -atom.get_velocity().x,
+          atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          -atom.get_position().x,
+          atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
       }
       x if x > size.x => {
-        atom.set_velocity(Vector3::new(-atom.get_velocity().x, atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new(2. * size.x - atom.get_position().x, atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          -atom.get_velocity().x,
+          atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          2. * size.x - atom.get_position().x,
+          atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
-      },
-      _ => atom
+      }
+      _ => atom,
     };
 
     atom = match atom.get_position().y {
       y if y < 0.0 => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, -atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, -atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          -atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          -atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
       }
       y if y > size.y => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, -atom.get_velocity().y, atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, 2. * size.y - atom.get_position().y, atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          -atom.get_velocity().y,
+          atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          2. * size.y - atom.get_position().y,
+          atom.get_position().z,
+        ));
         atom
-      },
-      _ => atom
+      }
+      _ => atom,
     };
 
     atom = match atom.get_position().z {
       z if z < 0.0 => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, atom.get_velocity().y, -atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, atom.get_position().y, -atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          atom.get_velocity().y,
+          -atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          atom.get_position().y,
+          -atom.get_position().z,
+        ));
         atom
       }
       z if z > size.z => {
-        atom.set_velocity(Vector3::new(atom.get_velocity().x, atom.get_velocity().y, -atom.get_velocity().z));
-        atom.update_position(Vector3::new(atom.get_position().x, atom.get_position().y, 2. * size.z - atom.get_position().z));
+        atom.set_velocity(Vector3::new(
+          atom.get_velocity().x,
+          atom.get_velocity().y,
+          -atom.get_velocity().z,
+        ));
+        atom.update_position(Vector3::new(
+          atom.get_position().x,
+          atom.get_position().y,
+          2. * size.z - atom.get_position().z,
+        ));
         atom
-      },
-      _ => atom
+      }
+      _ => atom,
     };
 
     atom

@@ -1,6 +1,6 @@
+use chrono::{DateTime, Local};
 use flexi_logger::{Duplicate, FileSpec, Logger, LoggerHandle, WriteMode};
 use std::sync::OnceLock;
-use chrono::{DateTime, Local};
 
 static LOGGER_HANDLE: OnceLock<LoggerHandle> = OnceLock::new();
 
@@ -26,4 +26,3 @@ pub fn init_logging(directory: String) {
       .expect("failed to start flexi_logger")
   });
 }
-

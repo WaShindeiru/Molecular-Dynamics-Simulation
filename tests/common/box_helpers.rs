@@ -1,29 +1,34 @@
+use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
+use carbon_nanotube::data::types::AtomType;
+use carbon_nanotube::persistence::dto::world::WorldDTO;
+use carbon_nanotube::particle::{Particle, SafeAtomFactory};
+use carbon_nanotube::sim_core::Engine;
+use carbon_nanotube::sim_core::world::WorldType;
+use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
+use carbon_nanotube::sim_core::world::integration::{
+  IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
+};
+use carbon_nanotube::sim_core::world::saver::SaveOptions;
 use nalgebra::Vector3;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
-use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
-use carbon_nanotube::data::types::AtomType;
-use carbon_nanotube::output::world::WorldDTO;
-use carbon_nanotube::particle::{Particle, SafeAtomFactory};
-use carbon_nanotube::sim_core::Engine;
-use carbon_nanotube::sim_core::world::integration::{IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance};
-use carbon_nanotube::sim_core::world::saver::SaveOptions;
-use carbon_nanotube::sim_core::world::WorldType;
-use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 
 const TIME_STEP: f64 = 1e-3;
 
 fn validate_dto_type(world_type: &WorldType, world_dto: &WorldDTO) -> bool {
   match (world_type, world_dto) {
     (WorldType::SimpleWorld, WorldDTO::SimpleWorldDTO(_)) => true,
-    (WorldType::BoxedWorld {..}, WorldDTO::BoxedWorldDTO(_)) => true,
+    (WorldType::BoxedWorld { .. }, WorldDTO::BoxedWorldDTO(_)) => true,
     _ => false,
   }
 }
 
 /// Test 1: Check that to_transfer_struct() returns all iterations without missing or repeating any
-pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge_condition: EdgeCondition) {
+pub fn test_reset_world_no_missing_iterations_runner(
+  world_type: WorldType,
+  edge_condition: EdgeCondition,
+) {
   // Setup: Create a small simulation
   let potential_gravity_max = 1.0;
   let simulation_size = Vector3::new(10., 10., 10.);
@@ -47,10 +52,16 @@ pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge
     save_path: String::new(),
     save_laamps: false,
     save_verbose: false,
+    ..SaveOptions::default()
   };
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
+    desired_temperature: vec![TemperatureInfo::new(
+      100.,
+      TimeIterationDistance::Iteration {
+        value: num_iterations,
+      },
+    )],
     q_effective_mass: 100.,
   };
 
@@ -65,12 +76,13 @@ pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge
     .integration_algorithm(integration_algorithm)
     .world_type(world_type)
     .edge_condition(edge_condition)
-      .build().unwrap();
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
   // TODO: change it back to verlet
-  engine.run(TIME_STEP);
+  engine.run();
 
   // Get the transfer struct
   let engine_dto = engine.to_transfer_struct();
@@ -82,7 +94,10 @@ pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge
   let atoms: &Vec<Vec<_>> = match world_dto {
     WorldDTO::SimpleWorldDTO(simple_dto) => &simple_dto.atoms,
     WorldDTO::BoxedWorldDTO(boxed_dto) => {
-      boxed_atoms_tmp = boxed_dto.history.box_container.iter()
+      boxed_atoms_tmp = boxed_dto
+        .history
+        .box_container
+        .iter()
         .map(|bc| bc.atoms.clone())
         .collect();
       &boxed_atoms_tmp
@@ -122,100 +137,121 @@ pub fn test_reset_world_no_missing_iterations_runner(world_type: WorldType, edge
     let next = all_iterations[i + 1];
 
     assert_eq!(
-      next, current + 1,
+      next,
+      current + 1,
       "Missing iteration detected: expected {} after {}, but got {}",
-      current + 1, current, next
+      current + 1,
+      current,
+      next
     );
   }
 
   // Check no iterations are repeated
   let unique_iterations: HashSet<usize> = all_iterations.iter().copied().collect();
   assert_eq!(
-    unique_iterations.len(), all_iterations.len(),
+    unique_iterations.len(),
+    all_iterations.len(),
     "Duplicate iterations detected: {} unique vs {} total",
-    unique_iterations.len(), all_iterations.len()
+    unique_iterations.len(),
+    all_iterations.len()
   );
 
   // Check we have the right number of iterations (initial state + num_iterations steps)
   let expected_total = num_iterations + 1;
   assert_eq!(
-    all_iterations.len(), expected_total,
+    all_iterations.len(),
+    expected_total,
     "Expected {} iterations (1 initial + {} steps), but got {}",
-    expected_total, num_iterations, all_iterations.len()
+    expected_total,
+    num_iterations,
+    all_iterations.len()
   );
 
   println!("✓ Test passed: No missing or repeated iterations");
 }
 
-pub fn test_reset_world_with_thermostat_runner(world_type: WorldType, edge_condition: EdgeCondition) {
-    let world_type_str = match world_type {
-        WorldType::SimpleWorld => "simple",
-        WorldType::BoxedWorld { .. } => "boxed",
-    };
-    let edge_condition_str = match edge_condition {
-        EdgeCondition::Simple => "simple",
-        EdgeCondition::Periodic => "periodic",
-    };
-    let test_dir = format!("../test/test_reset_world_with_thermostat_{}_{}", world_type_str, edge_condition_str);
+pub fn test_reset_world_with_thermostat_runner(
+  world_type: WorldType,
+  edge_condition: EdgeCondition,
+) {
+  let world_type_str = match world_type {
+    WorldType::SimpleWorld => "simple",
+    WorldType::BoxedWorld { .. } => "boxed",
+  };
+  let edge_condition_str = match edge_condition {
+    EdgeCondition::Simple => "simple",
+    EdgeCondition::Periodic => "periodic",
+  };
+  let test_dir = format!(
+    "../test/test_reset_world_with_thermostat_{}_{}",
+    world_type_str, edge_condition_str
+  );
 
-    // Clean up test directory if it exists
-    if Path::new(&test_dir).exists() {
-        fs::remove_dir_all(&test_dir).expect("Failed to remove test directory");
-    }
-    fs::create_dir_all(&test_dir).expect("Failed to create test directory");
+  // Clean up test directory if it exists
+  if Path::new(&test_dir).exists() {
+    fs::remove_dir_all(&test_dir).expect("Failed to remove test directory");
+  }
+  fs::create_dir_all(&test_dir).expect("Failed to create test directory");
 
-    let potential_gravity_max = 1.0;
-    let simulation_size = Vector3::new(10., 10., 10.);
-    let atom_factory = SafeAtomFactory::new(potential_gravity_max, simulation_size.z);
+  let potential_gravity_max = 1.0;
+  let simulation_size = Vector3::new(10., 10., 10.);
+  let atom_factory = SafeAtomFactory::new(potential_gravity_max, simulation_size.z);
 
-    let mut atoms: Vec<Particle> = Vec::new();
-    for i in 0..3 {
-        let position = Vector3::new(2.0 + i as f64 * 0.5, 5.0, 5.0);
-        let velocity = Vector3::new(0.1, 0.0, 0.0);
-        let atom = atom_factory.get_atom(AtomType::Fe, position, velocity);
-        atoms.push(atom);
-    }
+  let mut atoms: Vec<Particle> = Vec::new();
+  for i in 0..3 {
+    let position = Vector3::new(2.0 + i as f64 * 0.5, 5.0, 5.0);
+    let velocity = Vector3::new(0.1, 0.0, 0.0);
+    let atom = atom_factory.get_atom(AtomType::Fe, position, velocity);
+    atoms.push(atom);
+  }
 
-    let num_iterations = 100;
-    let max_iteration_till_reset = 8;
-    let one_frame_duration = 1e-2;
+  let num_iterations = 100;
+  let max_iteration_till_reset = 8;
+  let one_frame_duration = 1e-2;
 
-    let save_options = SaveOptions {
-        save: true,
-        save_path: test_dir.clone(),
-        save_laamps: false,
-        save_verbose: true,
-    };
+  let save_options = SaveOptions {
+    save: true,
+    save_path: test_dir.clone(),
+    save_laamps: false,
+    save_verbose: true,
+    ..SaveOptions::default()
+  };
 
-    let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-        desired_temperature: vec![TemperatureInfo::new(300., TimeIterationDistance::Iteration { value: num_iterations })],
-        q_effective_mass: 1000.,
-    };
+  let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature: vec![TemperatureInfo::new(
+      300.,
+      TimeIterationDistance::Iteration {
+        value: num_iterations,
+      },
+    )],
+    q_effective_mass: 1000.,
+  };
 
-    let config = SimulationConfigBuilder::new()
-        .atoms(atoms)
-        .world_size(simulation_size)
-        .time_step(TIME_STEP)
-        .num_of_iterations(num_iterations)
-        .max_iteration_till_reset(max_iteration_till_reset)
-        .save_all_iterations(false)
-        .one_frame_duration(one_frame_duration)
-        .save_options(save_options)
-        .integration_algorithm(integration_algorithm)
-        .world_type(world_type)
-        .edge_condition(edge_condition)
-        .potential_gravity_max(potential_gravity_max)
-        .build().unwrap();
+  let config = SimulationConfigBuilder::new()
+    .atoms(atoms)
+    .world_size(simulation_size)
+    .time_step(TIME_STEP)
+    .num_of_iterations(num_iterations)
+    .max_iteration_till_reset(max_iteration_till_reset)
+    .save_all_iterations(false)
+    .one_frame_duration(one_frame_duration)
+    .save_options(save_options)
+    .integration_algorithm(integration_algorithm)
+    .world_type(world_type)
+    .edge_condition(edge_condition)
+    .potential_gravity_max(potential_gravity_max)
+    .build_all()
+    .unwrap();
 
-    let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-    engine.run(TIME_STEP);
+  engine.run();
 
-    // Verify saved files contain all iterations despite resets
-    let energy_iterations = parse_csv_iterations(&format!("{}/energy.csv", test_dir), 0);
-    verify_iterations_complete(&energy_iterations, num_iterations, "energy.csv");
+  // Verify saved files contain all iterations despite resets
+  let energy_iterations = parse_csv_iterations(&format!("{}/energy.csv", test_dir), 0);
+  verify_iterations_complete(&energy_iterations, num_iterations, "energy.csv");
 
-    println!("✓ Test with thermostat passed: Saved files contain all iterations despite resets");
+  println!("✓ Test with thermostat passed: Saved files contain all iterations despite resets");
 }
 
 /// Test 3: Save to files and verify all CSV files contain correct iterations
@@ -228,7 +264,10 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     EdgeCondition::Simple => "simple",
     EdgeCondition::Periodic => "periodic",
   };
-  let test_dir = format!("../test/test_save_files_completeness_{}_{}", world_type_str, edge_condition_str);
+  let test_dir = format!(
+    "../test/test_save_files_completeness_{}_{}",
+    world_type_str, edge_condition_str
+  );
 
   // Clean up test directory if it exists
   if Path::new(&test_dir).exists() {
@@ -258,11 +297,17 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     save_path: test_dir.clone(),
     save_laamps: true,
     save_verbose: true,
+    ..SaveOptions::default()
   };
 
   // TODO: change back to verlet
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
+    desired_temperature: vec![TemperatureInfo::new(
+      100.,
+      TimeIterationDistance::Iteration {
+        value: num_iterations,
+      },
+    )],
     q_effective_mass: 100.,
   };
 
@@ -279,23 +324,40 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     .world_type(world_type)
     .edge_condition(edge_condition)
     .potential_gravity_max(potential_gravity_max)
-    .build().unwrap();
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(TIME_STEP);
+  engine.run();
 
   // Verify files exist
-  assert!(Path::new(&format!("{}/energy.csv", test_dir)).exists(), "energy.csv not found");
-  assert!(Path::new(&format!("{}/forces.csv", test_dir)).exists(), "forces.csv not found");
-  assert!(Path::new(&format!("{}/positions.csv", test_dir)).exists(), "positions.csv not found");
-  assert!(Path::new(&format!("{}/potential_energies.csv", test_dir)).exists(), "potential_energies.csv not found");
+  assert!(
+    Path::new(&format!("{}/energy.csv", test_dir)).exists(),
+    "energy.csv not found"
+  );
+  assert!(
+    Path::new(&format!("{}/forces.csv", test_dir)).exists(),
+    "forces.csv not found"
+  );
+  assert!(
+    Path::new(&format!("{}/positions.csv", test_dir)).exists(),
+    "positions.csv not found"
+  );
+  assert!(
+    Path::new(&format!("{}/potential_energies.csv", test_dir)).exists(),
+    "potential_energies.csv not found"
+  );
 
   // Check LAMMPS dump files exist
   let num_expected_dumps = num_iterations; // Since save_all_iterations is true
   for i in 0..num_expected_dumps {
     let dump_file = format!("{}/output_{}.dump", test_dir, i);
-    assert!(Path::new(&dump_file).exists(), "LAMMPS dump file {} not found", dump_file);
+    assert!(
+      Path::new(&dump_file).exists(),
+      "LAMMPS dump file {} not found",
+      dump_file
+    );
   }
 
   println!("✓ All expected files exist");
@@ -312,21 +374,21 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     &format!("{}/forces.csv", test_dir),
     num_iterations,
     num_atoms,
-    "forces.csv"
+    "forces.csv",
   );
 
   verify_iterations_complete_with_atoms(
     &format!("{}/positions.csv", test_dir),
     num_iterations,
     num_atoms,
-    "positions.csv"
+    "positions.csv",
   );
 
   verify_iterations_complete_with_atoms(
     &format!("{}/potential_energies.csv", test_dir),
     num_iterations,
     num_atoms,
-    "potential_energies.csv"
+    "potential_energies.csv",
   );
 
   println!("✓ All CSV files contain complete iterations without gaps or duplicates");
@@ -335,8 +397,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
 
 /// Helper function to parse iterations from CSV file
 fn parse_csv_iterations(file_path: &str, iteration_column: usize) -> Vec<usize> {
-  let content = fs::read_to_string(file_path)
-    .expect(&format!("Failed to read {}", file_path));
+  let content = fs::read_to_string(file_path).expect(&format!("Failed to read {}", file_path));
 
   let mut iterations = Vec::new();
 
@@ -357,8 +418,12 @@ fn verify_iterations_complete(iterations: &Vec<usize>, expected_count: usize, fi
   let mut sorted_iterations = iterations.clone();
   sorted_iterations.sort();
 
-  println!("Checking {}: found {} unique iterations out of {} total entries",
-           file_name, sorted_iterations.len(), iterations.len());
+  println!(
+    "Checking {}: found {} unique iterations out of {} total entries",
+    file_name,
+    sorted_iterations.len(),
+    iterations.len()
+  );
 
   // Check for gaps
   if !sorted_iterations.is_empty() {
@@ -366,7 +431,9 @@ fn verify_iterations_complete(iterations: &Vec<usize>, expected_count: usize, fi
       if sorted_iterations[i + 1] != sorted_iterations[i] + 1 {
         panic!(
           "{}: Gap detected between iterations {} and {}",
-          file_name, sorted_iterations[i], sorted_iterations[i + 1]
+          file_name,
+          sorted_iterations[i],
+          sorted_iterations[i + 1]
         );
       }
     }
@@ -376,27 +443,42 @@ fn verify_iterations_complete(iterations: &Vec<usize>, expected_count: usize, fi
   let unique_iterations: HashSet<usize> = sorted_iterations.iter().copied().collect();
   let expected_total = expected_count + 1; // +1 for initial state
   assert_eq!(
-    unique_iterations.len(), expected_total,
+    unique_iterations.len(),
+    expected_total,
     "{}: Expected {} unique iterations (1 initial + {} steps), found {}",
-    file_name, expected_total, expected_count, unique_iterations.len()
+    file_name,
+    expected_total,
+    expected_count,
+    unique_iterations.len()
   );
 }
 
 /// Helper function to verify all atoms are present for each iteration
 /// Validates that for each iteration, all atom IDs (0 to num_atoms-1) are present
-fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: usize, num_atoms: usize, file_name: &str) {
-  let content = fs::read_to_string(file_path)
-    .expect(&format!("Failed to read {}", file_path));
+fn verify_iterations_complete_with_atoms(
+  file_path: &str,
+  expected_iterations: usize,
+  num_atoms: usize,
+  file_name: &str,
+) {
+  let content = fs::read_to_string(file_path).expect(&format!("Failed to read {}", file_path));
 
   // Parse CSV: each line should have format: iteration,atom_id,...
   // Store data as: iteration -> set of atom_ids
-  let mut iteration_atoms: std::collections::HashMap<usize, HashSet<usize>> = std::collections::HashMap::new();
+  let mut iteration_atoms: std::collections::HashMap<usize, HashSet<usize>> =
+    std::collections::HashMap::new();
 
   for line in content.lines() {
     let parts: Vec<&str> = line.split(',').collect();
     if parts.len() >= 2 {
-      if let (Ok(iteration), Ok(atom_id)) = (parts[0].trim().parse::<usize>(), parts[1].trim().parse::<usize>()) {
-        iteration_atoms.entry(iteration).or_insert_with(HashSet::new).insert(atom_id);
+      if let (Ok(iteration), Ok(atom_id)) = (
+        parts[0].trim().parse::<usize>(),
+        parts[1].trim().parse::<usize>(),
+      ) {
+        iteration_atoms
+          .entry(iteration)
+          .or_insert_with(HashSet::new)
+          .insert(atom_id);
       }
     }
   }
@@ -405,15 +487,23 @@ fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: u
   let mut iterations: Vec<usize> = iteration_atoms.keys().copied().collect();
   iterations.sort();
 
-  println!("Checking {}: found {} iterations with {} atoms expected per iteration",
-           file_name, iterations.len(), num_atoms);
+  println!(
+    "Checking {}: found {} iterations with {} atoms expected per iteration",
+    file_name,
+    iterations.len(),
+    num_atoms
+  );
 
   // Check we have the right number of iterations (including initial state)
   let expected_total = expected_iterations + 1; // +1 for initial state
   assert_eq!(
-    iterations.len(), expected_total,
+    iterations.len(),
+    expected_total,
     "{}: Expected {} iterations (1 initial + {} steps), found {}",
-    file_name, expected_total, expected_iterations, iterations.len()
+    file_name,
+    expected_total,
+    expected_iterations,
+    iterations.len()
   );
 
   // Check for gaps in iterations
@@ -422,7 +512,9 @@ fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: u
       if iterations[i + 1] != iterations[i] + 1 {
         panic!(
           "{}: Gap detected between iterations {} and {}",
-          file_name, iterations[i], iterations[i + 1]
+          file_name,
+          iterations[i],
+          iterations[i + 1]
         );
       }
     }
@@ -434,9 +526,13 @@ fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: u
 
     // Check we have the right number of atoms
     assert_eq!(
-      atom_ids.len(), num_atoms,
+      atom_ids.len(),
+      num_atoms,
       "{}: Iteration {} has {} atoms, expected {}",
-      file_name, iteration, atom_ids.len(), num_atoms
+      file_name,
+      iteration,
+      atom_ids.len(),
+      num_atoms
     );
 
     // Check all atom IDs from 0 to num_atoms-1 are present
@@ -444,7 +540,9 @@ fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: u
       assert!(
         atom_ids.contains(&expected_id),
         "{}: Iteration {} is missing atom with ID {}",
-        file_name, iteration, expected_id
+        file_name,
+        iteration,
+        expected_id
       );
     }
 
@@ -453,13 +551,20 @@ fn verify_iterations_complete_with_atoms(file_path: &str, expected_iterations: u
       assert!(
         atom_id < num_atoms,
         "{}: Iteration {} has invalid atom ID {} (should be < {})",
-        file_name, iteration, atom_id, num_atoms
+        file_name,
+        iteration,
+        atom_id,
+        num_atoms
       );
     }
   }
 
-  println!("✓ {}: All {} iterations have complete atom data (all atom IDs 0-{} present)",
-           file_name, iterations.len(), num_atoms - 1);
+  println!(
+    "✓ {}: All {} iterations have complete atom data (all atom IDs 0-{} present)",
+    file_name,
+    iterations.len(),
+    num_atoms - 1
+  );
 }
 
 /// Test 4: Test edge case with single reset - verifies to_transfer_struct returns only last batch
@@ -472,7 +577,7 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
   let atom = atom_factory.get_atom(
     AtomType::C,
     Vector3::new(5.0, 5.0, 5.0),
-    Vector3::new(0.1, 0.0, 0.0)
+    Vector3::new(0.1, 0.0, 0.0),
   );
   atoms.push(atom);
 
@@ -485,11 +590,17 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
     save_path: String::new(),
     save_laamps: false,
     save_verbose: false,
+    ..SaveOptions::default()
   };
 
   // TODO: go back to verlet
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
+    desired_temperature: vec![TemperatureInfo::new(
+      100.,
+      TimeIterationDistance::Iteration {
+        value: num_iterations,
+      },
+    )],
     q_effective_mass: 100.,
   };
 
@@ -504,22 +615,29 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
     .integration_algorithm(integration_algorithm)
     .world_type(world_type)
     .edge_condition(edge_condition)
-    .build().unwrap();
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(TIME_STEP);
+  engine.run();
 
   let engine_dto = engine.to_transfer_struct();
   let world_dto = &engine_dto.world;
 
-  assert!(validate_dto_type(&world_type, &world_dto), "WorldDTO type doesn't match WorldType");
+  assert!(
+    validate_dto_type(&world_type, &world_dto),
+    "WorldDTO type doesn't match WorldType"
+  );
 
   let boxed_atoms_tmp: Vec<Vec<_>>;
   let atoms: &Vec<Vec<_>> = match world_dto {
     WorldDTO::SimpleWorldDTO(simple_dto) => &simple_dto.atoms,
     WorldDTO::BoxedWorldDTO(boxed_dto) => {
-      boxed_atoms_tmp = boxed_dto.history.box_container.iter()
+      boxed_atoms_tmp = boxed_dto
+        .history
+        .box_container
+        .iter()
         .map(|bc| bc.atoms.clone())
         .collect();
       &boxed_atoms_tmp
@@ -539,12 +657,19 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
   // After reset at iteration 10, we should have iterations 10-15 (6 iterations including the duplicate at 10)
   // The first batch (0-9) was cleared during reset, only last atom from it (iteration 10) is kept
   let expected_iterations_in_memory = num_iterations - max_iteration_till_reset + 1; // 15 - 10 + 1 = 6
-  assert_eq!(all_iterations.len(), expected_iterations_in_memory,
-             "Wrong number of iterations in memory after reset");
+  assert_eq!(
+    all_iterations.len(),
+    expected_iterations_in_memory,
+    "Wrong number of iterations in memory after reset"
+  );
 
   // Verify no gaps in the last batch
   for i in 0..all_iterations.len() - 1 {
-    assert_eq!(all_iterations[i + 1], all_iterations[i] + 1, "Gap in iterations");
+    assert_eq!(
+      all_iterations[i + 1],
+      all_iterations[i] + 1,
+      "Gap in iterations"
+    );
   }
 
   // Verify no duplicates
@@ -552,8 +677,10 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
   assert_eq!(unique.len(), all_iterations.len(), "Duplicate iterations");
 
   // Verify the iterations start from the reset point
-  assert_eq!(all_iterations[0], max_iteration_till_reset,
-             "First iteration in memory should be at reset point");
+  assert_eq!(
+    all_iterations[0], max_iteration_till_reset,
+    "First iteration in memory should be at reset point"
+  );
 
   println!("✓ Single reset test passed: to_transfer_struct correctly returns only last batch");
 }
@@ -568,7 +695,7 @@ pub fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition
   let atom = atom_factory.get_atom(
     AtomType::Fe,
     Vector3::new(5.0, 5.0, 5.0),
-    Vector3::new(0.0, 0.1, 0.0)
+    Vector3::new(0.0, 0.1, 0.0),
   );
   atoms.push(atom);
 
@@ -581,10 +708,16 @@ pub fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition
     save_path: String::new(),
     save_laamps: false,
     save_verbose: false,
+    ..SaveOptions::default()
   };
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
-    desired_temperature: vec![TemperatureInfo::new(100., TimeIterationDistance::Iteration { value: num_iterations })],
+    desired_temperature: vec![TemperatureInfo::new(
+      100.,
+      TimeIterationDistance::Iteration {
+        value: num_iterations,
+      },
+    )],
     q_effective_mass: 100.,
   };
 
@@ -599,22 +732,29 @@ pub fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition
     .integration_algorithm(integration_algorithm)
     .world_type(world_type)
     .edge_condition(edge_condition)
-    .build().unwrap();
+    .build_all()
+    .unwrap();
 
-  let mut engine = Engine::from_config(config);
+  let mut engine = Engine::from_config_all(config);
 
-  engine.run(TIME_STEP);
+  engine.run();
 
   let engine_dto = engine.to_transfer_struct();
   let world_dto = &engine_dto.world;
 
-  assert!(validate_dto_type(&world_type, &world_dto), "WorldDTO type doesn't match WorldType");
+  assert!(
+    validate_dto_type(&world_type, &world_dto),
+    "WorldDTO type doesn't match WorldType"
+  );
 
   let boxed_atoms_tmp: Vec<Vec<_>>;
   let atoms: &Vec<Vec<_>> = match world_dto {
     WorldDTO::SimpleWorldDTO(simple_dto) => &simple_dto.atoms,
     WorldDTO::BoxedWorldDTO(boxed_dto) => {
-      boxed_atoms_tmp = boxed_dto.history.box_container.iter()
+      boxed_atoms_tmp = boxed_dto
+        .history
+        .box_container
+        .iter()
         .map(|bc| bc.atoms.clone())
         .collect();
       &boxed_atoms_tmp
@@ -632,10 +772,18 @@ pub fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition
   all_iterations.sort();
 
   let expected_total = num_iterations + 1;
-  assert_eq!(all_iterations.len(), expected_total, "Wrong number of iterations");
+  assert_eq!(
+    all_iterations.len(),
+    expected_total,
+    "Wrong number of iterations"
+  );
 
   for i in 0..all_iterations.len() - 1 {
-    assert_eq!(all_iterations[i + 1], all_iterations[i] + 1, "Gap in iterations");
+    assert_eq!(
+      all_iterations[i + 1],
+      all_iterations[i] + 1,
+      "Gap in iterations"
+    );
   }
 
   let unique: HashSet<usize> = all_iterations.iter().copied().collect();

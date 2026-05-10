@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use nalgebra::Vector3;
 use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::ParticleCompliance;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
@@ -8,6 +5,9 @@ use crate::sim_core::world::boxed_world::box_container::box_container_config::Bo
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::box_task::VelocityTaskParticleData;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
+use nalgebra::Vector3;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 pub struct IntegrationCacheBuilder {
   particles: HashMap<usize, Particle>,
@@ -17,7 +17,10 @@ pub struct IntegrationCacheBuilder {
 }
 
 impl IntegrationCacheBuilder {
-  pub fn new(box_container_config: BoxContainerConfig, particles: HashMap<usize, Particle>) -> Self {
+  pub fn new(
+    box_container_config: BoxContainerConfig,
+    particles: HashMap<usize, Particle>,
+  ) -> Self {
     let num_particles = particles.len();
     IntegrationCacheBuilder {
       particles,
@@ -43,7 +46,10 @@ impl IntegrationCacheBuilder {
   /// Builds IntegrationCache. Returns None if not all particles have received velocity results.
   pub fn build(self) -> Option<IntegrationCache> {
     let all_supplied = self.particles.len() == self.half_velocity.len()
-      && self.particles.keys().all(|id| self.half_velocity.contains_key(id));
+      && self
+        .particles
+        .keys()
+        .all(|id| self.half_velocity.contains_key(id));
 
     if !all_supplied {
       return None;

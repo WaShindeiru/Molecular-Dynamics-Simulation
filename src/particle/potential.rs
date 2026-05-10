@@ -1,20 +1,20 @@
-use nalgebra::Vector3;
+use crate::data::Constant;
 use crate::data::constants::get_constant;
-use crate::data::{Constant};
 use crate::data::types::get_interaction_type;
-use crate::particle::{Particle};
+use crate::particle::Particle;
 use crate::particle::potential::b::g;
 use crate::particle::potential::fc::{fc, fc_gradient};
 use crate::particle::potential::va::{va, va_gradient};
 use crate::particle::potential::vr::{vr, vr_gradient};
 use crate::utils::math::cos_from_vec;
+use nalgebra::Vector3;
 
 const OPTIMIZATION: bool = true;
 
-pub mod fc;
-pub mod vr;
-pub mod va;
 pub mod b;
+pub mod fc;
+pub mod va;
+pub mod vr;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FP {
@@ -50,28 +50,32 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
 
     if OPTIMIZATION {
       for (j, particle_j) in particles.iter().enumerate() {
-        if j == i { continue }
+        if j == i {
+          continue;
+        }
 
         let r_ij_vec = particle_j.get_position() - particle_i.get_position();
         let r_ij_mag = r_ij_vec.magnitude();
-        let interaction_type_ij = get_interaction_type(&particle_i.get_type(),
-                                                       &particle_j.get_type());
+        let interaction_type_ij =
+          get_interaction_type(&particle_i.get_type(), &particle_j.get_type());
 
         let R_ij = get_constant(&interaction_type_ij, Constant::R);
         let D_ij = get_constant(&interaction_type_ij, Constant::D);
         let fc_ij = fc::fc(r_ij_mag, R_ij, D_ij);
-        if fc_ij < 1e-10 { continue }
-        else {
+        if fc_ij < 1e-10 {
+          continue;
+        } else {
           neighbours.push(j);
         }
       }
     } else {
       for (j, _) in particles.iter().enumerate() {
-        if j == i { continue }
+        if j == i {
+          continue;
+        }
         neighbours.push(j);
       }
     }
-
 
     for j_ in neighbours.iter() {
       let j = *j_;
@@ -80,8 +84,8 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
       gradients_cache = vec![Vector3::new(0., 0., 0.); particles.len()];
 
       let particle_j = particles.get(j).unwrap();
-      let interaction_type_ij = get_interaction_type(&particle_i.get_type(),
-                                                     &particle_j.get_type());
+      let interaction_type_ij =
+        get_interaction_type(&particle_i.get_type(), &particle_j.get_type());
 
       let R_ij = get_constant(&interaction_type_ij, Constant::R);
       let D_ij = get_constant(&interaction_type_ij, Constant::D);
@@ -108,14 +112,16 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
 
       for _k in neighbours.iter() {
         let k = *_k;
-        if (k == j || k == i) {continue};
+        if (k == j || k == i) {
+          continue;
+        };
 
         let particle_k = particles.get(k).unwrap();
         let r_ik_vec = particle_k.get_position() - particle_i.get_position();
         let r_ik_mag = r_ik_vec.magnitude();
 
-        let interaction_type_ik = get_interaction_type(&particle_i.get_type(),
-                                                       &particle_k.get_type());
+        let interaction_type_ik =
+          get_interaction_type(&particle_i.get_type(), &particle_k.get_type());
         let R_ik = get_constant(&interaction_type_ik, Constant::R);
         let D_ik = get_constant(&interaction_type_ik, Constant::D);
         let gamma_ik = get_constant(&interaction_type_ik, Constant::Gamma);
@@ -128,8 +134,17 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
         let g_ik = g(cos_theta_ijk, gamma_ik, c_ik, d_ik, h_ik);
         let fc_ik_grad_i = fc_gradient(&r_ik_vec, r_ik_mag, R_ik, D_ik);
         let fc_ik_grad_k = -&fc_ik_grad_i;
-        let g_ik_grads = b::g_ik_gradient(&r_ij_vec, r_ij_mag, &r_ik_vec, r_ik_mag,
-                                          cos_theta_ijk, gamma_ik, c_ik, d_ik, h_ik);
+        let g_ik_grads = b::g_ik_gradient(
+          &r_ij_vec,
+          r_ij_mag,
+          &r_ik_vec,
+          r_ik_mag,
+          cos_theta_ijk,
+          gamma_ik,
+          c_ik,
+          d_ik,
+          h_ik,
+        );
 
         bij_grad_i += fc_ik * g_ik_grads.grad_i + g_ik * fc_ik_grad_i;
         bij_grad_j += fc_ik * g_ik_grads.grad_j;
@@ -149,22 +164,28 @@ pub fn compute_forces_potential(particles: &Vec<Particle>) -> FPInfo {
 
       for k_ in neighbours.iter() {
         let k = *k_;
-        if k == j || k == i {continue};
+        if k == j || k == i {
+          continue;
+        };
         gradients_cache[k] = gradients_cache[k] * b_ij_grad_chi_ij;
       }
 
-      let force_i: Vector3<f64> = -0.5 * (fc_ij_grad_i * (vr_ij - b_ij * va_ij)
-        + fc_ij * (vr_ij_grad_i - bij_grad_i * va_ij - b_ij * va_ij_grad_i));
+      let force_i: Vector3<f64> = -0.5
+        * (fc_ij_grad_i * (vr_ij - b_ij * va_ij)
+          + fc_ij * (vr_ij_grad_i - bij_grad_i * va_ij - b_ij * va_ij_grad_i));
       result[i].force += force_i;
 
-      let force_j = -0.5 * (-fc_ij_grad_i * (vr_ij - b_ij * va_ij)
-        + fc_ij * (-vr_ij_grad_i - bij_grad_j * va_ij - b_ij * (-va_ij_grad_i)));
+      let force_j = -0.5
+        * (-fc_ij_grad_i * (vr_ij - b_ij * va_ij)
+          + fc_ij * (-vr_ij_grad_i - bij_grad_j * va_ij - b_ij * (-va_ij_grad_i)));
       result[j].force += force_j;
 
       for k_ in neighbours.iter() {
         let k = *k_;
-        if k == j || k == i {continue};
-        let force_k = -0.5 * ( -fc_ij * gradients_cache[k] * va_ij );
+        if k == j || k == i {
+          continue;
+        };
+        let force_k = -0.5 * (-fc_ij * gradients_cache[k] * va_ij);
         result[k].force += force_k;
       }
 

@@ -1,7 +1,10 @@
+pub mod config;
 pub mod constants;
 pub mod types;
 pub mod units;
-pub mod config;
 
-pub use types::{InteractionType, Constant};
-pub use config::SimulationConfig;
+pub use config::ConfigAll;
+pub use config::particle_config::ParticleConfig;
+pub use config::simulation_config::SimulationConfig;
+pub use types::{Constant, InteractionType};
+pub use units::ValueUnits;
