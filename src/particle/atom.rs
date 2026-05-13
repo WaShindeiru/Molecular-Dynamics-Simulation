@@ -5,9 +5,9 @@ use std::sync::{Mutex, OnceLock};
 
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
-use crate::persistence::dto::atom::AtomDTO;
 use crate::particle::Particle;
 use crate::particle::custom_path_atom::CustomPathAtom;
+use crate::persistence::dto::atom::AtomDTO;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Atom {

@@ -9,8 +9,8 @@ use crate::particle::SafeAtomFactory;
 
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::integration::{TemperatureInfo, TimeIterationDistance};
-use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
 use crate::simulations::generators::generator_config::GeneratorConfig;
+use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
 
 pub fn see_config_json() {
   let simulation_size = Vector3::new(10., 10., 10.);
@@ -56,6 +56,9 @@ pub fn see_dense_generator_configuration() {
   let particle_distance = 7.;
   let offset = Vector3::new(1.7, 1.7, 1.7);
   let config_local = GeneratorConfig::Dense(DenseGeneratorConfig::new(particle_distance, offset));
-  let config_file = GeneratorConfigFile::new(config_local, ValueUnits::Unitless).to_value_units(ValueUnits::Si);
-  config_file.to_json_file("/media/washindeiru/7E442D59442D1585/md/temp/dense.json").expect("should work!");
+  let config_file =
+    GeneratorConfigFile::new(config_local, ValueUnits::Unitless).to_value_units(ValueUnits::Si);
+  config_file
+    .to_json_file("/media/washindeiru/7E442D59442D1585/md/temp/dense.json")
+    .expect("should work!");
 }

@@ -33,7 +33,7 @@ impl SaveOptionsFile {
     }
   }
 
-  pub fn to_runtime(&self) -> SaveOptions {
+  pub fn to_runtime(&self, time_step: f64) -> SaveOptions {
     let save_path = if self.keep_path {
       self.save_path.clone()
     } else {
@@ -47,8 +47,12 @@ impl SaveOptionsFile {
       save_verbose: self.save_verbose,
       save_all_iterations_laamps: self.save_all_iterations_laamps,
       save_all_iterations_energy: self.save_all_iterations_energy,
-      laamps_sampling: self.laamps_sampling.to_runtime(),
-      energy_sampling: self.energy_sampling.to_runtime(),
+      laamps_sampling: self
+        .laamps_sampling
+        .to_runtime(time_step, self.save_all_iterations_laamps),
+      energy_sampling: self
+        .energy_sampling
+        .to_runtime(time_step, self.save_all_iterations_energy),
     }
   }
 

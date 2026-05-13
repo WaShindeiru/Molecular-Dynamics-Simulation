@@ -1,8 +1,8 @@
 use std::{fs, io};
 
 use crate::data::ValueUnits;
-use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
 use crate::simulations::generators::generator_config::GeneratorConfig;
+use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GeneratorConfigFile {
@@ -27,9 +27,7 @@ impl GeneratorConfigFile {
   }
 
   pub fn into_generator_config_unitless(self) -> GeneratorConfig {
-    self
-      .to_value_units(ValueUnits::Unitless)
-      .generator
+    self.to_value_units(ValueUnits::Unitless).generator
   }
 
   pub fn to_json_string(&self) -> Result<String, serde_json::Error> {

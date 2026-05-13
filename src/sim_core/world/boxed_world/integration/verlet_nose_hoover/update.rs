@@ -92,12 +92,27 @@ impl BoxedWorld {
         temperature,
       } => {
         if updated {
+          let entry = self
+            .integration_algorithm_state
+            .get_previous_history_entry()
+            .unwrap();
+
+          let temperature_started = entry.temperature_started.unwrap().temperature;
+          let temperature_achieved = entry.temperature_achieved.unwrap().temperature;
+          let temperature_switched = entry.temperature_switched.unwrap().temperature;
+
           info!(
-            "Iteration: {}, Simulation temperature: {}, Temperature: {} achieved, switching to temperature: {}",
-            self.iteration,
-            simulation_temperature * TEMPERATURE_U,
-            current_desired_temperature * TEMPERATURE_U,
-            temperature * TEMPERATURE_U
+            "Iteration: {iteration}, current simulation temperature: {simulation_temperature} K, \
+             temperature {achieved_temperature} K achieved, switching to {next_temperature} K.\
+             temperature_started: {temperature_started} K, temperature_achieved: {temperature_achieved} K, \
+             temperature_switched: {temperature_switched} K",
+            iteration = self.iteration,
+            simulation_temperature = simulation_temperature * TEMPERATURE_U,
+            achieved_temperature = current_desired_temperature * TEMPERATURE_U,
+            next_temperature = temperature * TEMPERATURE_U,
+            temperature_started = temperature_started * TEMPERATURE_U,
+            temperature_achieved = temperature_achieved * TEMPERATURE_U,
+            temperature_switched = temperature_switched * TEMPERATURE_U,
           );
         }
       }

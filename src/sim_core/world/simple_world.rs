@@ -1,9 +1,9 @@
 use crate::data::types::AtomType;
 use crate::data::{ParticleConfig, SimulationConfig};
+use crate::particle::Particle;
 use crate::persistence::dto::atom::AtomDTO;
 use crate::persistence::dto::world::WorldDTO;
 use crate::persistence::dto::world::simple::SimpleWorldDTO;
-use crate::particle::Particle;
 use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
 use crate::sim_core::world::get_index_for_iteration;
 use crate::sim_core::world::integration::IntegrationAlgorithm;

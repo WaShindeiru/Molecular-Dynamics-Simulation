@@ -25,14 +25,7 @@ pub fn new_integration_algorithm_state(
       desired_temperature,
       ..
     } => {
-      let mut history = vec![TemperatureHistoryEntry::default(); desired_temperature.len()];
-      if let Some(first_temp) = desired_temperature.first() {
-        history[0].temperature_started = Some(TemperatureIteration {
-          iteration: 0,
-          temperature: first_temp.desired_temperature,
-        });
-      }
-
+      let history = vec![TemperatureHistoryEntry::default(); desired_temperature.len()];
       let stage = if desired_temperature.len() <= 1 {
         NoseHooverStage::LastEntry
       } else {
@@ -58,6 +51,20 @@ impl IntegrationAlgorithmState {
     }
   }
 
+  pub fn get_previous_history_entry(&self) -> Option<&TemperatureHistoryEntry> {
+    match self {
+      IntegrationAlgorithmState::SemiImplicitEuler => None,
+      IntegrationAlgorithmState::VelocityVerlet => None,
+      IntegrationAlgorithmState::NoseHooverVerlet {
+        temperature_index,
+        stage,
+        acceptance_consecutive,
+        after_achieved_consecutive,
+        history,
+      } => Some(history.get(*temperature_index - 1).unwrap()),
+    }
+  }
+
   fn distance_reached(distance: TimeIterationDistance, time_step: f64, consecutive: usize) -> bool {
     match distance {
       TimeIterationDistance::Time { value: time } => time_step * consecutive as f64 > time,
@@ -76,12 +83,12 @@ impl IntegrationAlgorithmState {
     history: &mut [TemperatureHistoryEntry],
     index: usize,
     iteration: usize,
-    temp: &TemperatureInfo,
+    simulation_temperature_unitless: f64,
   ) {
     if history[index].temperature_started.is_none() {
       history[index].temperature_started = Some(TemperatureIteration {
         iteration,
-        temperature: temp.desired_temperature,
+        temperature: simulation_temperature_unitless,
       });
     }
   }
@@ -90,11 +97,11 @@ impl IntegrationAlgorithmState {
     history: &mut [TemperatureHistoryEntry],
     index: usize,
     iteration: usize,
-    temp: &TemperatureInfo,
+    simulation_temperature_unitless: f64,
   ) {
     history[index].temperature_achieved = Some(TemperatureIteration {
       iteration,
-      temperature: temp.desired_temperature,
+      temperature: simulation_temperature_unitless,
     });
   }
 
@@ -102,11 +109,11 @@ impl IntegrationAlgorithmState {
     history: &mut [TemperatureHistoryEntry],
     index: usize,
     iteration: usize,
-    temp: &TemperatureInfo,
+    simulation_temperature_unitless: f64,
   ) {
     history[index].temperature_switched = Some(TemperatureIteration {
       iteration,
-      temperature: temp.desired_temperature,
+      temperature: simulation_temperature_unitless,
     });
   }
 
@@ -144,7 +151,7 @@ impl IntegrationAlgorithmState {
           history,
           *temperature_index,
           current_iteration,
-          &temp_info,
+          simulation_temperature_unitless,
         );
 
         match *stage {
@@ -168,7 +175,7 @@ impl IntegrationAlgorithmState {
                   history,
                   *temperature_index,
                   current_iteration,
-                  &temp_info,
+                  simulation_temperature_unitless,
                 );
               }
             } else {
@@ -197,7 +204,7 @@ impl IntegrationAlgorithmState {
               history,
               *temperature_index,
               current_iteration,
-              &temp_info,
+              simulation_temperature_unitless,
             );
             *acceptance_consecutive = 0;
             *after_achieved_consecutive = 0;
@@ -210,12 +217,6 @@ impl IntegrationAlgorithmState {
 
             *temperature_index = next_temperature_index;
             let next_temp_info = *desired_temperature.get(*temperature_index).unwrap();
-            IntegrationAlgorithmState::record_started_if_missing(
-              history,
-              *temperature_index,
-              current_iteration,
-              &next_temp_info,
-            );
 
             *stage = if *temperature_index == desired_temperature.len() - 1 {
               NoseHooverStage::LastEntry

@@ -1,7 +1,7 @@
 use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
 use carbon_nanotube::data::types::AtomType;
-use carbon_nanotube::persistence::dto::world::WorldDTO;
 use carbon_nanotube::particle::{Particle, SafeAtomFactory};
+use carbon_nanotube::persistence::dto::world::WorldDTO;
 use carbon_nanotube::sim_core::Engine;
 use carbon_nanotube::sim_core::world::WorldType;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;

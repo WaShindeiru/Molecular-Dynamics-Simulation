@@ -10,6 +10,7 @@ use crate::persistence::json::simulation_config::read_simulation_config_from_jso
 use crate::sim_core::Engine;
 use crate::simulations::generators::generate::Generator;
 use crate::simulations::generators::generator_config::GeneratorConfig;
+use crate::utils::logging;
 
 pub fn run_with_particle_config(
   simulation_config: SimulationConfig,
@@ -38,6 +39,7 @@ pub fn run_from_paths(
   generator_config_path: Option<&str>,
 ) -> io::Result<()> {
   let simulation_config = read_simulation_config_from_json_file(simulation_config_path)?;
+  logging::init_logging(simulation_config.save_options.save_path.clone());
 
   match (particle_config_path, generator_config_path) {
     (Some(particle_path), None) => {

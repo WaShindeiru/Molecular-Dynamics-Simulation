@@ -1,5 +1,5 @@
-use crate::persistence::dto::world::boxed::box_container::BoxContainerDTO;
 use crate::particle::Particle;
+use crate::persistence::dto::world::boxed::box_container::BoxContainerDTO;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::{
   LeftEdge, Normal, RightEdge,

@@ -127,7 +127,7 @@ impl SimulationConfigFile {
       time_step: unitless.time_step,
       num_of_iterations: unitless.num_of_iterations,
       max_iteration_till_reset: unitless.max_iteration_till_reset,
-      save_options: unitless.save_options.to_runtime(),
+      save_options: unitless.save_options.to_runtime(unitless.time_step),
       integration_algorithm: unitless.integration_algorithm,
       world_type: unitless.world_type.to_runtime(),
       edge_condition: unitless.edge_condition.to_runtime(),

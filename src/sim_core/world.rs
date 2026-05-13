@@ -1,6 +1,6 @@
 use crate::data::{ParticleConfig, SimulationConfig};
-use crate::persistence::dto::world::WorldDTO;
 use crate::particle::Particle;
+use crate::persistence::dto::world::WorldDTO;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 use crate::sim_core::world::simple_world::SimpleWorld;
