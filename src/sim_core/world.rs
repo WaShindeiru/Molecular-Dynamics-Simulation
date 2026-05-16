@@ -2,6 +2,7 @@ use crate::data::{ParticleConfig, SimulationConfig};
 use crate::particle::Particle;
 use crate::persistence::dto::world::WorldDTO;
 use crate::sim_core::world::boxed_world::BoxedWorld;
+use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 use crate::sim_core::world::integration::IntegrationAlgorithm;
 use crate::sim_core::world::simple_world::SimpleWorld;
 use nalgebra::Vector3;
@@ -26,11 +27,12 @@ fn get_index_for_iteration(
   index
 }
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "type")]
+#[derive(Debug, Clone, Copy)]
 pub enum WorldType {
   SimpleWorld,
-  BoxedWorld { task_worker_multiplier: f64 },
+  BoxedWorld {
+    task_manager_config: TaskManagerConfig,
+  },
 }
 
 pub enum World {

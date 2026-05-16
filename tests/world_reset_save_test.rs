@@ -1,5 +1,6 @@
 mod common;
 
+use carbon_nanotube::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 use carbon_nanotube::sim_core::world::{WorldType, boundary_constraint::EdgeCondition};
 
 use common::box_helpers::{
@@ -12,7 +13,10 @@ use common::box_helpers::{
 fn test_reset_world_no_missing_iterations_boxed_simple() {
   test_reset_world_no_missing_iterations_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Simple,
   )
@@ -22,7 +26,10 @@ fn test_reset_world_no_missing_iterations_boxed_simple() {
 fn test_reset_world_no_missing_iterations_boxed_periodic() {
   test_reset_world_no_missing_iterations_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Periodic,
   )
@@ -32,7 +39,10 @@ fn test_reset_world_no_missing_iterations_boxed_periodic() {
 fn test_reset_world_with_thermostat_boxed_simple() {
   test_reset_world_with_thermostat_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Simple,
   );
@@ -42,7 +52,10 @@ fn test_reset_world_with_thermostat_boxed_simple() {
 fn test_reset_world_with_thermostat_boxed_periodic() {
   test_reset_world_with_thermostat_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Periodic,
   );
@@ -52,7 +65,10 @@ fn test_reset_world_with_thermostat_boxed_periodic() {
 fn test_save_files_completeness_boxed_simple() {
   test_save_files_completeness_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Simple,
   );
@@ -62,7 +78,10 @@ fn test_save_files_completeness_boxed_simple() {
 fn test_save_files_completeness_boxed_periodic() {
   test_save_files_completeness_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Periodic,
   );
@@ -72,7 +91,10 @@ fn test_save_files_completeness_boxed_periodic() {
 fn test_single_reset_boxed_simple() {
   test_single_reset_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Simple,
   );
@@ -82,7 +104,10 @@ fn test_single_reset_boxed_simple() {
 fn test_single_reset_boxed_periodic() {
   test_single_reset_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Periodic,
   );
@@ -92,7 +117,10 @@ fn test_single_reset_boxed_periodic() {
 fn test_no_reset_boxed_simple() {
   test_no_reset_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Simple,
   );
@@ -102,7 +130,10 @@ fn test_no_reset_boxed_simple() {
 fn test_no_reset_boxed_periodic() {
   test_no_reset_runner(
     WorldType::BoxedWorld {
-      task_worker_multiplier: 2.0,
+      task_manager_config: TaskManagerConfig {
+        debug: false,
+        task_worker_multiplier: 2.0,
+      },
     },
     EdgeCondition::Periodic,
   );

@@ -44,10 +44,10 @@ pub struct BoxedWorld {
 
 impl BoxedWorld {
   pub fn with_config(config: SimulationConfig, particle_config: ParticleConfig) -> Self {
-    let task_worker_multiplier = match config.world_type {
+    let task_manager_config = match config.world_type {
       WorldType::BoxedWorld {
-        task_worker_multiplier,
-      } => task_worker_multiplier,
+        task_manager_config,
+      } => task_manager_config,
       _ => unreachable!(),
     };
 
@@ -57,10 +57,10 @@ impl BoxedWorld {
     let box_container_config = *history_manager.box_container_config();
 
     let mut task_manager = TaskManager::new(
-      false,
+      task_manager_config.debug,
       config.clone(),
       box_container_config,
-      task_worker_multiplier,
+      task_manager_config.task_worker_multiplier,
     );
 
     task_manager.split_into_tasks_multiplier(&box_container_config);

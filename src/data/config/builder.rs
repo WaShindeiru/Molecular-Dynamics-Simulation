@@ -2,6 +2,7 @@ use crate::data::{ParticleConfig, SimulationConfig, config::ConfigAll};
 use crate::particle::Particle;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 use crate::sim_core::world::integration::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
@@ -251,7 +252,10 @@ impl SimulationConfigBuilder {
         },
       ),
       world_type: self.world_type.unwrap_or(WorldType::BoxedWorld {
-        task_worker_multiplier: 4.0,
+        task_manager_config: TaskManagerConfig {
+          debug: false,
+          task_worker_multiplier: 4.0,
+        },
       }),
       edge_condition: self.edge_condition.unwrap_or(EdgeCondition::Periodic),
     })

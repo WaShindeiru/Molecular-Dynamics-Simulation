@@ -1,5 +1,6 @@
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum EdgeConditionFile {
@@ -27,7 +28,31 @@ impl EdgeConditionFile {
 #[serde(tag = "type")]
 pub enum WorldTypeFile {
   SimpleWorld,
-  BoxedWorld { task_worker_multiplier: f64 },
+  BoxedWorld {
+    task_manager_config: TaskManagerConfigFile,
+  },
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct TaskManagerConfigFile {
+  pub debug: bool,
+  pub task_worker_multiplier: f64,
+}
+
+impl TaskManagerConfigFile {
+  pub fn from_runtime(value: TaskManagerConfig) -> Self {
+    Self {
+      debug: value.debug,
+      task_worker_multiplier: value.task_worker_multiplier,
+    }
+  }
+
+  pub fn to_runtime(&self) -> TaskManagerConfig {
+    TaskManagerConfig {
+      debug: self.debug,
+      task_worker_multiplier: self.task_worker_multiplier,
+    }
+  }
 }
 
 impl WorldTypeFile {
@@ -35,9 +60,9 @@ impl WorldTypeFile {
     match value {
       WorldType::SimpleWorld => WorldTypeFile::SimpleWorld,
       WorldType::BoxedWorld {
-        task_worker_multiplier,
+        task_manager_config,
       } => WorldTypeFile::BoxedWorld {
-        task_worker_multiplier,
+        task_manager_config: TaskManagerConfigFile::from_runtime(task_manager_config),
       },
     }
   }
@@ -46,9 +71,9 @@ impl WorldTypeFile {
     match self {
       WorldTypeFile::SimpleWorld => WorldType::SimpleWorld,
       WorldTypeFile::BoxedWorld {
-        task_worker_multiplier,
+        task_manager_config,
       } => WorldType::BoxedWorld {
-        task_worker_multiplier: *task_worker_multiplier,
+        task_manager_config: task_manager_config.to_runtime(),
       },
     }
   }

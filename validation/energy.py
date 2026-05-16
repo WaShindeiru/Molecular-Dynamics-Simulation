@@ -257,8 +257,8 @@ if __name__ == "__main__":
   # output_dir = "../../output"
   output_dir = "/media/washindeiru/7E442D59442D1585/md"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-13_00-46-31"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-13_01-14-02_exp"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-15_01-51-54"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-15_01-49-32"
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")

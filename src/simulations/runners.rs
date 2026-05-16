@@ -1,6 +1,7 @@
 use crate::data::units::{TEMPERATURE_U, TIME_U};
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 use crate::sim_core::world::integration::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
@@ -43,7 +44,10 @@ pub fn dense_runner() {
   };
 
   let world_type = WorldType::BoxedWorld {
-    task_worker_multiplier: 6.0,
+    task_manager_config: TaskManagerConfig {
+      debug: false,
+      task_worker_multiplier: 6.0,
+    },
   };
   let edge_condition = EdgeCondition::Periodic;
 
@@ -88,7 +92,10 @@ pub fn one_particle_edge_runner() {
   };
 
   let world_type = WorldType::BoxedWorld {
-    task_worker_multiplier: 2.0,
+    task_manager_config: TaskManagerConfig {
+      debug: false,
+      task_worker_multiplier: 2.0,
+    },
   };
   let edge_condition = EdgeCondition::Periodic;
 
@@ -127,7 +134,10 @@ pub fn two_particles_edge_runner() {
   };
 
   let world_type = WorldType::BoxedWorld {
-    task_worker_multiplier: 2.0,
+    task_manager_config: TaskManagerConfig {
+      debug: false,
+      task_worker_multiplier: 2.0,
+    },
   };
   let edge_condition = EdgeCondition::Periodic;
 
@@ -161,7 +171,10 @@ pub fn sphere_runner() {
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
   let world_type = WorldType::BoxedWorld {
-    task_worker_multiplier: 2.0,
+    task_manager_config: TaskManagerConfig {
+      debug: false,
+      task_worker_multiplier: 2.0,
+    },
   };
 
   sphere_particles(
@@ -194,7 +207,10 @@ pub fn triangle_runner() {
     q_effective_mass: Q_EFFECTIVE_MASS,
   };
   let world_type = WorldType::BoxedWorld {
-    task_worker_multiplier: 2.0,
+    task_manager_config: TaskManagerConfig {
+      debug: false,
+      task_worker_multiplier: 2.0,
+    },
   };
 
   triangle(
@@ -229,7 +245,10 @@ pub fn symmetric_triangle_test_runner() {
   // let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;
 
   let world_type = WorldType::BoxedWorld {
-    task_worker_multiplier: 4.0,
+    task_manager_config: TaskManagerConfig {
+      debug: false,
+      task_worker_multiplier: 4.0,
+    },
   };
 
   symmetric_triangle_test(

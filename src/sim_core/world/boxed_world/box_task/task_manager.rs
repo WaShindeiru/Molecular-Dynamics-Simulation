@@ -20,10 +20,17 @@ use crate::sim_core::world::boxed_world::integration_cache::integration_cache_bu
 
 mod threads;
 
+#[derive(Debug, Clone, Copy)]
+pub struct TaskManagerConfig {
+  pub debug: bool,
+  pub task_worker_multiplier: f64,
+}
+
 pub struct TaskManager {
   simulation_config: SimulationConfig,
   container_config: BoxContainerConfig,
 
+  debug: bool,
   threads: Vec<JoinHandle<()>>,
   tx_task: Sender<BoxTask>,
   rx_result: Receiver<BoxResult>,
@@ -43,6 +50,7 @@ impl TaskManager {
     let (tx_task, rx_result, threads, num_workers) = create_threads(debug);
 
     TaskManager {
+      debug,
       simulation_config,
       container_config,
       threads,

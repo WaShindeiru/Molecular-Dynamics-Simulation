@@ -1,5 +1,5 @@
 use crate::simulations::runners::dense_runner;
-use crate::simulations::various::see_dense_generator_configuration;
+use crate::simulations::various::{see_config_json, see_dense_generator_configuration};
 
 mod cmd;
 mod data;
@@ -17,5 +17,5 @@ fn main() {
     std::process::exit(1);
   }
 
-  // see_dense_generator_configuration()
+  // see_config_json()
 }
