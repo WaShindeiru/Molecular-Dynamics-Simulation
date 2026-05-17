@@ -158,6 +158,7 @@ use crate::data::InteractionType::FeC;
       ParticlePlacement {
         x: AxisPlacement::Normal,
         y: AxisPlacement::Normal,
+        z: AxisPlacement::Normal,
       }
     );
   }
@@ -238,6 +239,7 @@ use crate::data::InteractionType::FeC;
         ParticlePlacement {
           x: AxisPlacement::Normal,
           y: AxisPlacement::Normal,
+          z: AxisPlacement::Normal,
         }
       );
 
@@ -304,10 +306,12 @@ use crate::data::InteractionType::FeC;
     let normal_placement = ParticlePlacement {
       x: AxisPlacement::Normal,
       y: AxisPlacement::Normal,
+      z: AxisPlacement::Normal,
     };
     let left_x_placement = ParticlePlacement {
       x: AxisPlacement::Left,
       y: AxisPlacement::Normal,
+      z: AxisPlacement::Normal,
     };
     let mut expected_particles: Vec<(Vector3<f64>, ParticlePlacement)> = vec![
       (Vector3::new(95.0, 25.0, 25.0), normal_placement),
@@ -455,6 +459,7 @@ use crate::data::InteractionType::FeC;
       ParticlePlacement {
         x: AxisPlacement::Left,
         y: AxisPlacement::Normal,
+        z: AxisPlacement::Normal,
       }
     );
 
@@ -482,6 +487,7 @@ use crate::data::InteractionType::FeC;
       ParticlePlacement {
         x: AxisPlacement::Normal,
         y: AxisPlacement::Left,
+        z: AxisPlacement::Normal,
       }
     );
 
@@ -509,6 +515,7 @@ use crate::data::InteractionType::FeC;
       ParticlePlacement {
         x: AxisPlacement::Left,
         y: AxisPlacement::Left,
+        z: AxisPlacement::Normal,
       }
     );
   }
@@ -621,6 +628,7 @@ use crate::data::InteractionType::FeC;
       ParticlePlacement {
         x: AxisPlacement::Normal,
         y: AxisPlacement::Normal,
+        z: AxisPlacement::Normal,
       }
     );
   }

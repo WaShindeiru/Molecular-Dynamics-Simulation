@@ -1,5 +1,7 @@
+use crate::data::SimulationConfig;
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::ParticleCompliance;
+use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
@@ -10,6 +12,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct IntegrationCacheBuilder {
+  config: SimulationConfig,
   particles: HashMap<usize, Particle>,
   local_boxes: BoxContainer<SimulationBox>,
   half_velocity: HashMap<usize, Vector3<f64>>,
@@ -18,11 +21,13 @@ pub struct IntegrationCacheBuilder {
 
 impl IntegrationCacheBuilder {
   pub fn new(
+    config: SimulationConfig,
     box_container_config: BoxContainerConfig,
     particles: HashMap<usize, Particle>,
   ) -> Self {
     let num_particles = particles.len();
     IntegrationCacheBuilder {
+      config,
       particles,
       local_boxes: BoxContainer::<SimulationBox>::new_local(box_container_config),
       half_velocity: HashMap::with_capacity(num_particles),
@@ -31,6 +36,8 @@ impl IntegrationCacheBuilder {
   }
 
   pub fn add_velocity_results(&mut self, results: HashMap<usize, VelocityTaskParticleData>) {
+    let edge_condition = self.config.edge_condition;
+
     for (id, data) in results {
       let particle = self.particles.get_mut(&id).unwrap();
       particle.update_position(data.new_position);
@@ -38,7 +45,13 @@ impl IntegrationCacheBuilder {
 
       self.local_boxes.add_particle(Arc::new(particle.clone()));
 
-      self.half_velocity.insert(id, data.half_velocity);
+      let validated_half_velocity = match edge_condition {
+        EdgeCondition::Simple => unimplemented!("not yet!"),
+        EdgeCondition::Periodic => apply_velocity_constraint_periodic(&data.compliance, data.half_velocity),
+        EdgeCondition::PeriodicAll => data.half_velocity,
+      };
+
+      self.half_velocity.insert(id, validated_half_velocity);
       self.particle_compliance.insert(id, data.compliance);
     }
   }

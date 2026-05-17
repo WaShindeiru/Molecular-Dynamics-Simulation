@@ -38,6 +38,7 @@ pub enum SimBoxEdge {
 pub struct SimBoxPlacement {
   pub x: SimBoxEdge,
   pub y: SimBoxEdge,
+  pub z: SimBoxEdge,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -60,6 +61,7 @@ impl Default for SimulationBox {
       SimBoxPlacement {
         x: Normal,
         y: Normal,
+        z: Normal,
       },
     )
   }

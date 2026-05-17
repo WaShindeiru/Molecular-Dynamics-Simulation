@@ -181,6 +181,7 @@ pub fn test_reset_world_with_thermostat_runner(
   let edge_condition_str = match edge_condition {
     EdgeCondition::Simple => "simple",
     EdgeCondition::Periodic => "periodic",
+    EdgeCondition::PeriodicAll => "periodic_all",
   };
   let test_dir = format!(
     "../test/test_reset_world_with_thermostat_{}_{}",
@@ -263,6 +264,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
   let edge_condition_str = match edge_condition {
     EdgeCondition::Simple => "simple",
     EdgeCondition::Periodic => "periodic",
+    EdgeCondition::PeriodicAll => "periodic_all",
   };
   let test_dir = format!(
     "../test/test_save_files_completeness_{}_{}",

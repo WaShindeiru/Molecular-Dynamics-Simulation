@@ -69,7 +69,11 @@ impl BoxedWorld {
       .current_box_container()
       .all_particles_reset();
     let integration_cache_builder =
-      IntegrationCacheBuilder::new(box_container_config, initial_particles);
+      IntegrationCacheBuilder::new(
+        config.clone(),
+        box_container_config, 
+        initial_particles
+      );
 
     let persistance_reset = PersistanceReset::new(
       history_manager,

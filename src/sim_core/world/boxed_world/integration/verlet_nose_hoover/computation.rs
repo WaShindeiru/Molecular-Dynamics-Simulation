@@ -7,7 +7,7 @@ use crate::particle::potential::fc::{fc, fc_gradient};
 use crate::particle::potential::va::{va, va_gradient};
 use crate::particle::potential::vr::{vr, vr_gradient};
 use crate::particle::potential::{b, fc};
-use crate::sim_core::world::boundary_constraint::periodic::check_position_constraint_periodic;
+use crate::sim_core::world::boundary_constraint::periodic::{check_position_constraint_periodic, check_position_constraint_periodic_all, check_position_constraint_periodic_quadratic};
 use crate::sim_core::world::boundary_constraint::simple::check_position_constraint_simple;
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::utils::math::cos_from_vec;
@@ -45,6 +45,7 @@ where
   for temp_i in previous_atom_container.into_iter() {
     let atom_i = temp_i.as_ref();
     let i_id = atom_i.get_id();
+    let previous_velocity = atom_i.get_velocity();
 
     let thermostat_difference =
       atom_i.get_acceleration() - previous_thermostat_epsilon * atom_i.get_velocity();
@@ -56,8 +57,19 @@ where
     let next_position: Vector3<f64> = previous_position + half_velocity_i * time_step;
 
     let (validated_position, compliance) = match edge_condition {
-      EdgeCondition::Simple => check_position_constraint_simple(next_position, container_size),
-      EdgeCondition::Periodic => check_position_constraint_periodic(next_position, container_size),
+      EdgeCondition::Simple => {
+        unimplemented!("not yet");
+        check_position_constraint_simple(next_position, container_size)
+      },
+      EdgeCondition::Periodic => check_position_constraint_periodic_quadratic(
+        *previous_velocity, 
+        *atom_i.get_acceleration(),
+        *previous_position,
+        time_step,
+        next_position,
+        *container_size,
+      ),
+      EdgeCondition::PeriodicAll => check_position_constraint_periodic_all(next_position, container_size),
     };
 
     let thermostat_work;

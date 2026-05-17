@@ -162,6 +162,8 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     total_energy_difference = total_energy - total_energy[0]
 
   plt.figure()
+  # plt.xlim(225000, 230000)
+  # plt.xlim(50000, 53000)
   plt.plot(iteration, total_energy_difference, label="Total energy error")
 
   plt.xlabel("iteration")
@@ -257,7 +259,7 @@ if __name__ == "__main__":
   # output_dir = "../../output"
   output_dir = "/media/washindeiru/7E442D59442D1585/md"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-17_01-41-44"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-17_16-09-27_particles_fast"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-15_01-49-32"
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"

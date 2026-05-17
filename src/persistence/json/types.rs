@@ -6,6 +6,7 @@ use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConf
 pub enum EdgeConditionFile {
   Simple,
   Periodic,
+  PeriodicAll,
 }
 
 impl EdgeConditionFile {
@@ -13,6 +14,7 @@ impl EdgeConditionFile {
     match value {
       EdgeCondition::Simple => EdgeConditionFile::Simple,
       EdgeCondition::Periodic => EdgeConditionFile::Periodic,
+      EdgeCondition::PeriodicAll => EdgeConditionFile::PeriodicAll,
     }
   }
 
@@ -20,6 +22,7 @@ impl EdgeConditionFile {
     match self {
       EdgeConditionFile::Simple => EdgeCondition::Simple,
       EdgeConditionFile::Periodic => EdgeCondition::Periodic,
+      EdgeConditionFile::PeriodicAll => EdgeCondition::PeriodicAll,
     }
   }
 }

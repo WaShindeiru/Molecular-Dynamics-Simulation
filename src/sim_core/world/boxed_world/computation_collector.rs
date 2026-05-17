@@ -77,35 +77,27 @@ impl ComputationCollector {
 
   pub fn set_velocity(&mut self, thermostat_epsilon: f64) {
     let time_step = self.config.time_step;
-    let edge_condition = self.config.edge_condition;
     let half_velocity_cache = self.integration_cache.half_velocity_cache();
-    let compliance_cache = self.integration_cache.particle_compliance();
     let box_cache = self.integration_cache.box_cache();
 
     for (id, particle) in self.particles_modified.iter_mut() {
       let half_velocity = half_velocity_cache.get(id).unwrap();
-      let compliance = compliance_cache.get(id).unwrap();
 
       let numerator = half_velocity + 0.5 * particle.get_acceleration() * time_step;
       let denominator = 1.0 + 0.5 * time_step * thermostat_epsilon;
       let new_velocity = numerator / denominator;
-
-      let validated_velocity = match edge_condition {
-        EdgeCondition::Simple => unimplemented!("not yet"),
-        EdgeCondition::Periodic => apply_velocity_constraint_periodic(compliance, new_velocity),
-      };
 
       #[cfg(debug_assertions)]
       log::debug!(
         "Updated particle {} in box {}: velocity={:?}, force={:?}, position={:?}",
         id,
         box_cache.particle_box_id(*id),
-        validated_velocity,
+        new_velocity,
         particle.get_force(),
         particle.get_position()
       );
 
-      particle.set_velocity(validated_velocity);
+      particle.set_velocity(new_velocity);
     }
   }
 

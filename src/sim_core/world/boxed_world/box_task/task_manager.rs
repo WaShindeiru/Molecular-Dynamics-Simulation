@@ -126,7 +126,10 @@ impl TaskManager {
 
     let num_tasks = mapping.len();
     let particles = box_container.all_particles_reset();
-    let mut builder = IntegrationCacheBuilder::new(self.container_config, particles);
+    let mut builder = IntegrationCacheBuilder::new(
+      self.simulation_config.clone(),
+      self.container_config, 
+      particles);
 
     for (task_id, box_ids) in mapping {
       let task = BoxTask::VelocityBatchTask {

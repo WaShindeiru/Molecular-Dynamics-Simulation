@@ -68,24 +68,32 @@ impl ForceTaskBoxContainer {
     let sim_box = self.container.get_box(box_id)?;
 
     let x_axis_placement = match (self.edge_condition, sim_box.sim_box_placement().x) {
-      (EdgeCondition::Simple, _) => AxisPlacement::Normal,
-      (EdgeCondition::Periodic, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
-      (EdgeCondition::Periodic, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
+      (EdgeCondition::Simple, _) => unimplemented!("not yet"),
+      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
+      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
         AxisPlacement::Normal
       }
     };
 
     let y_axis_placement = match (self.edge_condition, sim_box.sim_box_placement().y) {
-      (EdgeCondition::Simple, _) => AxisPlacement::Normal,
-      (EdgeCondition::Periodic, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
-      (EdgeCondition::Periodic, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
+      (EdgeCondition::Simple, _) => unimplemented!("not yet"),
+      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
+      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
         AxisPlacement::Normal
       }
+    };
+
+    let z_axis_placement = match (self.edge_condition, sim_box.sim_box_placement().z) {
+      (EdgeCondition::Simple, _) => unimplemented!("not yet"),
+      (EdgeCondition::Periodic, _) => AxisPlacement::Normal,
+      (EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
+      (EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => AxisPlacement::Normal,
     };
 
     let placement = ParticlePlacement {
       x: x_axis_placement,
       y: y_axis_placement,
+      z: z_axis_placement
     };
 
     let proxies: Vec<Box<dyn ForceComputationOperations>> = sim_box
@@ -137,16 +145,24 @@ impl ForceTaskBoxContainer {
 
           let x_axis_placement = match (self.edge_condition, sim_box_placement.x, x_offset) {
             (EdgeCondition::Simple, _, _) => AxisPlacement::Normal,
-            (EdgeCondition::Periodic, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
-            (EdgeCondition::Periodic, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
-            (EdgeCondition::Periodic, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,
           };
 
           let y_axis_placement = match (self.edge_condition, sim_box_placement.y, y_offset) {
             (EdgeCondition::Simple, _, _) => AxisPlacement::Normal,
-            (EdgeCondition::Periodic, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
-            (EdgeCondition::Periodic, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,
+          };
+
+          let z_axis_placement = match (self.edge_condition, sim_box_placement.z, z_offset) {
+            (EdgeCondition::Simple, _, _) => AxisPlacement::Normal,
             (EdgeCondition::Periodic, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
+            (EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
+            (EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,
           };
 
           let x_ = (((x + x_offset) + box_count_dim.x as isize) as usize) % box_count_dim.x;
@@ -162,6 +178,7 @@ impl ForceTaskBoxContainer {
           let placement = ParticlePlacement {
             x: x_axis_placement,
             y: y_axis_placement,
+            z: z_axis_placement
           };
           for particle in sim_box.particles().values() {
             proxies.push(Box::new(new_particle_position_proxy(

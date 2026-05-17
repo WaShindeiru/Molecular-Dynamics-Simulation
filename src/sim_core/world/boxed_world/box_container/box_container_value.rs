@@ -54,6 +54,14 @@ impl BoxContainer<SimulationBox> {
             Normal
           };
 
+          let z_edge = if z_i == 0 {
+            LeftEdge
+          } else if z_i == config.box_count_dim.z - 1 {
+            RightEdge
+          } else {
+            Normal
+          };
+
           let sim_box = SimulationBox::new(
             box_id,
             leftmost_point,
@@ -62,6 +70,7 @@ impl BoxContainer<SimulationBox> {
             SimBoxPlacement {
               x: x_edge,
               y: y_edge,
+              z: z_edge,
             },
           );
 

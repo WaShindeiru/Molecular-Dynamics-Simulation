@@ -61,11 +61,8 @@ pub fn handle_force_batch_task(
   box_ids: &[usize],
   integration_cache: &IntegrationCache,
 ) -> ForceTaskResult {
-  assert_eq!(
-    boundary_condition,
-    EdgeCondition::Periodic,
-    "Only periodic boundary condition is supported for force batch task"
-  );
+  assert!(boundary_condition == EdgeCondition::Periodic || boundary_condition == EdgeCondition::PeriodicAll, 
+    "Only periodic and periodic_all boundary condition is supported for force batch task");
 
   let config = integration_cache.box_cache().config();
   let needed_ids = get_needed_box_id_periodic(&box_ids.to_vec(), config);

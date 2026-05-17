@@ -15,6 +15,7 @@ pub enum AxisPlacement {
 pub struct ParticlePlacement {
   pub x: AxisPlacement,
   pub y: AxisPlacement,
+  pub z: AxisPlacement,
 }
 
 pub struct ParticlePositionProxy {
@@ -55,6 +56,11 @@ impl ForceComputationOperations for ParticlePositionProxy {
     position.y = match self.particle_placement.y {
       AxisPlacement::Left => position.y + self.world_size.y,
       AxisPlacement::Normal => position.y,
+    };
+
+    position.z = match self.particle_placement.z {
+      AxisPlacement::Left => position.z + self.world_size.z,
+      AxisPlacement::Normal => position.z,
     };
 
     position
