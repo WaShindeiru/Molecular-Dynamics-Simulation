@@ -46,3 +46,108 @@ pub fn apply_velocity_constraint_periodic(
 
   velocity
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn check_position_constraint_periodic_keeps_position_inside_bounds() {
+    let container_size = Vector3::new(10.0, 20.0, 30.0);
+    let position = Vector3::new(2.0, 3.0, 4.0);
+
+    let (validated_position, compliance) =
+      check_position_constraint_periodic(position, &container_size);
+
+    assert_eq!(validated_position, Vector3::new(2.0, 3.0, 4.0));
+    assert_eq!(
+      compliance,
+      ParticleCompliance {
+        compliant: true,
+        x: Compliance::Compliant,
+        y: Compliance::Compliant,
+        z: Compliance::Compliant,
+      }
+    );
+  }
+
+  #[test]
+  fn check_position_constraint_periodic_wraps_x_and_y() {
+    let container_size = Vector3::new(10.0, 20.0, 30.0);
+    let position = Vector3::new(12.0, -3.0, 4.0);
+
+    let (validated_position, compliance) =
+      check_position_constraint_periodic(position, &container_size);
+
+    assert_eq!(validated_position, Vector3::new(2.0, 17.0, 4.0));
+    assert_eq!(
+      compliance,
+      ParticleCompliance {
+        compliant: true,
+        x: Compliance::Compliant,
+        y: Compliance::Compliant,
+        z: Compliance::Compliant,
+      }
+    );
+  }
+
+  #[test]
+  fn check_position_constraint_periodic_wraps_x_and_x() {
+    let container_size = Vector3::new(10.0, 20.0, 30.0);
+    let position = Vector3::new(-2.0, 5.0, 4.0);
+
+    let (validated_position, compliance) =
+      check_position_constraint_periodic(position, &container_size);
+
+    assert_eq!(validated_position, Vector3::new(8.0, 5.0, 4.0));
+    assert_eq!(
+      compliance,
+      ParticleCompliance {
+        compliant: true,
+        x: Compliance::Compliant,
+        y: Compliance::Compliant,
+        z: Compliance::Compliant,
+      }
+    );
+  }
+
+  #[test]
+  fn check_position_constraint_periodic_reflects_lower_z_boundary() {
+    let container_size = Vector3::new(10.0, 20.0, 30.0);
+    let position = Vector3::new(2.0, 3.0, -4.0);
+
+    let (validated_position, compliance) =
+      check_position_constraint_periodic(position, &container_size);
+
+    assert_eq!(validated_position, Vector3::new(2.0, 3.0, 4.0));
+    assert_eq!(
+      compliance,
+      ParticleCompliance {
+        compliant: false,
+        x: Compliance::Compliant,
+        y: Compliance::Compliant,
+        z: Compliance::ExceededLowerBoundary,
+      }
+    );
+  }
+
+  #[test]
+  fn check_position_constraint_periodic_reflects_upper_z_boundary() {
+    let container_size = Vector3::new(10.0, 20.0, 30.0);
+    let position = Vector3::new(2.0, 3.0, 34.0);
+
+    let (validated_position, compliance) =
+      check_position_constraint_periodic(position, &container_size);
+
+    assert_eq!(validated_position, Vector3::new(2.0, 3.0, 26.0));
+    assert_eq!(
+      compliance,
+      ParticleCompliance {
+        compliant: false,
+        x: Compliance::Compliant,
+        y: Compliance::Compliant,
+        z: Compliance::ExceededHigherBoundary,
+      }
+    );
+  }
+}

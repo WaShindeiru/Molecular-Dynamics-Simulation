@@ -54,6 +54,8 @@ impl ComputationCollector {
           .entry(*particle_id)
           .and_modify(|count| *count += 1)
           .or_insert(1);
+      } else {
+        panic!("sth wrong")
       }
     }
   }
@@ -78,6 +80,7 @@ impl ComputationCollector {
     let edge_condition = self.config.edge_condition;
     let half_velocity_cache = self.integration_cache.half_velocity_cache();
     let compliance_cache = self.integration_cache.particle_compliance();
+    let box_cache = self.integration_cache.box_cache();
 
     for (id, particle) in self.particles_modified.iter_mut() {
       let half_velocity = half_velocity_cache.get(id).unwrap();
@@ -88,9 +91,19 @@ impl ComputationCollector {
       let new_velocity = numerator / denominator;
 
       let validated_velocity = match edge_condition {
-        EdgeCondition::Simple => apply_velocity_constraint_simple(compliance, new_velocity),
+        EdgeCondition::Simple => unimplemented!("not yet"),
         EdgeCondition::Periodic => apply_velocity_constraint_periodic(compliance, new_velocity),
       };
+
+      #[cfg(debug_assertions)]
+      log::debug!(
+        "Updated particle {} in box {}: velocity={:?}, force={:?}, position={:?}",
+        id,
+        box_cache.particle_box_id(*id),
+        validated_velocity,
+        particle.get_force(),
+        particle.get_position()
+      );
 
       particle.set_velocity(validated_velocity);
     }

@@ -140,7 +140,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
     plt.plot(iteration, thermostat_work, label="thermostat work")
   plt.xlabel("iteration")
   plt.ylabel("Energy [eV]")
-  # plt.xlim([0, 200])
+  # plt.xlim([130000, 140000])
   # plt.ylim([-5, 5])
   plt.title("Energy plot")
   plt.legend()
@@ -167,7 +167,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   plt.xlabel("iteration")
   plt.ylabel("Energy [eV]")
   plt.title("Total energy error")
-  # plt.xlim([0, 200])
+  # plt.xlim([123000, 140000])
   plt.savefig(path + '/energy_difference.png')
   plt.show()
 
@@ -257,7 +257,7 @@ if __name__ == "__main__":
   # output_dir = "../../output"
   output_dir = "/media/washindeiru/7E442D59442D1585/md"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-15_01-51-54"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-17_01-41-44"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-15_01-49-32"
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"

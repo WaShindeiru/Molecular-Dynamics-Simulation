@@ -55,8 +55,21 @@ impl IntegrationCacheBuilder {
       return None;
     }
 
+    let shared_boxes = self.local_boxes.into_shared();
+
+    #[cfg(debug_assertions)]
+    for sim_box in shared_boxes.simulation_boxes().iter() {
+      for particle in sim_box.particles().values() {
+        log::debug!(
+          "Particle {} is stored in simulation box {}",
+          particle.get_id(),
+          sim_box.id()
+        );
+      }
+    }
+
     Some(IntegrationCache::new(
-      self.local_boxes.into_shared(),
+      shared_boxes,
       self.half_velocity,
       self.particle_compliance,
     ))

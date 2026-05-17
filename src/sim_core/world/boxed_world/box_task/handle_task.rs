@@ -88,7 +88,79 @@ pub fn handle_force_batch_task(
       force_container.neighbour_atoms_periodic(box_id).collect();
     particles_j.extend(force_container.atoms_for_box(box_id).unwrap());
 
+    #[cfg(debug_assertions)]
+    for particle in particles_i.iter() {
+      let particle_id = particle.get_id();
+      let particle_box_id = force_container.view().particle_box_id(particle_id);
+      let correct_position = force_container
+        .view()
+        .get_box(particle_box_id)
+        .expect("Logged particle box must be present in ForceTaskBoxContainer")
+        .particle(particle_id)
+        .get_position()
+        .clone();
+      let proxy_position = particle.get_position();
+
+      log::debug!(
+        "Force task {} box {} particles_i particle {} correct_position {:?} proxy_position {:?}",
+        task_id,
+        box_id,
+        particle_id,
+        correct_position,
+        proxy_position
+      );
+    }
+
+    #[cfg(debug_assertions)]
+    for particle in particles_j.iter() {
+      let particle_id = particle.get_id();
+      let particle_box_id = force_container.view().particle_box_id(particle_id);
+      let correct_position = force_container
+        .view()
+        .get_box(particle_box_id)
+        .expect("Logged particle box must be present in ForceTaskBoxContainer")
+        .particle(particle_id)
+        .get_position()
+        .clone();
+      let proxy_position = particle.get_position();
+
+      log::debug!(
+        "Force task {} box {} particles_j particle {} correct_position {:?} proxy_position {:?}",
+        task_id,
+        box_id,
+        particle_id,
+        correct_position,
+        proxy_position
+      );
+    }
+
     let info = compute_forces_potential(&particles_i, &particles_j);
+
+    #[cfg(debug_assertions)]
+    for particle in particles_j.iter() {
+      let particle_id = particle.get_id();
+      let fp = info.fp.get(&particle_id).unwrap();
+      let particle_box_id = force_container.view().particle_box_id(particle_id);
+      let real_position = force_container
+        .view()
+        .get_box(particle_box_id)
+        .expect("Logged particle box must be present in ForceTaskBoxContainer")
+        .particle(particle_id)
+        .get_position()
+        .clone();
+      let proxy_position = particle.get_position();
+
+      log::debug!(
+        "Force task {} box {} computed particle {} real_position {:?} proxy_position {:?} force {:?} potential_energy {}",
+        task_id,
+        box_id,
+        particle_id,
+        real_position,
+        proxy_position,
+        fp.force,
+        fp.potential_energy
+      );
+    }
 
     potential_energy_total += info.potential_energy;
     optimization_considered_total += info.optimization_considered;
@@ -110,6 +182,25 @@ pub fn handle_force_batch_task(
           potential_energy: fp.potential_energy,
         });
     }
+  }
+
+  #[cfg(debug_assertions)]
+  for (particle_id, particle_data) in particles.iter() {
+    let position = integration_cache
+      .box_cache()
+      .get_box(particle_data.box_id)
+      .particle(*particle_id)
+      .get_position()
+      .clone();
+
+    log::debug!(
+      "Force task {} result particle {} position {:?} force {:?} potential_energy {}",
+      task_id,
+      particle_id,
+      position,
+      particle_data.force,
+      particle_data.potential_energy
+    );
   }
 
   ForceTaskResult {

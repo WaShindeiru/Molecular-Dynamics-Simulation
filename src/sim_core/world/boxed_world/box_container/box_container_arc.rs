@@ -117,6 +117,7 @@ impl BoxContainer<Arc<SimulationBox>> {
       .clone()
   }
 
+  // TODO: change this so that don't have to iterate over whole cube maybe?
   pub fn view_select_boxes(&self, box_ids: &[usize]) -> BoxContainer<Option<Arc<SimulationBox>>> {
     let id_set: HashSet<usize> = box_ids.iter().copied().collect();
 

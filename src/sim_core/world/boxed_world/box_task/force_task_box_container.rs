@@ -8,7 +8,7 @@ use crate::sim_core::world::boxed_world::box_container::sim_box::{
   SimBoxEdge, SimulationBox, get_coordinates_from_simulation_box_id, get_id_simulation_box,
 };
 use crate::sim_core::world::boxed_world::box_task::force_task_box_container::particle_proxy::{
-  AxisPlacement, ParticlePlacement, new_particle_position_proxy,
+  AxisPlacement, ParticlePlacement, ParticlePositionProxy, new_particle_position_proxy,
 };
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
 use nalgebra::Vector3;
@@ -181,3 +181,7 @@ impl ForceTaskBoxContainer {
     &self.container
   }
 }
+
+#[cfg(test)]
+#[path = "force_task_box_container_test.rs"]
+mod tests;

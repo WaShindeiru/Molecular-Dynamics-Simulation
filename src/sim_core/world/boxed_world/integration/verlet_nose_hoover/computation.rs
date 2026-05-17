@@ -12,6 +12,7 @@ use crate::sim_core::world::boundary_constraint::simple::check_position_constrai
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::utils::math::cos_from_vec;
 use nalgebra::Vector3;
+use std::any::Any;
 use std::collections::HashMap;
 
 const OPTIMIZATION: bool = true;
@@ -99,6 +100,7 @@ pub struct FPInfoBoxed {
 }
 
 pub trait ForceComputationOperations {
+  fn as_any(&self) -> &dyn Any;
   fn get_id(&self) -> usize;
   fn get_position(&self) -> Vector3<f64>;
   fn get_type(&self) -> AtomType;
