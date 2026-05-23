@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::data::SimulationConfig;
 use crate::data::units::{R_U, TIME_U, ValueUnits};
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::FrameSamplingConfig;
 use crate::utils::logging::get_save_path;
 

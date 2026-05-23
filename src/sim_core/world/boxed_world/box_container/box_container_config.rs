@@ -18,6 +18,25 @@ pub struct BoxContainerConfig {
 
 impl BoxContainerConfig {
   pub fn box_coordinates_for_position(&self, position: &Vector3<f64>) -> Vector3<usize> {
+    debug_assert!(
+      0.0 <= position.x && position.x <= self.world_size.x,
+      "position.x={} must be within [0, {}]",
+      position.x,
+      self.world_size.x
+    );
+    debug_assert!(
+      0.0 <= position.y && position.y <= self.world_size.y,
+      "position.y={} must be within [0, {}]",
+      position.y,
+      self.world_size.y
+    );
+    debug_assert!(
+      0.0 <= position.z && position.z <= self.world_size.z,
+      "position.z={} must be within [0, {}]",
+      position.z,
+      self.world_size.z
+    );
+
     let x = if position.x == self.world_size.x {
       self.box_count_dim.x - 1
     } else {

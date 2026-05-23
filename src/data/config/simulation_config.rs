@@ -1,6 +1,6 @@
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::SaveOptions;
 use nalgebra::Vector3;
 

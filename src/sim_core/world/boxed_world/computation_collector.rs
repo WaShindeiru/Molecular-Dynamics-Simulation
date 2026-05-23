@@ -4,12 +4,11 @@ use std::sync::Arc;
 
 use crate::data::SimulationConfig;
 use crate::data::units::K_B;
+use crate::sim_core::world::boundary_constraint::EdgeCondition;
 
 use crate::particle::Particle;
 
-use crate::sim_core::world::boundary_constraint::EdgeCondition;
-use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
-use crate::sim_core::world::boundary_constraint::simple::apply_velocity_constraint_simple;
+use crate::sim_core::world::computation::compute_new_velocity;
 
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
@@ -54,6 +53,8 @@ impl ComputationCollector {
           .entry(*particle_id)
           .and_modify(|count| *count += 1)
           .or_insert(1);
+      } else {
+        panic!("sth wrong")
       }
     }
   }
@@ -75,24 +76,41 @@ impl ComputationCollector {
 
   pub fn set_velocity(&mut self, thermostat_epsilon: f64) {
     let time_step = self.config.time_step;
-    let edge_condition = self.config.edge_condition;
+    let subtask_size = match self.config.edge_condition {
+      EdgeCondition::Periodic { trigger_small_subtask_size }
+      | EdgeCondition::Simple { trigger_small_subtask_size } => trigger_small_subtask_size,
+      EdgeCondition::PeriodicAll => 1,
+    };
     let half_velocity_cache = self.integration_cache.half_velocity_cache();
-    let compliance_cache = self.integration_cache.particle_compliance();
+    let particle_compliance = self.integration_cache.particle_compliance();
+    let box_cache = self.integration_cache.box_cache();
 
     for (id, particle) in self.particles_modified.iter_mut() {
       let half_velocity = half_velocity_cache.get(id).unwrap();
-      let compliance = compliance_cache.get(id).unwrap();
+      let compliance = particle_compliance.get(id).unwrap();
 
-      let numerator = half_velocity + 0.5 * particle.get_acceleration() * time_step;
-      let denominator = 1.0 + 0.5 * time_step * thermostat_epsilon;
-      let new_velocity = numerator / denominator;
-
-      let validated_velocity = match edge_condition {
-        EdgeCondition::Simple => apply_velocity_constraint_simple(compliance, new_velocity),
-        EdgeCondition::Periodic => apply_velocity_constraint_periodic(compliance, new_velocity),
+      // Non-compliant particles went through PartialVelocityStep with sub-steps of
+      // time_step/subtask_size, so their returned half_velocity was computed with that
+      // smaller step and must be combined with the same step here to stay time-symmetric.
+      let effective_time_step = if !compliance.compliant && subtask_size > 1 {
+        time_step / subtask_size as f64
+      } else {
+        time_step
       };
 
-      particle.set_velocity(validated_velocity);
+      let new_velocity = compute_new_velocity(*half_velocity, *particle.get_acceleration(), thermostat_epsilon, effective_time_step);
+
+      #[cfg(debug_assertions)]
+      log::debug!(
+        "Updated particle {} in box {}: velocity={:?}, force={:?}, position={:?}",
+        id,
+        box_cache.particle_box_id(*id),
+        new_velocity,
+        particle.get_force(),
+        particle.get_position()
+      );
+
+      particle.set_velocity(new_velocity);
     }
   }
 

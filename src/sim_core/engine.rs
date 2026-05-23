@@ -113,6 +113,11 @@ impl Engine {
     let mut counter = 0;
 
     for i in 0..self.config.num_of_iterations {
+      log::debug!(
+        "Current iteration: {}",
+        self.current_iteration
+      );
+
       let mut should_stop = false;
       while let Ok(signal) = signal_rx.try_recv() {
         match signal {

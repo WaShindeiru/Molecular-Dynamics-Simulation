@@ -30,7 +30,7 @@ impl<B> BoxContainer<B> {
 }
 
 impl<B: Deref<Target = SimulationBox>> BoxContainer<B> {
-  pub fn particles_of_box<'a>(&'a self, box_id: usize) -> impl Iterator<Item = Arc<Particle>> {
+  pub fn particles_of_box(&self, box_id: usize) -> impl Iterator<Item=Arc<Particle>> {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.config.box_count_dim);
     self
       .simulation_boxes

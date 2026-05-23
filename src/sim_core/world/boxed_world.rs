@@ -15,7 +15,7 @@ use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 use crate::sim_core::world::boxed_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
 use crate::sim_core::world::boxed_world::persistance_reset::PersistanceReset;
-use crate::sim_core::world::integration::{
+use crate::sim_core::world::thermostat::{
   IntegrationAlgorithm, IntegrationAlgorithmState, new_integration_algorithm_state,
 };
 use crate::sim_core::world::saver::PartialWorldSaver;
@@ -69,7 +69,11 @@ impl BoxedWorld {
       .current_box_container()
       .all_particles_reset();
     let integration_cache_builder =
-      IntegrationCacheBuilder::new(box_container_config, initial_particles);
+      IntegrationCacheBuilder::new(
+        config.clone(),
+        box_container_config, 
+        initial_particles
+      );
 
     let persistance_reset = PersistanceReset::new(
       history_manager,

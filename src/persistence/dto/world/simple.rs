@@ -1,5 +1,5 @@
 use crate::persistence::dto::atom::AtomDTO;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 
 pub struct SimpleWorldDTO {
   pub num_of_atoms: usize,

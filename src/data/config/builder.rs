@@ -3,7 +3,7 @@ use crate::particle::Particle;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
-use crate::sim_core::world::integration::{
+use crate::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
 use crate::sim_core::world::saver::{FrameSamplingConfig, SaveOptions};
@@ -211,13 +211,20 @@ impl SimulationConfigBuilder {
     let default_save_all_iterations = self.save_all_iterations.unwrap_or(false);
     let default_one_frame_duration = self.one_frame_duration.unwrap_or(1e-16);
 
+    let save_options_provided = self.save_options.is_some();
     let mut save_options = self.save_options.unwrap_or_default();
+
+    // Priority: explicit builder field > SaveOptions field (if SaveOptions was provided) > default
     let save_all_iterations_laamps = self
       .save_all_iterations_laamps
-      .unwrap_or(default_save_all_iterations);
+      .unwrap_or_else(|| {
+        if save_options_provided { save_options.save_all_iterations_laamps } else { default_save_all_iterations }
+      });
     let save_all_iterations_energy = self
       .save_all_iterations_energy
-      .unwrap_or(default_save_all_iterations);
+      .unwrap_or_else(|| {
+        if save_options_provided { save_options.save_all_iterations_energy } else { default_save_all_iterations }
+      });
     save_options.save_all_iterations_laamps = save_all_iterations_laamps;
     save_options.save_all_iterations_energy = save_all_iterations_energy;
     save_options.laamps_sampling = FrameSamplingConfig::from_duration(
@@ -257,7 +264,7 @@ impl SimulationConfigBuilder {
           task_worker_multiplier: 4.0,
         },
       }),
-      edge_condition: self.edge_condition.unwrap_or(EdgeCondition::Periodic),
+      edge_condition: self.edge_condition.unwrap_or(EdgeCondition::Periodic { trigger_small_subtask_size: 1 }),
     })
   }
 

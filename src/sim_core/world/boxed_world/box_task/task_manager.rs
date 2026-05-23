@@ -126,7 +126,10 @@ impl TaskManager {
 
     let num_tasks = mapping.len();
     let particles = box_container.all_particles_reset();
-    let mut builder = IntegrationCacheBuilder::new(self.container_config, particles);
+    let mut builder = IntegrationCacheBuilder::new(
+      self.simulation_config.clone(),
+      self.container_config, 
+      particles);
 
     for (task_id, box_ids) in mapping {
       let task = BoxTask::VelocityBatchTask {
@@ -191,6 +194,26 @@ impl TaskManager {
       match self.rx_result.recv_timeout(Duration::from_secs(20)) {
         Ok(BoxResult::ForceResult(result)) => {
           debug!("Received ForceResult for task_id {}", result.task_id);
+
+          #[cfg(debug_assertions)]
+          for (particle_id, particle_data) in result.particles.iter() {
+            let position = integration_cache
+              .box_cache()
+              .get_box(particle_data.box_id)
+              .particle(*particle_id)
+              .get_position()
+              .clone();
+
+            debug!(
+              "Received ForceResult task {} particle {} position {:?} force {:?} potential_energy {}",
+              result.task_id,
+              particle_id,
+              position,
+              particle_data.force,
+              particle_data.potential_energy
+            );
+          }
+
           collector.apply_force_results(&result.particles);
         }
         Ok(_) => panic!("Expected ForceResult, got wrong result type"),

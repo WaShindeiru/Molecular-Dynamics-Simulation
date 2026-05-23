@@ -62,6 +62,14 @@ impl BoxContainer<Arc<SimulationBox>> {
             Normal
           };
 
+          let z_edge = if z_i == 0 {
+            LeftEdge
+          } else if z_i == box_container_config.box_count_dim.z - 1 {
+            RightEdge
+          } else {
+            Normal
+          };
+
           let sim_box = SimulationBox::new(
             box_id,
             leftmost_point,
@@ -70,6 +78,7 @@ impl BoxContainer<Arc<SimulationBox>> {
             SimBoxPlacement {
               x: x_edge,
               y: y_edge,
+              z: z_edge,
             },
           );
 
@@ -117,6 +126,12 @@ impl BoxContainer<Arc<SimulationBox>> {
       .clone()
   }
 
+  pub fn get_particle(&self, particle_id: usize) -> Arc<Particle> {
+    let box_id = self.particle_box_id(particle_id);
+    self.get_box(box_id).particle(particle_id)
+  }
+
+  // TODO: change this so that don't have to iterate over whole cube maybe?
   pub fn view_select_boxes(&self, box_ids: &[usize]) -> BoxContainer<Option<Arc<SimulationBox>>> {
     let id_set: HashSet<usize> = box_ids.iter().copied().collect();
 

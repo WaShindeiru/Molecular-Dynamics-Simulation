@@ -1,8 +1,9 @@
 use crate::data::types::AtomType;
 use crate::particle::{Atom, CustomPathAtom};
 use crate::persistence::dto::atom::AtomDTO;
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
+use crate::sim_core::world::computation::ForceComputationOperations;
 use nalgebra::Vector3;
+use std::any::Any;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Particle {
@@ -185,6 +186,10 @@ impl AsRef<Particle> for Particle {
 }
 
 impl ForceComputationOperations for Particle {
+  fn as_any(&self) -> &dyn Any {
+    self
+  }
+
   fn get_id(&self) -> usize {
     Particle::get_id(self)
   }

@@ -1,20 +1,83 @@
 use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::{
+  LeftEdge, Normal, RightEdge,
+};
 use crate::sim_core::world::boxed_world::box_container::sim_box::{
-  SimulationBox, get_coordinates_from_simulation_box_id, get_id_simulation_box,
+  SimBoxPlacement, SimulationBox, get_coordinates_from_simulation_box_id, get_id_simulation_box,
 };
 use crate::utils::cube::Cube;
+use nalgebra::Vector3;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 impl BoxContainer<SimulationBox> {
   pub fn new_local(config: BoxContainerConfig) -> Self {
-    let boxes: Cube<SimulationBox> = Cube::new(
+    let mut boxes: Cube<SimulationBox> = Cube::new(
       config.box_count_dim.x,
       config.box_count_dim.y,
       config.box_count_dim.z,
     );
+
+    for x_i in 0..config.box_count_dim.x {
+      for y_i in 0..config.box_count_dim.y {
+        for z_i in 0..config.box_count_dim.z {
+          let coordinates = Vector3::new(x_i, y_i, z_i);
+          let box_id = get_id_simulation_box(&coordinates, &config.box_count_dim);
+
+          let leftmost_point = Vector3::new(
+            x_i as f64 * config.box_length.x,
+            y_i as f64 * config.box_length.y,
+            z_i as f64 * config.box_length.z,
+          );
+
+          let rightmost_point = Vector3::new(
+            (x_i + 1) as f64 * config.box_length.x,
+            (y_i + 1) as f64 * config.box_length.y,
+            (z_i + 1) as f64 * config.box_length.z,
+          );
+
+          let x_edge = if x_i == 0 {
+            LeftEdge
+          } else if x_i == config.box_count_dim.x - 1 {
+            RightEdge
+          } else {
+            Normal
+          };
+
+          let y_edge = if y_i == 0 {
+            LeftEdge
+          } else if y_i == config.box_count_dim.y - 1 {
+            RightEdge
+          } else {
+            Normal
+          };
+
+          let z_edge = if z_i == 0 {
+            LeftEdge
+          } else if z_i == config.box_count_dim.z - 1 {
+            RightEdge
+          } else {
+            Normal
+          };
+
+          let sim_box = SimulationBox::new(
+            box_id,
+            leftmost_point,
+            rightmost_point,
+            config.box_length,
+            SimBoxPlacement {
+              x: x_edge,
+              y: y_edge,
+              z: z_edge,
+            },
+          );
+
+          boxes.set(x_i, y_i, z_i, sim_box).unwrap();
+        }
+      }
+    }
 
     BoxContainer {
       config,

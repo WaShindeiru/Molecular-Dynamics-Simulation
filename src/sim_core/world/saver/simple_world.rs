@@ -7,7 +7,7 @@ use log::info;
 use nalgebra::Vector3;
 
 use crate::persistence::dto::world::simple::SimpleWorldDTO;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::PartialWorldSaver;
 
 impl PartialWorldSaver {
@@ -43,18 +43,24 @@ impl PartialWorldSaver {
     let mut forces: Vec<Vec<Vector3<f64>>> = Vec::new();
     let mut potential_energies: Vec<Vec<f64>> = Vec::new();
 
-    for (i, atom_container) in atoms.iter().enumerate() {
+    for atom_container in atoms.iter() {
+      let num_atoms = atom_container.len();
       let mut current_forces: Vec<Vector3<f64>> =
-        vec![Vector3::new(0., 0., 0.); world.num_of_atoms];
-      let mut current_potential_energies: Vec<f64> = vec![0.; world.num_of_atoms];
+        vec![Vector3::new(0., 0., 0.); num_atoms];
+      let mut current_potential_energies: Vec<f64> = vec![0.; num_atoms];
 
-      for atom_dto in atom_container.iter() {
-        let force_i = current_forces.get_mut(atom_dto.id).unwrap();
+      // Sort by atom ID to get a consistent local ordering that is independent
+      // of the global ID values (which may not start at 0 across test runs).
+      let mut sorted_atoms: Vec<_> = atom_container.iter().collect();
+      sorted_atoms.sort_by_key(|a| a.id);
+
+      for (local_idx, atom_dto) in sorted_atoms.iter().enumerate() {
+        let force_i = current_forces.get_mut(local_idx).unwrap();
         force_i.x = atom_dto.force_x;
         force_i.y = atom_dto.force_y;
         force_i.z = atom_dto.force_z;
 
-        *current_potential_energies.get_mut(atom_dto.id).unwrap() = atom_dto.potential_energy;
+        *current_potential_energies.get_mut(local_idx).unwrap() = atom_dto.potential_energy;
       }
 
       forces.push(current_forces);

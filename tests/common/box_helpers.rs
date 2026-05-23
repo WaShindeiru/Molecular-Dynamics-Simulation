@@ -5,10 +5,10 @@ use carbon_nanotube::persistence::dto::world::WorldDTO;
 use carbon_nanotube::sim_core::Engine;
 use carbon_nanotube::sim_core::world::WorldType;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
-use carbon_nanotube::sim_core::world::integration::{
+use carbon_nanotube::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
-use carbon_nanotube::sim_core::world::saver::SaveOptions;
+use carbon_nanotube::sim_core::world::saver::{FrameSamplingConfig, SaveOptions};
 use nalgebra::Vector3;
 use std::collections::HashSet;
 use std::fs;
@@ -179,8 +179,9 @@ pub fn test_reset_world_with_thermostat_runner(
     WorldType::BoxedWorld { .. } => "boxed",
   };
   let edge_condition_str = match edge_condition {
-    EdgeCondition::Simple => "simple",
-    EdgeCondition::Periodic => "periodic",
+    EdgeCondition::Simple { .. } => "simple",
+    EdgeCondition::Periodic { .. } => "periodic",
+    EdgeCondition::PeriodicAll => "periodic_all",
   };
   let test_dir = format!(
     "../test/test_reset_world_with_thermostat_{}_{}",
@@ -207,14 +208,23 @@ pub fn test_reset_world_with_thermostat_runner(
 
   let num_iterations = 100;
   let max_iteration_till_reset = 8;
-  let one_frame_duration = 1e-2;
+  let one_frame_duration = 1e-3;
 
   let save_options = SaveOptions {
     save: true,
     save_path: test_dir.clone(),
     save_laamps: false,
     save_verbose: true,
-    ..SaveOptions::default()
+    save_all_iterations_laamps: true,
+    save_all_iterations_energy: true,
+    laamps_sampling: FrameSamplingConfig {
+      one_frame_duration: TIME_STEP,
+      frame_iteration_count: 1,
+    },
+    energy_sampling: FrameSamplingConfig {
+      one_frame_duration: TIME_STEP,
+      frame_iteration_count: 1,
+    },
   };
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -233,7 +243,6 @@ pub fn test_reset_world_with_thermostat_runner(
     .time_step(TIME_STEP)
     .num_of_iterations(num_iterations)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .save_all_iterations(false)
     .one_frame_duration(one_frame_duration)
     .save_options(save_options)
     .integration_algorithm(integration_algorithm)
@@ -261,8 +270,9 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     WorldType::BoxedWorld { .. } => "boxed",
   };
   let edge_condition_str = match edge_condition {
-    EdgeCondition::Simple => "simple",
-    EdgeCondition::Periodic => "periodic",
+    EdgeCondition::Simple { .. } => "simple",
+    EdgeCondition::Periodic { .. } => "periodic",
+    EdgeCondition::PeriodicAll => "periodic_all",
   };
   let test_dir = format!(
     "../test/test_save_files_completeness_{}_{}",
@@ -290,14 +300,22 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
 
   let num_iterations = 50;
   let max_iteration_till_reset = 12; // Will have multiple save batches
-  let one_frame_duration = 1e-2;
 
   let save_options = SaveOptions {
     save: true,
     save_path: test_dir.clone(),
     save_laamps: true,
     save_verbose: true,
-    ..SaveOptions::default()
+    save_all_iterations_laamps: true,
+    save_all_iterations_energy: true,
+    laamps_sampling: FrameSamplingConfig {
+      one_frame_duration: TIME_STEP,
+      frame_iteration_count: 1,
+    },
+    energy_sampling: FrameSamplingConfig {
+      one_frame_duration: TIME_STEP,
+      frame_iteration_count: 1,
+    },
   };
 
   // TODO: change back to verlet
@@ -317,8 +335,6 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     .time_step(TIME_STEP)
     .num_of_iterations(num_iterations)
     .max_iteration_till_reset(max_iteration_till_reset)
-    .save_all_iterations(true)
-    .one_frame_duration(one_frame_duration)
     .save_options(save_options)
     .integration_algorithm(integration_algorithm)
     .world_type(world_type)
@@ -352,7 +368,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
   // Check LAMMPS dump files exist
   let num_expected_dumps = num_iterations; // Since save_all_iterations is true
   for i in 0..num_expected_dumps {
-    let dump_file = format!("{}/output_{}.dump", test_dir, i);
+    let dump_file = format!("{}/laamps/output_{}.dump", test_dir, i);
     assert!(
       Path::new(&dump_file).exists(),
       "LAMMPS dump file {} not found",

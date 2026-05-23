@@ -8,7 +8,7 @@ use crate::persistence::json::{GeneratorConfigFile, SimulationConfigFile};
 use crate::particle::SafeAtomFactory;
 
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
-use crate::sim_core::world::integration::{TemperatureInfo, TimeIterationDistance};
+use crate::sim_core::world::thermostat::{TemperatureInfo, TimeIterationDistance};
 use crate::simulations::generators::generator_config::GeneratorConfig;
 use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
 
@@ -35,9 +35,9 @@ pub fn see_config_json() {
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)
     .world_size(simulation_size)
-    .edge_condition(EdgeCondition::Periodic)
+    .edge_condition(EdgeCondition::Periodic { trigger_small_subtask_size: 1 })
     .integration_algorithm(
-      crate::sim_core::world::integration::IntegrationAlgorithm::NoseHooverVerlet {
+      crate::sim_core::world::thermostat::IntegrationAlgorithm::NoseHooverVerlet {
         desired_temperature: (desired_temperatures),
         q_effective_mass: (1.0),
       },

@@ -3,23 +3,27 @@ use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
 pub enum EdgeConditionFile {
-  Simple,
-  Periodic,
+  Simple { trigger_small_subtask_size: usize },
+  Periodic { trigger_small_subtask_size: usize },
+  PeriodicAll,
 }
 
 impl EdgeConditionFile {
   pub fn from_runtime(value: EdgeCondition) -> Self {
     match value {
-      EdgeCondition::Simple => EdgeConditionFile::Simple,
-      EdgeCondition::Periodic => EdgeConditionFile::Periodic,
+      EdgeCondition::Simple { trigger_small_subtask_size } => EdgeConditionFile::Simple { trigger_small_subtask_size },
+      EdgeCondition::Periodic { trigger_small_subtask_size } => EdgeConditionFile::Periodic { trigger_small_subtask_size },
+      EdgeCondition::PeriodicAll => EdgeConditionFile::PeriodicAll,
     }
   }
 
   pub fn to_runtime(&self) -> EdgeCondition {
     match self {
-      EdgeConditionFile::Simple => EdgeCondition::Simple,
-      EdgeConditionFile::Periodic => EdgeCondition::Periodic,
+      EdgeConditionFile::Simple { trigger_small_subtask_size } => EdgeCondition::Simple { trigger_small_subtask_size: *trigger_small_subtask_size },
+      EdgeConditionFile::Periodic { trigger_small_subtask_size } => EdgeCondition::Periodic { trigger_small_subtask_size: *trigger_small_subtask_size },
+      EdgeConditionFile::PeriodicAll => EdgeCondition::PeriodicAll,
     }
   }
 }

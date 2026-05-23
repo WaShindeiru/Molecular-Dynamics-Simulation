@@ -1,5 +1,7 @@
+use crate::data::SimulationConfig;
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::ParticleCompliance;
+use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
@@ -10,6 +12,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct IntegrationCacheBuilder {
+  config: SimulationConfig,
   particles: HashMap<usize, Particle>,
   local_boxes: BoxContainer<SimulationBox>,
   half_velocity: HashMap<usize, Vector3<f64>>,
@@ -18,11 +21,13 @@ pub struct IntegrationCacheBuilder {
 
 impl IntegrationCacheBuilder {
   pub fn new(
+    config: SimulationConfig,
     box_container_config: BoxContainerConfig,
     particles: HashMap<usize, Particle>,
   ) -> Self {
     let num_particles = particles.len();
     IntegrationCacheBuilder {
+      config,
       particles,
       local_boxes: BoxContainer::<SimulationBox>::new_local(box_container_config),
       half_velocity: HashMap::with_capacity(num_particles),
@@ -55,8 +60,21 @@ impl IntegrationCacheBuilder {
       return None;
     }
 
+    let shared_boxes = self.local_boxes.into_shared();
+
+    #[cfg(debug_assertions)]
+    for sim_box in shared_boxes.simulation_boxes().iter() {
+      for particle in sim_box.particles().values() {
+        log::debug!(
+          "Particle {} is stored in simulation box {}",
+          particle.get_id(),
+          sim_box.id()
+        );
+      }
+    }
+
     Some(IntegrationCache::new(
-      self.local_boxes.into_shared(),
+      shared_boxes,
       self.half_velocity,
       self.particle_compliance,
     ))
