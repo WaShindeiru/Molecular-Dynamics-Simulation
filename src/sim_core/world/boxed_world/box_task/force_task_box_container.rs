@@ -10,7 +10,7 @@ use crate::sim_core::world::boxed_world::box_container::sim_box::{
 use crate::sim_core::world::boxed_world::box_task::force_task_box_container::particle_proxy::{
   AxisPlacement, ParticlePlacement, ParticlePositionProxy, new_particle_position_proxy,
 };
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
+use crate::sim_core::world::computation::ForceComputationOperations;
 use nalgebra::Vector3;
 
 mod particle_proxy;
@@ -68,24 +68,24 @@ impl ForceTaskBoxContainer {
     let sim_box = self.container.get_box(box_id)?;
 
     let x_axis_placement = match (self.edge_condition, sim_box.sim_box_placement().x) {
-      (EdgeCondition::Simple, _) => unimplemented!("not yet"),
-      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
-      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
+      (EdgeCondition::Simple { .. }, _) => unimplemented!("not yet"),
+      (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
+      (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
         AxisPlacement::Normal
       }
     };
 
     let y_axis_placement = match (self.edge_condition, sim_box.sim_box_placement().y) {
-      (EdgeCondition::Simple, _) => unimplemented!("not yet"),
-      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
-      (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
+      (EdgeCondition::Simple { .. }, _) => unimplemented!("not yet"),
+      (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
+      (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => {
         AxisPlacement::Normal
       }
     };
 
     let z_axis_placement = match (self.edge_condition, sim_box.sim_box_placement().z) {
-      (EdgeCondition::Simple, _) => unimplemented!("not yet"),
-      (EdgeCondition::Periodic, _) => AxisPlacement::Normal,
+      (EdgeCondition::Simple { .. }, _) => unimplemented!("not yet"),
+      (EdgeCondition::Periodic { .. }, _) => AxisPlacement::Normal,
       (EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge) => AxisPlacement::Left,
       (EdgeCondition::PeriodicAll, SimBoxEdge::Normal | SimBoxEdge::RightEdge) => AxisPlacement::Normal,
     };
@@ -115,7 +115,7 @@ impl ForceTaskBoxContainer {
     &self,
     box_id: usize,
   ) -> Box<dyn Iterator<Item = Box<dyn ForceComputationOperations>>> {
-    if self.edge_condition == EdgeCondition::Simple {
+    if matches!(self.edge_condition, EdgeCondition::Simple { .. }) {
       panic!("this method doesn't work correctly for simple edge condition.")
     }
 
@@ -144,22 +144,22 @@ impl ForceTaskBoxContainer {
           }
 
           let x_axis_placement = match (self.edge_condition, sim_box_placement.x, x_offset) {
-            (EdgeCondition::Simple, _, _) => AxisPlacement::Normal,
-            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
-            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
-            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::Simple { .. }, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,
           };
 
           let y_axis_placement = match (self.edge_condition, sim_box_placement.y, y_offset) {
-            (EdgeCondition::Simple, _, _) => AxisPlacement::Normal,
-            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
-            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
-            (EdgeCondition::Periodic | EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::Simple { .. }, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
+            (EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,
           };
 
           let z_axis_placement = match (self.edge_condition, sim_box_placement.z, z_offset) {
-            (EdgeCondition::Simple, _, _) => AxisPlacement::Normal,
-            (EdgeCondition::Periodic, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::Simple { .. }, _, _) => AxisPlacement::Normal,
+            (EdgeCondition::Periodic { .. }, _, _) => AxisPlacement::Normal,
             (EdgeCondition::PeriodicAll, SimBoxEdge::LeftEdge, 0 | 1) => AxisPlacement::Left,
             (EdgeCondition::PeriodicAll, SimBoxEdge::RightEdge, 1) => AxisPlacement::Left,
             (EdgeCondition::PeriodicAll, _, _) => AxisPlacement::Normal,

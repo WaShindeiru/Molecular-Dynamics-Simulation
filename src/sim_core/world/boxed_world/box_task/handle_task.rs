@@ -1,19 +1,23 @@
+use nalgebra::Vector3;
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::box_task::force_task_box_container::{
   ForceTaskBoxContainer, get_needed_box_id_periodic,
 };
+use crate::sim_core::world::boxed_world::box_task::handle_task::handle_partial_velocity_step::{apply_velocity_constraint, handle_partial_velocity_step};
 use crate::sim_core::world::boxed_world::box_task::{
   ForceTaskParticleData, ForceTaskResult, VelocityTaskParticleData, VelocityTaskResult,
 };
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::{
-  ForceComputationOperations, compute_forces_potential, verlet_noose_hoover_half_velocity_position,
-};
+use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::{HalfVelocityResult, verlet_noose_hoover_half_velocity_position};use crate::sim_core::world::computation::{ForceComputationOperations, compute_forces_potential};
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
-use nalgebra::Vector3;
-use std::collections::HashMap;
-use std::sync::Arc;
+
+mod partial_velocity_step;
+mod handle_partial_velocity_step;
 
 pub fn handle_velocity_batch_task(
   task_id: usize,
@@ -37,20 +41,39 @@ pub fn handle_velocity_batch_task(
     edge_condition,
   );
 
-  let particles: HashMap<usize, VelocityTaskParticleData> = half_velocity_response
-    .half_velocity
-    .keys()
-    .map(|id_| {
-      let id = *id_;
-      let data = VelocityTaskParticleData {
-        half_velocity: *half_velocity_response.half_velocity.get(&id).unwrap(),
-        new_position: *half_velocity_response.new_position.get(&id).unwrap(),
-        thermostat_work: *half_velocity_response.thermostat_work.get(&id).unwrap(),
-        compliance: *half_velocity_response.compliance.get(&id).unwrap(),
-      };
-      (id, data)
-    })
+  let HalfVelocityResult { half_velocity, new_position, thermostat_work, compliance } =
+    half_velocity_response;
+    
+  let all_particles: HashMap<usize, VelocityTaskParticleData> = compliance
+    .into_iter()
+    .map(|(id, compliance)| (id, VelocityTaskParticleData {
+      half_velocity: half_velocity[&id],
+      new_position: new_position[&id],
+      thermostat_work: thermostat_work[&id],
+      compliance,
+    }))
     .collect();
+
+  let (compliant, non_compliant): (HashMap<_, _>, HashMap<_, _>) = match edge_condition {
+    EdgeCondition::Simple { .. } | EdgeCondition::Periodic { .. } => {
+      all_particles.into_iter().partition(|(_, d)| d.compliance.compliant)
+    },
+    EdgeCondition::PeriodicAll => (all_particles, HashMap::new()),
+  };
+
+  let mut particles = apply_velocity_constraint(compliant, edge_condition);
+
+  if !non_compliant.is_empty() {
+    let corrected = handle_partial_velocity_step(
+      history,
+      non_compliant,
+      container_size,
+      edge_condition,
+      previous_thermostat_epsilon,
+      time_step,
+    );
+    particles.extend(corrected);
+  }
 
   VelocityTaskResult { task_id, particles }
 }
@@ -61,7 +84,7 @@ pub fn handle_force_batch_task(
   box_ids: &[usize],
   integration_cache: &IntegrationCache,
 ) -> ForceTaskResult {
-  assert!(boundary_condition == EdgeCondition::Periodic || boundary_condition == EdgeCondition::PeriodicAll, 
+  assert!(matches!(boundary_condition, EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll), 
     "Only periodic and periodic_all boundary condition is supported for force batch task");
 
   let config = integration_cache.box_cache().config();

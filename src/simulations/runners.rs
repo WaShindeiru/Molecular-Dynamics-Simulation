@@ -2,7 +2,7 @@ use crate::data::units::{TEMPERATURE_U, TIME_U};
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
-use crate::sim_core::world::integration::{
+use crate::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
 use crate::simulations::examples::{
@@ -49,7 +49,7 @@ pub fn dense_runner() {
       task_worker_multiplier: 6.0,
     },
   };
-  let edge_condition = EdgeCondition::Periodic;
+  let edge_condition = EdgeCondition::Periodic { trigger_small_subtask_size: 1 };
 
   let world_size = Vector3::new(50., 50., 50.);
   let offset = Vector3::new(1.7, 1.7, 1.7);
@@ -97,7 +97,7 @@ pub fn one_particle_edge_runner() {
       task_worker_multiplier: 2.0,
     },
   };
-  let edge_condition = EdgeCondition::Periodic;
+  let edge_condition = EdgeCondition::Periodic { trigger_small_subtask_size: 1 };
 
   one_particle_edge(
     TIME_STEP,
@@ -139,7 +139,7 @@ pub fn two_particles_edge_runner() {
       task_worker_multiplier: 2.0,
     },
   };
-  let edge_condition = EdgeCondition::Periodic;
+  let edge_condition = EdgeCondition::Periodic { trigger_small_subtask_size: 1 };
 
   two_particles_edge(
     TIME_STEP,

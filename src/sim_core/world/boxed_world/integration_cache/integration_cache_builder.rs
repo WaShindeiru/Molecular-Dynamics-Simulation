@@ -36,8 +36,6 @@ impl IntegrationCacheBuilder {
   }
 
   pub fn add_velocity_results(&mut self, results: HashMap<usize, VelocityTaskParticleData>) {
-    let edge_condition = self.config.edge_condition;
-
     for (id, data) in results {
       let particle = self.particles.get_mut(&id).unwrap();
       particle.update_position(data.new_position);
@@ -45,13 +43,7 @@ impl IntegrationCacheBuilder {
 
       self.local_boxes.add_particle(Arc::new(particle.clone()));
 
-      let validated_half_velocity = match edge_condition {
-        EdgeCondition::Simple => unimplemented!("not yet!"),
-        EdgeCondition::Periodic => apply_velocity_constraint_periodic(&data.compliance, data.half_velocity),
-        EdgeCondition::PeriodicAll => data.half_velocity,
-      };
-
-      self.half_velocity.insert(id, validated_half_velocity);
+      self.half_velocity.insert(id, data.half_velocity);
       self.particle_compliance.insert(id, data.compliance);
     }
   }

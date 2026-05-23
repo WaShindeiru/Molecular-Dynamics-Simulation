@@ -7,9 +7,9 @@ use crate::data::units::TEMPERATURE_U;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::thermostat::compute_new_thermostat_epsilon;
 
-use crate::sim_core::world::integration::IntegrationAlgorithm;
-use crate::sim_core::world::integration::IntegrationAlgorithmState;
-use crate::sim_core::world::integration::IntegrationStateUpdateResponse;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithmState;
+use crate::sim_core::world::thermostat::IntegrationStateUpdateResponse;
 
 impl BoxedWorld {
   pub fn update_verlet_nose_hoover(&mut self, next_iteration: usize) {

@@ -3,14 +3,15 @@ use crate::particle::Particle;
 use crate::persistence::dto::world::WorldDTO;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::simple_world::SimpleWorld;
 use nalgebra::Vector3;
 use std::io;
 
 pub mod boundary_constraint;
 pub mod boxed_world;
-pub mod integration;
+pub mod computation;
+pub mod thermostat;
 pub mod saver;
 pub mod simple_world;
 

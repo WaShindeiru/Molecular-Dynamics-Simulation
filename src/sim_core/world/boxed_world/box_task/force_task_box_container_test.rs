@@ -32,7 +32,7 @@ use crate::data::InteractionType::FeC;
 
     let box_container = BoxContainer::new_local(container_config).into_shared();
     let view = box_container.view_select_boxes(&needed_box_ids);
-    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic);
+    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic { trigger_small_subtask_size: 1 });
 
     let mut some_box_count = 0;
     let mut none_box_count = 0;
@@ -103,7 +103,7 @@ use crate::data::InteractionType::FeC;
     let view = box_container
       .into_shared()
       .view_select_boxes(&needed_box_ids);
-    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic);
+    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic { trigger_small_subtask_size: 1 });
 
     let mut some_box_count = 0;
     let mut none_box_count = 0;
@@ -201,7 +201,7 @@ use crate::data::InteractionType::FeC;
     let view = box_container
       .into_shared()
       .view_select_boxes(&needed_box_ids);
-    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic);
+    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic { trigger_small_subtask_size: 1 });
     let box_id = get_id_simulation_box(
       &Vector3::new(3, 3, 3),
       &container_config.box_count_dim,
@@ -292,7 +292,7 @@ use crate::data::InteractionType::FeC;
     let view = box_container
       .into_shared()
       .view_select_boxes(&needed_box_ids);
-    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic);
+    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic { trigger_small_subtask_size: 1 });
     let box_id = get_id_simulation_box(
       &Vector3::new(0, 3, 3),
       &container_config.box_count_dim,
@@ -404,7 +404,7 @@ use crate::data::InteractionType::FeC;
     let view = box_container
       .into_shared()
       .view_select_boxes(&needed_box_ids);
-    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic);
+    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic { trigger_small_subtask_size: 1 });
 
     let mut some_box_count = 0;
     let mut none_box_count = 0;
@@ -562,7 +562,7 @@ use crate::data::InteractionType::FeC;
     let view = box_container
       .into_shared()
       .view_select_boxes(&needed_box_ids);
-    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic);
+    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic { trigger_small_subtask_size: 1 });
 
     let mut some_box_count = 0;
     let mut none_box_count = 0;

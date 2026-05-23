@@ -126,6 +126,11 @@ impl BoxContainer<Arc<SimulationBox>> {
       .clone()
   }
 
+  pub fn get_particle(&self, particle_id: usize) -> Arc<Particle> {
+    let box_id = self.particle_box_id(particle_id);
+    self.get_box(box_id).particle(particle_id)
+  }
+
   // TODO: change this so that don't have to iterate over whole cube maybe?
   pub fn view_select_boxes(&self, box_ids: &[usize]) -> BoxContainer<Option<Arc<SimulationBox>>> {
     let id_set: HashSet<usize> = box_ids.iter().copied().collect();

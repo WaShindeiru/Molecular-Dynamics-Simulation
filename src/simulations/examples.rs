@@ -3,7 +3,7 @@ use crate::data::units::TIME_U;
 use crate::particle::{Particle, SafeAtomFactory};
 use crate::sim_core::Engine;
 use crate::sim_core::world::WorldType;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::SaveOptions;
 use log::info;
 use nalgebra::Vector3;
@@ -61,7 +61,7 @@ pub fn symmetric_triangle_test(
     ..SaveOptions::default()
   };
 
-  let edge_condition = EdgeCondition::Simple;
+  let edge_condition = EdgeCondition::Simple { trigger_small_subtask_size: 1 };
 
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)
@@ -129,7 +129,7 @@ pub fn triangle(
     ..SaveOptions::default()
   };
 
-  let edge_condition = EdgeCondition::Simple;
+  let edge_condition = EdgeCondition::Simple { trigger_small_subtask_size: 1 };
 
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)
@@ -365,7 +365,7 @@ pub fn sphere_particles(
     ..SaveOptions::default()
   };
 
-  let edge_condition = EdgeCondition::Simple;
+  let edge_condition = EdgeCondition::Simple { trigger_small_subtask_size: 1 };
 
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)

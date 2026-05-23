@@ -1,7 +1,7 @@
 pub mod box_container;
 
 use crate::persistence::dto::world::history::HistoryDTO;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use nalgebra::Vector3;
 
 pub struct BoxedWorldDTO {

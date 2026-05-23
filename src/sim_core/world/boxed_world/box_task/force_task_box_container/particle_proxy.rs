@@ -1,6 +1,6 @@
 use crate::data::types::AtomType;
 use crate::particle::Particle;
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
+use crate::sim_core::world::computation::ForceComputationOperations;
 use nalgebra::Vector3;
 use std::any::Any;
 use std::sync::Arc;

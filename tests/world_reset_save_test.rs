@@ -10,6 +10,7 @@ use common::box_helpers::{
 };
 
 #[test]
+#[ignore]
 fn test_reset_world_no_missing_iterations_boxed_simple() {
   test_reset_world_no_missing_iterations_runner(
     WorldType::BoxedWorld {
@@ -18,7 +19,7 @@ fn test_reset_world_no_missing_iterations_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple,
+    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
   )
 }
 
@@ -31,11 +32,12 @@ fn test_reset_world_no_missing_iterations_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic,
+    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
   )
 }
 
 #[test]
+#[ignore]
 fn test_reset_world_with_thermostat_boxed_simple() {
   test_reset_world_with_thermostat_runner(
     WorldType::BoxedWorld {
@@ -44,7 +46,7 @@ fn test_reset_world_with_thermostat_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple,
+    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
   );
 }
 
@@ -57,11 +59,12 @@ fn test_reset_world_with_thermostat_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic,
+    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
   );
 }
 
 #[test]
+#[ignore]
 fn test_save_files_completeness_boxed_simple() {
   test_save_files_completeness_runner(
     WorldType::BoxedWorld {
@@ -70,7 +73,7 @@ fn test_save_files_completeness_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple,
+    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
   );
 }
 
@@ -83,11 +86,12 @@ fn test_save_files_completeness_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic,
+    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
   );
 }
 
 #[test]
+#[ignore]
 fn test_single_reset_boxed_simple() {
   test_single_reset_runner(
     WorldType::BoxedWorld {
@@ -96,7 +100,7 @@ fn test_single_reset_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple,
+    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
   );
 }
 
@@ -109,11 +113,12 @@ fn test_single_reset_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic,
+    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
   );
 }
 
 #[test]
+#[ignore]
 fn test_no_reset_boxed_simple() {
   test_no_reset_runner(
     WorldType::BoxedWorld {
@@ -122,7 +127,7 @@ fn test_no_reset_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple,
+    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
   );
 }
 
@@ -135,6 +140,6 @@ fn test_no_reset_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic,
+    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
   );
 }

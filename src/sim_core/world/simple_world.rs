@@ -6,7 +6,7 @@ use crate::persistence::dto::world::WorldDTO;
 use crate::persistence::dto::world::simple::SimpleWorldDTO;
 use crate::sim_core::old::simple_atom_container::SimpleAtomContainer;
 use crate::sim_core::world::get_index_for_iteration;
-use crate::sim_core::world::integration::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::PartialWorldSaver;
 use crate::sim_core::world::saver::SaveOptions;
 use log::info;

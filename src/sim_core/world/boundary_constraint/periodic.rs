@@ -187,14 +187,15 @@ pub fn check_position_constraint_periodic_all(
 
 pub fn apply_velocity_constraint_periodic(
   compliance: &ParticleCompliance,
-  mut velocity: Vector3<f64>,
+  velocity: &Vector3<f64>,
 ) -> Vector3<f64> {
-  velocity.z = match compliance.z {
-    Compliant => velocity.z,
-    Compliance::ExceededLowerBoundary | Compliance::ExceededHigherBoundary => -velocity.z,
+  let mut correct_velocity = velocity.clone();
+  correct_velocity.z = match compliance.z {
+    Compliant => correct_velocity.z,
+    Compliance::ExceededLowerBoundary | Compliance::ExceededHigherBoundary => -correct_velocity.z,
   };
 
-  velocity
+  correct_velocity
 }
 
 #[cfg(test)]

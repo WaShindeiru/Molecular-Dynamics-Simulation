@@ -18,7 +18,7 @@ pub enum Compliance {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum EdgeCondition {
-  Simple,
-  Periodic,
+  Simple { trigger_small_subtask_size: usize },
+  Periodic { trigger_small_subtask_size: usize },
   PeriodicAll,
 }

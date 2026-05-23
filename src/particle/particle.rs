@@ -1,7 +1,7 @@
 use crate::data::types::AtomType;
 use crate::particle::{Atom, CustomPathAtom};
 use crate::persistence::dto::atom::AtomDTO;
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::ForceComputationOperations;
+use crate::sim_core::world::computation::ForceComputationOperations;
 use nalgebra::Vector3;
 use std::any::Any;
 
