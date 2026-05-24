@@ -1,5 +1,13 @@
-use crate::persistence::dto::world::WorldDTO;
 use std::io;
+use std::path::Path;
+
+use crate::data::ValueUnits;
+use crate::persistence::dto::atom::AtomDTO;
+use crate::persistence::dto::world::WorldDTO;
+use crate::persistence::json::particle_config::ParticleInitialState;
+use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
+use crate::sim_core::world::velocity_heap::{VelocityHeap, VelocityParticle};
+use std::fs;
 
 mod boxed_world;
 mod simple_world;
@@ -59,6 +67,7 @@ pub struct SaveOptions {
   pub save_all_iterations_energy: bool,
   pub laamps_sampling: FrameSamplingConfig,
   pub energy_sampling: FrameSamplingConfig,
+  pub velocity_particles_num: usize,
 }
 
 impl Default for SaveOptions {
@@ -72,6 +81,7 @@ impl Default for SaveOptions {
       save_all_iterations_energy: false,
       laamps_sampling: FrameSamplingConfig::default(),
       energy_sampling: FrameSamplingConfig::default(),
+      velocity_particles_num: 100,
     }
   }
 }
@@ -82,16 +92,42 @@ pub struct PartialWorldSaver {
   thermostat_work_total: f64,
   laamps_frame_iteration_count_current_iteration: usize,
   energy_frame_iteration_count_current_iteration: usize,
+
+  velocity_heap: VelocityHeap,
 }
 
 impl PartialWorldSaver {
   pub fn new(save_options: SaveOptions) -> Self {
+    let velocity_heap = VelocityHeap::new(save_options.velocity_particles_num);
     PartialWorldSaver {
-      save_options,
       thermostat_work_total: 0.,
       laamps_frame_iteration_count_current_iteration: 0,
       energy_frame_iteration_count_current_iteration: 0,
+      velocity_heap,
+      save_options,
     }
+  }
+
+  pub fn handle_velocity_particles(&mut self, atoms: impl Iterator<Item = AtomDTO>) {
+    for atom in atoms {
+      self.velocity_heap.try_insert(atom);
+    }
+  }
+
+  pub fn persist_velocity_particles(&mut self) -> io::Result<()> {
+    let dir = Path::new(&self.save_options.save_path);
+
+    let particles: Vec<ParticleInitialState> = self
+      .velocity_heap
+      .drain_descending()
+      .map(velocity_particle_to_initial_state)
+      .map(|p| p.to_value_units(ValueUnits::Si))
+      .collect();
+
+    let json = serde_json::to_string_pretty(&particles)
+      .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+    fs::write(dir.join("velocity_particles.json"), json)
   }
 
   pub fn persist(&mut self, world: &WorldDTO) -> io::Result<()> {
@@ -104,4 +140,16 @@ impl PartialWorldSaver {
       Ok(())
     }
   }
+}
+
+fn velocity_particle_to_initial_state(vp: VelocityParticle) -> ParticleInitialState {
+  let velocity_magnitude = vp.velocity.magnitude();
+  ParticleInitialState::new(
+    vp.id,
+    vp.type_,
+    ParticleTypeFile::from(vp.kind),
+    vp.position,
+    vp.velocity,
+    Some(velocity_magnitude),
+  )
 }

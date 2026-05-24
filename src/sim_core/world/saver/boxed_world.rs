@@ -153,7 +153,7 @@ impl PartialWorldSaver {
         for atom_dto in atom_container.iter() {
           result_string.push_str(&format!(
             "{} {} {} {} {}\n",
-            atom_dto.id, atom_dto.atom_type, atom_dto.x, atom_dto.y, atom_dto.z
+            atom_dto.id, atom_dto.atom_type as u64, atom_dto.position.x, atom_dto.position.y, atom_dto.position.z
           ));
         }
 
@@ -192,9 +192,9 @@ impl PartialWorldSaver {
 
       for (local_idx, atom_dto) in sorted_atoms.iter().enumerate() {
         let force_i = current_forces.get_mut(local_idx).unwrap();
-        force_i.x = atom_dto.force_x;
-        force_i.y = atom_dto.force_y;
-        force_i.z = atom_dto.force_z;
+        force_i.x = atom_dto.force.x;
+        force_i.y = atom_dto.force.y;
+        force_i.z = atom_dto.force.z;
 
         *current_potential_energies.get_mut(local_idx).unwrap() = atom_dto.potential_energy;
       }
@@ -293,9 +293,9 @@ impl PartialWorldSaver {
         wtr.write_record(&[
           format!("{}", iteration),
           format!("{}", id),
-          format!("{}", atom.x),
-          format!("{}", atom.y),
-          format!("{}", atom.z),
+          format!("{}", atom.position.x),
+          format!("{}", atom.position.y),
+          format!("{}", atom.position.z),
         ])?;
       }
     }

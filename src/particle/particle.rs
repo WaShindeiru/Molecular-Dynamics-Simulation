@@ -5,6 +5,12 @@ use crate::sim_core::world::computation::ForceComputationOperations;
 use nalgebra::Vector3;
 use std::any::Any;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ParticleKind {
+  Atom,
+  CustomPathAtom,
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Particle {
   Atom(Atom),
@@ -65,6 +71,13 @@ impl Particle {
     match self {
       Particle::Atom(atom) => atom.get_potential_energy(),
       Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_potential_energy(),
+    }
+  }
+
+  pub fn get_kinetic_energy(&self) -> f64 {
+    match self {
+      Particle::Atom(atom) => atom.get_kinetic_energy(),
+      Particle::CustomPathAtom(custom_path_atom) => custom_path_atom.get_kinetic_energy(),
     }
   }
 

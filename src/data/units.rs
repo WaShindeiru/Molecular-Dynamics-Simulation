@@ -15,7 +15,7 @@ pub enum ValueUnits {
 
 impl Default for ValueUnits {
   fn default() -> Self {
-    ValueUnits::Unitless
+    ValueUnits::Si
   }
 }
 

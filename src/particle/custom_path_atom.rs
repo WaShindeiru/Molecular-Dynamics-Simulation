@@ -1,6 +1,29 @@
 use crate::data::types::AtomType;
+use crate::particle::particle::ParticleKind;
 use crate::persistence::dto::atom::AtomDTO;
 use nalgebra::Vector3;
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct CustomPathAtom {
+  id: usize,
+  iteration: usize,
+  type_: AtomType,
+  mass: f64,
+
+  position: Vector3<f64>,
+  velocity: Vector3<f64>,
+
+  acceleration: Vector3<f64>,
+  force: Vector3<f64>,
+
+  kinetic_energy: f64,
+  potential_energy: f64,
+  potential_gravity_energy: f64,
+  thermostat_work: f64,
+
+  path: Vec<Vector3<f64>>,
+  step: usize,
+}
 
 impl CustomPathAtom {
   pub fn get_id(&self) -> usize {
@@ -41,6 +64,10 @@ impl CustomPathAtom {
 
   pub fn get_potential_gravity_energy(&self) -> f64 {
     self.potential_gravity_energy
+  }
+
+  pub fn get_kinetic_energy(&self) -> f64 {
+    self.kinetic_energy
   }
 
   pub fn get_thermostat_work(&self) -> f64 {
@@ -115,41 +142,17 @@ impl CustomPathAtom {
     AtomDTO {
       id: self.id,
       iteration: self.iteration,
-      atom_type: if self.type_ == AtomType::C { 0 } else { 1 },
-      x: self.position.x,
-      y: self.position.y,
-      z: self.position.z,
+      kind: ParticleKind::CustomPathAtom,
+      atom_type: self.type_,
+      position: self.position,
+      velocity: self.velocity,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
       potential_gravity_energy: self.potential_gravity_energy,
       thermostat_work: self.thermostat_work,
-      force_x: self.force.x,
-      force_y: self.force.y,
-      force_z: self.force.z,
+      force: self.force,
     }
   }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct CustomPathAtom {
-  id: usize,
-  iteration: usize,
-  type_: AtomType,
-  mass: f64,
-
-  position: Vector3<f64>,
-  velocity: Vector3<f64>,
-
-  acceleration: Vector3<f64>,
-  force: Vector3<f64>,
-
-  kinetic_energy: f64,
-  potential_energy: f64,
-  potential_gravity_energy: f64,
-  thermostat_work: f64,
-
-  path: Vec<Vector3<f64>>,
-  step: usize,
 }
 
 impl CustomPathAtom {

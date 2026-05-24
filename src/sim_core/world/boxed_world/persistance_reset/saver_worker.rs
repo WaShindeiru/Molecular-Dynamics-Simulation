@@ -24,8 +24,17 @@ impl SaverWorker {
 
   pub(crate) fn run(mut self) {
     while let Ok(dto) = self.receiver.recv() {
+      let atoms = dto
+        .history
+        .box_container
+        .iter()
+        .flat_map(|bc| bc.atoms.iter().cloned());
+      self.saver.handle_velocity_particles(atoms);
+
       let result = self.saver.persist_boxed_world(&dto);
       let _ = self.result_sender.send(result);
     }
+
+    let _ = self.saver.persist_velocity_particles();
   }
 }

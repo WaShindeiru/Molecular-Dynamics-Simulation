@@ -14,6 +14,7 @@ pub mod computation;
 pub mod thermostat;
 pub mod saver;
 pub mod simple_world;
+pub mod velocity_heap;
 
 fn get_index_for_iteration(
   current_iteration: usize,

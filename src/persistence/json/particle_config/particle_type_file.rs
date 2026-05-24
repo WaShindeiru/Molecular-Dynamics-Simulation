@@ -1,3 +1,4 @@
+use crate::particle::particle::ParticleKind;
 use crate::particle::Particle;
 
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -12,6 +13,15 @@ impl ParticleTypeFile {
     match value {
       Particle::Atom(_) => ParticleTypeFile::Atom,
       Particle::CustomPathAtom(_) => ParticleTypeFile::CustomPathAtom,
+    }
+  }
+}
+
+impl From<ParticleKind> for ParticleTypeFile {
+  fn from(kind: ParticleKind) -> Self {
+    match kind {
+      ParticleKind::Atom => ParticleTypeFile::Atom,
+      ParticleKind::CustomPathAtom => ParticleTypeFile::CustomPathAtom,
     }
   }
 }

@@ -1,7 +1,8 @@
 #[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[repr(u64)]
 pub enum AtomType {
-  C,
-  Fe,
+  C = 0,
+  Fe = 1,
 }
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]

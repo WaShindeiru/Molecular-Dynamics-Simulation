@@ -7,6 +7,7 @@ use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::particle::Particle;
 use crate::particle::custom_path_atom::CustomPathAtom;
+use crate::particle::particle::ParticleKind;
 use crate::persistence::dto::atom::AtomDTO;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -64,6 +65,10 @@ impl Atom {
 
   pub fn get_potential_energy(&self) -> f64 {
     self.potential_energy
+  }
+
+  pub fn get_kinetic_energy(&self) -> f64 {
+    self.kinetic_energy
   }
 
   pub fn get_potential_gravity_energy(&self) -> f64 {
@@ -135,17 +140,15 @@ impl Atom {
     AtomDTO {
       id: self.id,
       iteration: self.iteration,
-      atom_type: if self.type_ == AtomType::C { 0 } else { 1 },
-      x: self.position.x,
-      y: self.position.y,
-      z: self.position.z,
+      kind: ParticleKind::Atom,
+      atom_type: self.type_,
+      position: self.position,
+      velocity: self.velocity,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
       thermostat_work: self.thermostat_work,
       potential_gravity_energy: self.potential_gravity_energy,
-      force_x: self.force.x,
-      force_y: self.force.y,
-      force_z: self.force.z,
+      force: self.force,
     }
   }
 }

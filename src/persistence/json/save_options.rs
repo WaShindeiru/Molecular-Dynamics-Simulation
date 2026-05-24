@@ -4,6 +4,10 @@ use crate::sim_core::world::saver::SaveOptions;
 use super::frame_sampling::FrameSamplingConfigFile;
 use super::simulation_config::refresh_save_path_with_current_date;
 
+fn default_velocity_particles_num() -> usize {
+  100
+}
+
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct SaveOptionsFile {
   pub save: bool,
@@ -16,6 +20,8 @@ pub struct SaveOptionsFile {
   pub save_all_iterations_energy: bool,
   pub laamps_sampling: FrameSamplingConfigFile,
   pub energy_sampling: FrameSamplingConfigFile,
+  #[serde(default = "default_velocity_particles_num")]
+  pub velocity_particles_num: usize,
 }
 
 impl SaveOptionsFile {
@@ -30,6 +36,7 @@ impl SaveOptionsFile {
       save_all_iterations_energy: save_options.save_all_iterations_energy,
       laamps_sampling: FrameSamplingConfigFile::from_runtime(&save_options.laamps_sampling),
       energy_sampling: FrameSamplingConfigFile::from_runtime(&save_options.energy_sampling),
+      velocity_particles_num: save_options.velocity_particles_num,
     }
   }
 
@@ -53,6 +60,7 @@ impl SaveOptionsFile {
       energy_sampling: self
         .energy_sampling
         .to_runtime(time_step, self.save_all_iterations_energy),
+      velocity_particles_num: self.velocity_particles_num,
     }
   }
 
@@ -67,6 +75,7 @@ impl SaveOptionsFile {
       save_all_iterations_energy: self.save_all_iterations_energy,
       laamps_sampling: self.laamps_sampling.to_value_units(source, target),
       energy_sampling: self.energy_sampling.to_value_units(source, target),
+      velocity_particles_num: self.velocity_particles_num,
     }
   }
 }
