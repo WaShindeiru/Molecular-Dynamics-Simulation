@@ -225,6 +225,8 @@ pub fn test_reset_world_with_thermostat_runner(
       one_frame_duration: TIME_STEP,
       frame_iteration_count: 1,
     },
+    velocity_particles_num: 10,
+    save_final_particles: false,
   };
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -316,6 +318,8 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
       one_frame_duration: TIME_STEP,
       frame_iteration_count: 1,
     },
+    velocity_particles_num: 10,
+    save_final_particles: false,
   };
 
   // TODO: change back to verlet

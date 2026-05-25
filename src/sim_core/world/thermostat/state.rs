@@ -1,6 +1,14 @@
+use std::io;
+use std::path::Path;
+
+use crate::data::units::TEMPERATURE_U;
+use crate::data::{ParticleConfig, ValueUnits};
+use crate::particle::Particle;
+use crate::persistence::json::particle_config::ParticleConfigFile;
+
 use super::types::{
   IntegrationAlgorithm, IntegrationStateUpdateResponse, NoseHooverStage, TemperatureHistoryEntry,
-  TemperatureInfo, TemperatureIteration, TimeIterationDistance,
+  TemperatureIteration, TimeIterationDistance,
 };
 
 pub enum IntegrationAlgorithmState {
@@ -105,25 +113,32 @@ impl IntegrationAlgorithmState {
     });
   }
 
-  fn record_switched(
+  fn record_switched<'a>(
     history: &mut [TemperatureHistoryEntry],
     index: usize,
     iteration: usize,
     simulation_temperature_unitless: f64,
+    save: bool,
+    particles: impl Iterator<Item = &'a Particle>,
   ) {
     history[index].temperature_switched = Some(TemperatureIteration {
       iteration,
       temperature: simulation_temperature_unitless,
     });
+    if save {
+      history[index].particles = Some(particles.cloned().collect());
+    }
   }
 
-  pub fn update_state(
+  pub fn update_state<'a>(
     &mut self,
     current_iteration: usize,
     time_step: f64,
     integration_algorithm: &IntegrationAlgorithm,
     simulation_temperature_unitless: f64,
+    particles: impl Iterator<Item = &'a Particle>,
   ) -> IntegrationStateUpdateResponse {
+
     match (self, integration_algorithm) {
       (IntegrationAlgorithmState::SemiImplicitEuler, IntegrationAlgorithm::SemiImplicitEuler) => {
         IntegrationStateUpdateResponse::SemiImplicitEuler
@@ -205,6 +220,8 @@ impl IntegrationAlgorithmState {
               *temperature_index,
               current_iteration,
               simulation_temperature_unitless,
+              temp_info.save,
+              particles,
             );
             *acceptance_consecutive = 0;
             *after_achieved_consecutive = 0;
@@ -236,5 +253,40 @@ impl IntegrationAlgorithmState {
         panic!("IntegrationAlgorithmState does not match IntegrationAlgorithm variant");
       }
     }
+  }
+
+  pub fn save_temperature_particles(
+    &self,
+    integration_algorithm: &IntegrationAlgorithm,
+    base_path: &Path,
+  ) -> io::Result<()> {
+    let (history, desired_temperature) = match (self, integration_algorithm) {
+      (
+        IntegrationAlgorithmState::NoseHooverVerlet { history, .. },
+        IntegrationAlgorithm::NoseHooverVerlet { desired_temperature, .. },
+      ) => (history, desired_temperature),
+      _ => return Ok(()),
+    };
+
+    let dir_path = base_path.join("particles").join("temperature");
+
+    for (entry, temp_info) in history.iter().zip(desired_temperature.iter()) {
+      let Some(particles) = &entry.particles else {
+        continue;
+      };
+
+      let temperature_k = temp_info.desired_temperature * TEMPERATURE_U;
+      let file_path = dir_path.join(format!("{}.json", temperature_k));
+
+      std::fs::create_dir_all(&dir_path)?;
+
+      let config = ParticleConfig::from_slice(particles);
+      let config_file = ParticleConfigFile::from_runtime(&config, ValueUnits::Si);
+      let json = serde_json::to_string_pretty(&config_file)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+      std::fs::write(file_path, json)?;
+    }
+
+    Ok(())
   }
 }

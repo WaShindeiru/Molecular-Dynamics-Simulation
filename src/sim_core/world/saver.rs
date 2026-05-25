@@ -1,11 +1,10 @@
 use std::io;
 use std::path::Path;
 
-use crate::data::ValueUnits;
 use crate::persistence::dto::atom::AtomDTO;
 use crate::persistence::dto::world::WorldDTO;
-use crate::persistence::json::particle_config::ParticleInitialState;
 use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
+use crate::persistence::json::velocity_particle::VelocityParticleFile;
 use crate::sim_core::world::velocity_heap::{VelocityHeap, VelocityParticle};
 use std::fs;
 
@@ -68,6 +67,7 @@ pub struct SaveOptions {
   pub laamps_sampling: FrameSamplingConfig,
   pub energy_sampling: FrameSamplingConfig,
   pub velocity_particles_num: usize,
+  pub save_final_particles: bool,
 }
 
 impl Default for SaveOptions {
@@ -82,6 +82,7 @@ impl Default for SaveOptions {
       laamps_sampling: FrameSamplingConfig::default(),
       energy_sampling: FrameSamplingConfig::default(),
       velocity_particles_num: 100,
+      save_final_particles: false,
     }
   }
 }
@@ -115,13 +116,13 @@ impl PartialWorldSaver {
   }
 
   pub fn persist_velocity_particles(&mut self) -> io::Result<()> {
-    let dir = Path::new(&self.save_options.save_path);
+    let dir = Path::new(&self.save_options.save_path).join("particles");
+    fs::create_dir_all(&dir)?;
 
-    let particles: Vec<ParticleInitialState> = self
+    let particles: Vec<VelocityParticleFile> = self
       .velocity_heap
       .drain_descending()
-      .map(velocity_particle_to_initial_state)
-      .map(|p| p.to_value_units(ValueUnits::Si))
+      .map(|vp| velocity_particle_to_file(vp).to_value_units(crate::data::ValueUnits::Si))
       .collect();
 
     let json = serde_json::to_string_pretty(&particles)
@@ -142,14 +143,13 @@ impl PartialWorldSaver {
   }
 }
 
-fn velocity_particle_to_initial_state(vp: VelocityParticle) -> ParticleInitialState {
-  let velocity_magnitude = vp.velocity.magnitude();
-  ParticleInitialState::new(
+fn velocity_particle_to_file(vp: VelocityParticle) -> VelocityParticleFile {
+  VelocityParticleFile::new(
     vp.id,
+    vp.iteration,
     vp.type_,
     ParticleTypeFile::from(vp.kind),
     vp.position,
     vp.velocity,
-    Some(velocity_magnitude),
   )
 }

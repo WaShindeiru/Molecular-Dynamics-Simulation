@@ -166,6 +166,12 @@ impl Engine {
     }
   }
 
+  fn save_final_particles(&self) -> io::Result<()> {
+    
+  
+    Ok(())
+  }
+
   pub fn save(&mut self) -> io::Result<()> {
     self.world.save()?;
     let save_dir = Path::new(&self.save_options.save_path);
@@ -191,6 +197,10 @@ impl Engine {
       &self.particle_config,
       particles_initial_path.to_string_lossy().as_ref(),
     )?;
+
+    if self.config.save_options.save_final_particles {
+      self.save_final_particles()?;
+    }
 
     Ok(())
   }

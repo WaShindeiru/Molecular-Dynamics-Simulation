@@ -1,14 +1,18 @@
 mod saver_handle;
 mod saver_worker;
 
+use std::fs;
 use std::io;
+use std::path::Path;
 use std::sync::Arc;
 
 use log::info;
 
-use crate::data::SimulationConfig;
+use crate::data::types::AtomType;
+use crate::data::{SimulationConfig, ValueUnits};
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::persistence::dto::world::history::HistoryDTO;
+use crate::persistence::json::particle_config::{ParticleConfigFile, ParticleInitialState};
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
@@ -134,6 +138,49 @@ impl PersistanceReset {
     self.saver_handle.drain_finished_results()?;
     let dto = self.build_boxed_snapshot_dto(num_of_world_iterations);
     self.saver_handle.send_dto_wait_result(dto)
+  }
+
+  pub fn save_final_particles(&self) -> io::Result<()> {
+    if !self.save_options.save || !self.save_options.save_final_particles {
+      return Ok(());
+    }
+
+    info!("Saving final particle states");
+
+    let container = self.history_manager.current_box_container();
+
+    let mut c_count = 0usize;
+    let mut fe_count = 0usize;
+
+    let particles: Vec<ParticleInitialState> = container
+      .simulation_boxes()
+      .iter()
+      .flat_map(|sim_box| sim_box.particles().values())
+      .map(|particle| {
+        match particle.get_type() {
+          AtomType::C => c_count += 1,
+          AtomType::Fe => fe_count += 1,
+        }
+        ParticleInitialState::from_runtime(particle)
+      })
+      .collect();
+
+    let config_file = ParticleConfigFile {
+      value_units: ValueUnits::Unitless,
+      particles,
+      num_of_atoms: c_count + fe_count,
+      num_of_carbon_atoms: c_count,
+      num_of_iron_atoms: fe_count,
+    }
+    .to_value_units(ValueUnits::Si);
+
+    let dir = Path::new(&self.save_options.save_path).join("particles");
+    fs::create_dir_all(&dir)?;
+
+    let json = serde_json::to_string_pretty(&config_file)
+      .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+    fs::write(dir.join("final_particles.json"), json)
   }
 }
 

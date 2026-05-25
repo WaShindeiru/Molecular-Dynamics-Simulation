@@ -54,11 +54,15 @@ impl ParticleConfigFile {
   }
 
   pub fn to_value_units(&self, target: ValueUnits) -> Self {
+    let source = self.value_units;
+    let position_scale = ValueUnits::scale_between(source, target, R_U);
+    let velocity_scale = ValueUnits::scale_between(source, target, VELOCITY_U);
+
     let particles = self
       .particles
       .iter()
       .cloned()
-      .map(|particle| particle.to_value_units(target))
+      .map(|particle| particle.to_value_units(position_scale, velocity_scale))
       .collect();
 
     Self {
@@ -73,15 +77,11 @@ impl ParticleConfigFile {
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct ParticleInitialState {
-  #[serde(default)]
-  pub value_units: ValueUnits,
   id: usize,
   atom_type: AtomType,
   particle_type: ParticleTypeFile,
   position: Vector3Record,
   velocity: Vector3Record,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  velocity_magnitude: Option<f64>,
 }
 
 impl ParticleInitialState {
@@ -91,31 +91,27 @@ impl ParticleInitialState {
     particle_type: ParticleTypeFile,
     position: Vector3<f64>,
     velocity: Vector3<f64>,
-    velocity_magnitude: Option<f64>,
   ) -> Self {
     Self {
-      value_units: ValueUnits::Unitless,
       id,
       atom_type,
       particle_type,
       position: Vector3Record::from(position),
       velocity: Vector3Record::from(velocity),
-      velocity_magnitude,
     }
   }
 
-  fn from_runtime(particle: &Particle) -> Self {
+  pub fn from_runtime(particle: &Particle) -> Self {
     Self::new(
       particle.get_id(),
       particle.get_type(),
       ParticleTypeFile::from_runtime(particle),
       *particle.get_position(),
       *particle.get_velocity(),
-      None,
     )
   }
 
-  fn try_to_runtime(&self) -> io::Result<Particle> {
+  pub fn try_to_runtime(&self) -> io::Result<Particle> {
     let mass = match self.atom_type {
       AtomType::C => ATOMIC_MASS_C,
       AtomType::Fe => ATOMIC_MASS_FE,
@@ -141,18 +137,13 @@ impl ParticleInitialState {
     })
   }
 
-  pub fn to_value_units(&self, target: ValueUnits) -> Self {
-    let source = self.value_units;
-    let position_scale = ValueUnits::scale_between(source, target, R_U);
-    let velocity_scale = ValueUnits::scale_between(source, target, VELOCITY_U);
+  fn to_value_units(&self, position_scale: f64, velocity_scale: f64) -> Self {
     Self {
-      value_units: target,
       id: self.id,
       atom_type: self.atom_type,
       particle_type: self.particle_type,
       position: self.position.scale(position_scale),
       velocity: self.velocity.scale(velocity_scale),
-      velocity_magnitude: self.velocity_magnitude.map(|m| m * velocity_scale),
     }
   }
 }
@@ -171,11 +162,11 @@ impl From<Vector3<f64>> for Vector3Record {
 }
 
 impl Vector3Record {
-  fn to_runtime(&self) -> Vector3<f64> {
+  pub fn to_runtime(&self) -> Vector3<f64> {
     Vector3::new(self.x, self.y, self.z)
   }
 
-  fn scale(&self, scale: f64) -> Self {
+  pub fn scale(&self, scale: f64) -> Self {
     Self {
       x: self.x * scale,
       y: self.y * scale,

@@ -124,6 +124,10 @@ impl ComputationCollector {
     temperature / count as f64
   }
 
+  pub fn particles(&self) -> impl Iterator<Item = &Particle> {
+    self.particles_modified.values()
+  }
+
   pub fn into_box_container(self) -> BoxContainer<Arc<SimulationBox>> {
     let box_container_config = *self.integration_cache.box_cache().config();
     let particle_box_mapping = self.integration_cache.box_cache().box_id_cache().clone();

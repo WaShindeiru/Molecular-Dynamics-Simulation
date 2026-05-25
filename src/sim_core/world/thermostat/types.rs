@@ -1,6 +1,7 @@
 use crate::data::units::TEMPERATURE_U;
 use crate::data::units::TIME_U;
 use crate::data::units::ValueUnits;
+use crate::particle::Particle;
 
 pub const DEFAULT_TEMP_THRESHOLD_UNITLESS: f64 = 30. / TEMPERATURE_U;
 pub const DEFAULT_ACCEPTANCE_TIME_UNITLESS: f64 = 2000. * 1e-18 / TIME_U;
@@ -48,6 +49,7 @@ pub struct TemperatureInfo {
   pub achieved_distance: TimeIterationDistance,
   #[serde(default = "default_temperature_threshold")]
   pub threshold: f64,
+  pub save: bool,
 }
 
 impl TemperatureInfo {
@@ -57,6 +59,7 @@ impl TemperatureInfo {
       acceptance_distance: default_acceptance_distance(),
       achieved_distance,
       threshold: default_temperature_threshold(),
+      save: false,
     }
   }
 
@@ -71,6 +74,7 @@ impl TemperatureInfo {
       acceptance_distance,
       achieved_distance,
       threshold,
+      save: false,
     }
   }
 
@@ -81,6 +85,7 @@ impl TemperatureInfo {
       acceptance_distance: self.acceptance_distance.to_value_units(source, target),
       achieved_distance: self.achieved_distance.to_value_units(source, target),
       threshold: self.threshold * ValueUnits::scale_between(source, target, TEMPERATURE_U),
+      save: self.save,
     }
   }
 }
@@ -128,11 +133,12 @@ pub struct TemperatureIteration {
   pub temperature: f64,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct TemperatureHistoryEntry {
   pub temperature_started: Option<TemperatureIteration>,
   pub temperature_achieved: Option<TemperatureIteration>,
   pub temperature_switched: Option<TemperatureIteration>,
+  pub particles: Option<Vec<Particle>>,
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -1,4 +1,5 @@
 use std::io;
+use std::path::Path;
 use std::sync::Arc;
 
 use nalgebra::Vector3;
@@ -97,6 +98,17 @@ impl BoxedWorld {
   }
 
   pub fn save(&mut self) -> io::Result<()> {
+    if self.config.save_options.save_final_particles {
+      self
+        .persistance_reset
+        .save_final_particles()?;
+    }
+
+    self.integration_algorithm_state.save_temperature_particles(
+      &self.config.integration_algorithm,
+      &Path::new(&self.config.save_options.save_path),
+    )?;
+
     self
       .persistance_reset
       .save_full_snapshot_blocking(self.iteration)

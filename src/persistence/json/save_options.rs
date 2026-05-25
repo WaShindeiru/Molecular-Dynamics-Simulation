@@ -22,6 +22,8 @@ pub struct SaveOptionsFile {
   pub energy_sampling: FrameSamplingConfigFile,
   #[serde(default = "default_velocity_particles_num")]
   pub velocity_particles_num: usize,
+  #[serde(default)]
+  pub save_final_particles: bool,
 }
 
 impl SaveOptionsFile {
@@ -37,6 +39,7 @@ impl SaveOptionsFile {
       laamps_sampling: FrameSamplingConfigFile::from_runtime(&save_options.laamps_sampling),
       energy_sampling: FrameSamplingConfigFile::from_runtime(&save_options.energy_sampling),
       velocity_particles_num: save_options.velocity_particles_num,
+      save_final_particles: save_options.save_final_particles,
     }
   }
 
@@ -61,6 +64,7 @@ impl SaveOptionsFile {
         .energy_sampling
         .to_runtime(time_step, self.save_all_iterations_energy),
       velocity_particles_num: self.velocity_particles_num,
+      save_final_particles: self.save_final_particles,
     }
   }
 
@@ -76,6 +80,7 @@ impl SaveOptionsFile {
       laamps_sampling: self.laamps_sampling.to_value_units(source, target),
       energy_sampling: self.energy_sampling.to_value_units(source, target),
       velocity_particles_num: self.velocity_particles_num,
+      save_final_particles: self.save_final_particles,
     }
   }
 }

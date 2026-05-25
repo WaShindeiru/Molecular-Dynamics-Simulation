@@ -85,6 +85,7 @@ impl BoxedWorld {
       self.config.time_step,
       &self.config.integration_algorithm,
       simulation_temperature,
+      computation_collector.particles(),
     );
     match result {
       IntegrationStateUpdateResponse::NoseHooverVerlet {
