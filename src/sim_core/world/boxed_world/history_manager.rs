@@ -111,7 +111,7 @@ impl HistoryManager {
       for sim_box in container.simulation_boxes().iter() {
         for (_, particle) in sim_box.particles() {
           match particle.get_type() {
-            AtomType::C => c_count += 1,
+            AtomType::C | AtomType::C_nanotube => c_count += 1,
             AtomType::Fe => fe_count += 1,
           }
         }

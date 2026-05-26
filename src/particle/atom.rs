@@ -230,10 +230,10 @@ impl AtomFactory {
     velocity_: Vector3<f64>,
   ) -> Particle {
     let result = match atom {
-      AtomType::C => Atom {
+      AtomType::C | AtomType::C_nanotube => Atom {
         id: self.counter,
         iteration: 0,
-        type_: AtomType::C,
+        type_: atom,
         mass: ATOMIC_MASS_C,
         position: position_,
         velocity: velocity_,
@@ -268,9 +268,9 @@ impl AtomFactory {
 
   fn get_atom_custom_path(&mut self, atom: AtomType, path: Vec<Vector3<f64>>) -> Particle {
     let result = match atom {
-      AtomType::C => CustomPathAtom::new(
+      AtomType::C | AtomType::C_nanotube => CustomPathAtom::new(
         self.counter,
-        AtomType::C,
+        atom,
         ATOMIC_MASS_C,
         path,
         self.potential_gravity_max,

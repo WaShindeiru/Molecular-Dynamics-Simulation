@@ -113,7 +113,7 @@ impl ParticleInitialState {
 
   pub fn try_to_runtime(&self) -> io::Result<Particle> {
     let mass = match self.atom_type {
-      AtomType::C => ATOMIC_MASS_C,
+      AtomType::C | AtomType::C_nanotube => ATOMIC_MASS_C,
       AtomType::Fe => ATOMIC_MASS_FE,
     };
 
@@ -148,7 +148,7 @@ impl ParticleInitialState {
   }
 }
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Vector3Record {
   x: f64,
   y: f64,

@@ -70,7 +70,7 @@ impl From<Particle> for VelocityParticle {
 impl From<AtomDTO> for VelocityParticle {
   fn from(dto: AtomDTO) -> Self {
     let mass = match dto.atom_type {
-      AtomType::C => ATOMIC_MASS_C,
+      AtomType::C | AtomType::C_nanotube => ATOMIC_MASS_C,
       AtomType::Fe => ATOMIC_MASS_FE,
     };
     let kinetic_energy = 0.5 * mass * dto.velocity.magnitude_squared();

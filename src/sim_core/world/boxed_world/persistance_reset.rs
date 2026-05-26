@@ -158,7 +158,7 @@ impl PersistanceReset {
       .flat_map(|sim_box| sim_box.particles().values())
       .map(|particle| {
         match particle.get_type() {
-          AtomType::C => c_count += 1,
+          AtomType::C | AtomType::C_nanotube => c_count += 1,
           AtomType::Fe => fe_count += 1,
         }
         ParticleInitialState::from_runtime(particle)

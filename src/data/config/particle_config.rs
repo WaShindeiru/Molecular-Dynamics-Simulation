@@ -15,7 +15,7 @@ impl ParticleConfig {
       atoms
         .iter()
         .fold((0usize, 0usize), |acc, atom| match atom.get_type() {
-          AtomType::C => (acc.0 + 1, acc.1),
+          AtomType::C | AtomType::C_nanotube => (acc.0 + 1, acc.1),
           AtomType::Fe => (acc.0, acc.1 + 1),
         });
 

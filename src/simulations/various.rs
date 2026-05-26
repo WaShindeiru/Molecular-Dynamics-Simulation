@@ -9,8 +9,10 @@ use crate::particle::SafeAtomFactory;
 
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::thermostat::{TemperatureInfo, TimeIterationDistance};
+use crate::persistence::json::particle_config::Vector3Record;
 use crate::simulations::generators::generator_config::GeneratorConfig;
 use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
+use crate::simulations::generators::generator_config::nanotube::{NanotubeGeneratorConfig, NanotubeGeneratorParticleFile};
 
 pub fn see_config_json() {
   let simulation_size = Vector3::new(10., 10., 10.);
@@ -61,4 +63,24 @@ pub fn see_dense_generator_configuration() {
   config_file
     .to_json_file("/media/washindeiru/7E442D59442D1585/md/temp/dense.json")
     .expect("should work!");
+}
+
+pub fn see_nanotube_generator_configuration() {
+  let particles = vec![
+    NanotubeGeneratorParticleFile {
+      position: Vector3Record::from(Vector3::new(3., 4., 5.)),
+      particle_type: AtomType::C_nanotube,
+    },
+  ];
+
+  let offset = Vector3Record::from(Vector3::new(1., 1., 1.));
+  let vel_mean = Vector3Record::from(Vector3::new(1., 1., 1.));
+  let vel_std_dev = Vector3Record::from(Vector3::new(1., 1., 1.));
+
+  let config_local = GeneratorConfig::Nanotube(NanotubeGeneratorConfig::new(
+    particles, offset, vel_mean, vel_std_dev
+  ));
+  let config_file = GeneratorConfigFile::new(config_local, ValueUnits::Unitless).to_value_units(ValueUnits::Unitless);
+  let result = config_file.to_json_string().unwrap();
+  println!("{result}");
 }

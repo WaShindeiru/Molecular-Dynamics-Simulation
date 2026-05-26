@@ -26,7 +26,7 @@ pub fn run_with_generator_config(
   generator_config: GeneratorConfig,
 ) -> io::Result<()> {
   let generator = generator_config.to_generator(&simulation_config);
-  let particle_config = generator.generate();
+  let particle_config = generator.generate()?;
 
   save_generator_config(&simulation_config, &generator_config)?;
 

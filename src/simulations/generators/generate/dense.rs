@@ -32,7 +32,7 @@ impl DenseGenerator {
 }
 
 impl Generator for DenseGenerator {
-  fn generate(&self) -> ParticleConfig {
+  fn generate(&self) -> Result<ParticleConfig, crate::simulations::generators::generate::GeneratorError> {
     let atom_factory = SafeAtomFactory::new(self.potential_gravity_max, self.world_size.z);
 
     let mut atoms: Vec<Particle> = Vec::new();
@@ -108,6 +108,6 @@ impl Generator for DenseGenerator {
       z = z + self.particle_distance;
     }
 
-    ParticleConfig::new(atoms)
+    Ok(ParticleConfig::new(atoms))
   }
 }

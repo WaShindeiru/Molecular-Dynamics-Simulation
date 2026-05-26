@@ -71,7 +71,7 @@ pub fn detect_box_type(atoms: &[Particle]) -> SimulationBoxType {
   let mut c = false;
 
   for particle in atoms {
-    if particle.get_type() == AtomType::C {
+    if matches!(particle.get_type(), AtomType::C | AtomType::C_nanotube) {
       c = true;
     } else {
       fe = true;
