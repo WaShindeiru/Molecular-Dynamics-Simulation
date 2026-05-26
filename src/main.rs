@@ -64,8 +64,8 @@ fn two_particles(save: bool, num_iterations: usize, use_thermostat: bool, verbos
     custom_path_2.push(position_vector);
   }
 
-  let atom_0 = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::Fe, custom_path_2));
-  let static_atom = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::Fe, custom_path));
+  let atom_0 = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::C, custom_path_2));
+  let static_atom = Particle::CustomPathAtom(atom_factory.get_atom_custom_path(AtomType::C, custom_path));
 
   let atoms: Vec<Particle> = vec![atom_0, static_atom];
 

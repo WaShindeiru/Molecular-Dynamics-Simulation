@@ -68,9 +68,14 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   plt.title(f"Potential energy of particle {first_particle_id}")
   plt.legend()
   plt.xlim([0, 4])
-  plt.ylim([-1, 4])
+  plt.ylim([-4, 4])
   plt.savefig(path + '/first_particle_potential_energy.png')
   plt.show()
+
+  min_idx = first_particle_energy.iloc[:, 2].idxmin()
+  x_at_min_energy = x_displacement.loc[min_idx]
+
+  print(f"min energy: {first_particle_energy.iloc[:, 2].min()}, x: {x_at_min_energy}")
 
   # Read positions and calculate x displacement of first particle
 
@@ -141,7 +146,7 @@ if __name__ == "__main__":
   # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check")
   # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check_v2/prog_check")
   import os
-  output_dir = "../../output"
+  output_dir = "/home/washindeiru/studia/sem9/md/output/"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
   thermostat = False
   show_energy_plot(newest_folder, thermostat)
