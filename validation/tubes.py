@@ -91,7 +91,7 @@ def parse_xyz(filepath: str) -> Simulation:
 
 
 if __name__ == "__main__":
-  sim = parse_xyz("/home/washindeiru/studia/sem9/md/carbon_tubes/first_nanotube_26_05_2026/Nanotube_CC.txt")
+  sim = parse_xyz("/home/washindeiru/studia/sem9/md/carbon_tubes/minimum_tube_v2_27_05_26/Nanotube_CC.txt")
   print(f"number of atoms: {len(sim.particles)}")
-  sim.save_json("/home/washindeiru/studia/sem9/md/carbon_tubes/first_nanotube_26_05_2026/Nanotube_CC.json")
+  sim.save_json("/home/washindeiru/studia/sem9/md/carbon_tubes/minimum_tube_v2_27_05_26/Nanotube_CC.json")
   print("saved to nanotube.json")
