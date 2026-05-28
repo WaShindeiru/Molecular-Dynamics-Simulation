@@ -41,8 +41,10 @@ impl ComputationCollector {
     &mut self,
     force_results: impl IntoIterator<Item = (&'a usize, &'a ForceTaskParticleData)>,
   ) {
+
     for (particle_id, force_data) in force_results {
       if let Some(particle) = self.particles_modified.get_mut(particle_id) {
+
         let acceleration = force_data.force / particle.get_mass();
         particle.set_force(particle.get_force() + force_data.force);
         particle
@@ -127,6 +129,15 @@ impl ComputationCollector {
         if let Some(&vel) = custom_velocities.get(id) {
           p.set_velocity(vel);
         }
+      }
+    }
+  }
+
+  pub fn compute_phantom_energy(&mut self) {
+    for (_, particle) in self.particles_modified.iter_mut() {
+      if let Particle::CustomVelocityAtom(p) = particle {
+        let phantom_energy_delta = p.get_previous_potential_energy() - p.get_potential_energy();
+        p.add_phantom_energy(phantom_energy_delta);
       }
     }
   }

@@ -1,14 +1,12 @@
-use std::fs::OpenOptions;
 use std::path::Path;
 use std::{fs, io};
 
-use csv::Writer;
 use log::info;
 use nalgebra::Vector3;
 
 use crate::persistence::dto::world::simple::SimpleWorldDTO;
+use crate::sim_core::world::saver::{PartialWorldSaver, csv_writer_with_header};
 use crate::sim_core::world::thermostat::IntegrationAlgorithm;
-use crate::sim_core::world::saver::PartialWorldSaver;
 
 impl PartialWorldSaver {
   pub fn persist_simple_world(&mut self, world: &SimpleWorldDTO) -> io::Result<()> {
@@ -45,8 +43,7 @@ impl PartialWorldSaver {
 
     for atom_container in atoms.iter() {
       let num_atoms = atom_container.len();
-      let mut current_forces: Vec<Vector3<f64>> =
-        vec![Vector3::new(0., 0., 0.); num_atoms];
+      let mut current_forces: Vec<Vector3<f64>> = vec![Vector3::new(0., 0., 0.); num_atoms];
       let mut current_potential_energies: Vec<f64> = vec![0.; num_atoms];
 
       // Sort by atom ID to get a consistent local ordering that is independent
@@ -77,35 +74,52 @@ impl PartialWorldSaver {
     let mut kinetic_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     // let mut potential_energy: Vec<f64> = Vec::with_capacity(engine_dto.num_of_iterations);
     let potential_energy = &world.potential_energy;
+    let mut phantom_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut total_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut thermostat_work: Vec<f64> = Vec::with_capacity(num_of_iterations);
 
     for (i, atom_container) in atoms.iter().enumerate() {
       let mut kinetic_energy_i = 0.;
       let mut thermostat_work_i = 0.;
+      let mut phantom_energy_i = 0.;
       // let mut potential_energy_i = 0.;
 
       for atom_dto in atom_container.iter() {
         kinetic_energy_i += atom_dto.kinetic_energy;
         thermostat_work_i += atom_dto.thermostat_work;
+        phantom_energy_i += atom_dto.phantom_energy;
       }
 
       self.thermostat_work_total += thermostat_work_i;
 
       kinetic_energy.push(kinetic_energy_i);
+      phantom_energy.push(phantom_energy_i);
       // potential_energy.push(potential_energy_i);
       let potential_energy_i = *potential_energy.get(i).unwrap();
-      total_energy.push(kinetic_energy_i + potential_energy_i);
+      total_energy.push(kinetic_energy_i + potential_energy_i + phantom_energy_i);
       thermostat_work.push(self.thermostat_work_total);
     }
 
     let save_dir = Path::new(&self.save_options.save_path);
-    let file = OpenOptions::new()
-      .create(true)
-      .append(true)
-      .open(save_dir.join("energy.csv"))?;
-
-    let mut wtr = Writer::from_writer(file);
+    let energy_header = match world.integration_algorithm {
+      IntegrationAlgorithm::NoseHooverVerlet { .. } => &[
+        "iteration",
+        "kinetic_energy",
+        "potential_energy",
+        "phantom_energy",
+        "total_energy",
+        "thermostat_work_total",
+        "thermostat_epsilon",
+      ][..],
+      _ => &[
+        "iteration",
+        "kinetic_energy",
+        "potential_energy",
+        "phantom_energy",
+        "total_energy",
+      ][..],
+    };
+    let mut wtr = csv_writer_with_header(&save_dir.join("energy.csv"), energy_header)?;
 
     assert!(
       kinetic_energy.len() == potential_energy.len() && kinetic_energy.len() == total_energy.len()
@@ -129,6 +143,7 @@ impl PartialWorldSaver {
             format!("{}", iteration),
             format!("{}", kinetic_energy.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
+            format!("{}", phantom_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
             format!("{}", thermostat_work.get(i).unwrap()),
             format!("{}", world.thermostat_epsilon.get(i).unwrap()),
@@ -139,6 +154,7 @@ impl PartialWorldSaver {
             format!("{}", iteration),
             format!("{}", kinetic_energy.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
+            format!("{}", phantom_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
           ])?;
         }
@@ -180,7 +196,11 @@ impl PartialWorldSaver {
         for atom_dto in atom_container.iter() {
           result_string.push_str(&format!(
             "{} {} {} {} {}\n",
-            atom_dto.id, atom_dto.atom_type as u64, atom_dto.position.x, atom_dto.position.y, atom_dto.position.z
+            atom_dto.id,
+            atom_dto.atom_type as u64,
+            atom_dto.position.x,
+            atom_dto.position.y,
+            atom_dto.position.z
           ));
         }
 
@@ -205,12 +225,16 @@ impl PartialWorldSaver {
     forces: &Vec<Vec<Vector3<f64>>>,
   ) -> io::Result<()> {
     let save_dir = Path::new(&self.save_options.save_path);
-    let file = OpenOptions::new()
-      .create(true)
-      .append(true)
-      .open(save_dir.join("forces.csv"))?;
-
-    let mut wtr = Writer::from_writer(file);
+    let mut wtr = csv_writer_with_header(
+      &save_dir.join("forces.csv"),
+      &[
+        "iteration",
+        "particle_index",
+        "force_x",
+        "force_y",
+        "force_z",
+      ],
+    )?;
 
     for i in 0..forces.len() {
       let iteration = world.number_of_resets * world.max_iteration_till_reset + i;
@@ -239,12 +263,10 @@ impl PartialWorldSaver {
     potential_energies: &Vec<Vec<f64>>,
   ) -> io::Result<()> {
     let save_dir = Path::new(&self.save_options.save_path);
-    let file = OpenOptions::new()
-      .create(true)
-      .append(true)
-      .open(save_dir.join("potential_energies.csv"))?;
-
-    let mut wtr = Writer::from_writer(file);
+    let mut wtr = csv_writer_with_header(
+      &save_dir.join("potential_energies.csv"),
+      &["iteration", "particle_index", "potential_energy"],
+    )?;
 
     for i in 0..potential_energies.len() {
       let iteration = world.number_of_resets * world.max_iteration_till_reset + i;
@@ -268,12 +290,16 @@ impl PartialWorldSaver {
   fn append_positions_in_one_file_simple_world(&self, world: &SimpleWorldDTO) -> io::Result<()> {
     let atoms = &world.atoms;
     let save_dir = Path::new(&self.save_options.save_path);
-    let file = OpenOptions::new()
-      .create(true)
-      .append(true)
-      .open(save_dir.join("positions.csv"))?;
-
-    let mut wtr = Writer::from_writer(file);
+    let mut wtr = csv_writer_with_header(
+      &save_dir.join("positions.csv"),
+      &[
+        "iteration",
+        "particle_index",
+        "position_x",
+        "position_y",
+        "position_z",
+      ],
+    )?;
 
     for i in 0..atoms.len() {
       let iteration = world.number_of_resets * world.max_iteration_till_reset + i;

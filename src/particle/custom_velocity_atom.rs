@@ -17,7 +17,11 @@ pub struct CustomVelocityAtom {
   force: Vector3<f64>,
 
   kinetic_energy: f64,
+
   potential_energy: f64,
+  previous_potential_energy: f64,
+  phantom_energy: f64,
+
   thermostat_work: f64,
   potential_gravity_energy: f64,
 
@@ -42,6 +46,8 @@ impl CustomVelocityAtom {
       acceleration: Vector3::zeros(),
       kinetic_energy: 0.0,
       potential_energy: 0.0,
+      previous_potential_energy: 0.0,
+      phantom_energy: 0.0,
       potential_gravity_energy: 0.0,
       thermostat_work: 0.0,
       ignore_edge_conditions: true,
@@ -84,6 +90,10 @@ impl CustomVelocityAtom {
     self.potential_energy
   }
 
+  pub fn get_previous_potential_energy(&self) -> f64 {
+    self.previous_potential_energy
+  }
+
   pub fn get_kinetic_energy(&self) -> f64 {
     self.kinetic_energy
   }
@@ -109,6 +119,10 @@ impl CustomVelocityAtom {
     self.potential_energy = potential_energy_;
   }
 
+  pub fn add_phantom_energy(&mut self, phantom_energy: f64) {
+    self.phantom_energy += phantom_energy;
+  }
+
   pub fn set_potential_gravity_energy(&mut self, potential_gravity_energy: f64) {
     self.potential_gravity_energy = 0.0;
   }
@@ -122,7 +136,7 @@ impl CustomVelocityAtom {
   }
 
   pub fn set_thermostat_work(&mut self, thermostat_work: f64) {
-    self.thermostat_work = thermostat_work;
+    self.thermostat_work = 0.0;
   }
 
   pub fn set_iteration(&mut self, iteration_: usize) {
@@ -134,6 +148,8 @@ impl CustomVelocityAtom {
   }
 
   pub fn reset_clone(&self) -> CustomVelocityAtom {
+    let previous_potential_energy = self.potential_energy;
+
     CustomVelocityAtom {
       id: self.id,
       iteration: self.iteration,
@@ -146,8 +162,10 @@ impl CustomVelocityAtom {
       acceleration: Vector3::zeros(),
       force: Vector3::zeros(),
 
-      kinetic_energy: self.kinetic_energy,
+      kinetic_energy: 0.0,
       potential_energy: 0.0,
+      previous_potential_energy: previous_potential_energy,
+      phantom_energy: self.phantom_energy,
       thermostat_work: 0.0,
       potential_gravity_energy: 0.0,
 
@@ -165,6 +183,7 @@ impl CustomVelocityAtom {
       velocity: self.velocity,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
+      phantom_energy: self.phantom_energy,
       thermostat_work: self.thermostat_work,
       potential_gravity_energy: self.potential_gravity_energy,
       force: self.force,

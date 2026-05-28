@@ -6,7 +6,8 @@ use crate::persistence::dto::world::WorldDTO;
 use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
 use crate::persistence::json::velocity_particle::VelocityParticleFile;
 use crate::sim_core::world::velocity_heap::{VelocityHeap, VelocityParticle};
-use std::fs;
+use csv::Writer;
+use std::fs::{self, File, OpenOptions};
 
 mod boxed_world;
 mod simple_world;
@@ -152,4 +153,16 @@ fn velocity_particle_to_file(vp: VelocityParticle) -> VelocityParticleFile {
     vp.position,
     vp.velocity,
   )
+}
+
+fn csv_writer_with_header(path: &Path, header: &[&str]) -> io::Result<Writer<File>> {
+  let should_write_header = !path.exists() || path.metadata()?.len() == 0;
+  let file = OpenOptions::new().create(true).append(true).open(path)?;
+  let mut writer = Writer::from_writer(file);
+
+  if should_write_header {
+    writer.write_record(header)?;
+  }
+
+  Ok(writer)
 }

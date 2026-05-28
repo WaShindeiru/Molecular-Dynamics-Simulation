@@ -85,6 +85,10 @@ impl BoxedWorld {
       self.velocity_manager.compute_velocities_for_iteration(next_iteration);
     computation_collector.apply_custom_velocities(&current_custom_velocities);
 
+    if self.iteration != 0 {
+      computation_collector.compute_phantom_energy();
+    }
+
     let simulation_temperature = computation_collector.get_mean_temperature();
 
     let result = self.integration_algorithm_state.update_state(

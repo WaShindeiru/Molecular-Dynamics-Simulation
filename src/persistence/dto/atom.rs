@@ -14,6 +14,7 @@ pub struct AtomDTO {
 
   pub kinetic_energy: f64,
   pub potential_energy: f64,
+  pub phantom_energy: f64,
   pub thermostat_work: f64,
   pub potential_gravity_energy: f64,
 

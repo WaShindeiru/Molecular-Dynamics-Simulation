@@ -164,7 +164,7 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   plt.figure()
   # plt.xlim(225000, 230000)
   # plt.xlim(50000, 53000)
-  plt.plot(iteration, total_energy_difference, label="Total energy error")
+  plt.plot(iteration[0:], total_energy_difference[0:], label="Total energy error")
 
   plt.xlabel("iteration")
   plt.ylabel("Energy [eV]")
