@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::EdgeCondition;
+use crate::sim_core::world::boundary_constraint::{Compliance, EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::box_task::force_task_box_container::{
@@ -13,7 +13,8 @@ use crate::sim_core::world::boxed_world::box_task::handle_task::handle_partial_v
 use crate::sim_core::world::boxed_world::box_task::{
   ForceTaskParticleData, ForceTaskResult, VelocityTaskParticleData, VelocityTaskResult,
 };
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::{HalfVelocityResult, verlet_noose_hoover_half_velocity_position};use crate::sim_core::world::computation::{ForceComputationOperations, compute_forces_potential};
+use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::{HalfVelocityResult, verlet_noose_hoover_half_velocity_position};
+use crate::sim_core::world::computation::{ForceComputationOperations, compute_forces_potential};
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
 mod partial_velocity_step;
@@ -29,10 +30,15 @@ pub fn handle_velocity_batch_task(
   container_size: Vector3<f64>,
   edge_condition: EdgeCondition,
 ) -> VelocityTaskResult {
-  let atom_count = history.atom_count_of_boxes(box_ids);
+  // Separate CustomVelocityAtom particles from normal particles.
+  let (normal_particles, custom_vel_particles): (Vec<_>, Vec<_>) = history
+    .particles_of_boxes(box_ids)
+    .partition(|p| !p.is_custom_velocity_atom());
+
+  let atom_count = normal_particles.len();
 
   let half_velocity_response = verlet_noose_hoover_half_velocity_position(
-    history.particles_of_boxes(box_ids),
+    normal_particles,
     time_step,
     previous_thermostat_epsilon,
     atom_count,
@@ -43,8 +49,8 @@ pub fn handle_velocity_batch_task(
 
   let HalfVelocityResult { half_velocity, new_position, thermostat_work, compliance } =
     half_velocity_response;
-    
-  let all_particles: HashMap<usize, VelocityTaskParticleData> = compliance
+
+  let all_normal_particles: HashMap<usize, VelocityTaskParticleData> = compliance
     .into_iter()
     .map(|(id, compliance)| (id, VelocityTaskParticleData {
       half_velocity: half_velocity[&id],
@@ -56,9 +62,9 @@ pub fn handle_velocity_batch_task(
 
   let (compliant, non_compliant): (HashMap<_, _>, HashMap<_, _>) = match edge_condition {
     EdgeCondition::Simple { .. } | EdgeCondition::Periodic { .. } => {
-      all_particles.into_iter().partition(|(_, d)| d.compliance.compliant)
+      all_normal_particles.into_iter().partition(|(_, d)| d.compliance.compliant)
     },
-    EdgeCondition::PeriodicAll => (all_particles, HashMap::new()),
+    EdgeCondition::PeriodicAll => (all_normal_particles, HashMap::new()),
   };
 
   let mut particles = apply_velocity_constraint(compliant, edge_condition);
@@ -73,6 +79,27 @@ pub fn handle_velocity_batch_task(
       time_step,
     );
     particles.extend(corrected);
+  }
+
+  // CustomVelocityAtom: velocity is prescribed. The current velocity (set in the previous
+  // iteration by apply_custom_velocities) is read directly from the history particle.
+  // Position advances with simple Euler: pos += vel * dt.  No Verlet half-step, no
+  // boundary checks (ignore_edge_conditions is always true for now).
+  for particle_arc in custom_vel_particles {
+    let id = particle_arc.get_id();
+    let vel = *particle_arc.get_velocity();
+    let new_position = particle_arc.get_position() + vel * time_step;
+    particles.insert(id, VelocityTaskParticleData {
+      half_velocity: vel,
+      new_position,
+      thermostat_work: 0.0,
+      compliance: ParticleCompliance {
+        compliant: true,
+        x: Compliance::Compliant,
+        y: Compliance::Compliant,
+        z: Compliance::Compliant,
+      },
+    });
   }
 
   VelocityTaskResult { task_id, particles }

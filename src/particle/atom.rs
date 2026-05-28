@@ -7,6 +7,7 @@ use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::particle::Particle;
 use crate::particle::custom_path_atom::CustomPathAtom;
+use crate::particle::custom_velocity_atom::CustomVelocityAtom;
 use crate::particle::particle::ParticleKind;
 use crate::persistence::dto::atom::AtomDTO;
 
@@ -289,6 +290,18 @@ impl AtomFactory {
 
     Particle::CustomPathAtom(result)
   }
+
+  fn get_atom_custom_velocity(&mut self, atom: AtomType, position: Vector3<f64>) -> Particle {
+    let result = match atom {
+      AtomType::C | AtomType::C_nanotube => {
+        CustomVelocityAtom::new(self.counter, atom, ATOMIC_MASS_C, position)
+      }
+      AtomType::Fe => CustomVelocityAtom::new(self.counter, AtomType::Fe, ATOMIC_MASS_FE, position),
+    };
+    self.counter = self.counter + 1;
+
+    Particle::CustomVelocityAtom(result)
+  }
 }
 
 pub struct SafeAtomFactory {
@@ -332,6 +345,11 @@ impl SafeAtomFactory {
   pub fn get_atom_custom_path(&self, atom: AtomType, path: Vec<Vector3<f64>>) -> Particle {
     let mut factory = self.inner.lock().unwrap();
     factory.get_atom_custom_path(atom, path)
+  }
+
+  pub fn get_atom_custom_velocity(&self, atom: AtomType, position: Vector3<f64>) -> Particle {
+    let mut factory = self.inner.lock().unwrap();
+    factory.get_atom_custom_velocity(atom, position)
   }
 
   pub fn get_atom_random(&self, atom: AtomType, lower_bound: f64, upper_bound: f64) -> Particle {

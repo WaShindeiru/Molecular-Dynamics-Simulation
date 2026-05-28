@@ -6,6 +6,7 @@ use crate::particle::Particle;
 pub enum ParticleTypeFile {
   Atom,
   CustomPathAtom,
+  CustomVelocityAtom,
 }
 
 impl ParticleTypeFile {
@@ -13,6 +14,7 @@ impl ParticleTypeFile {
     match value {
       Particle::Atom(_) => ParticleTypeFile::Atom,
       Particle::CustomPathAtom(_) => ParticleTypeFile::CustomPathAtom,
+      Particle::CustomVelocityAtom(_) => ParticleTypeFile::CustomVelocityAtom,
     }
   }
 }
@@ -22,6 +24,7 @@ impl From<ParticleKind> for ParticleTypeFile {
     match kind {
       ParticleKind::Atom => ParticleTypeFile::Atom,
       ParticleKind::CustomPathAtom => ParticleTypeFile::CustomPathAtom,
+      ParticleKind::CustomVelocityAtom => ParticleTypeFile::CustomVelocityAtom,
     }
   }
 }

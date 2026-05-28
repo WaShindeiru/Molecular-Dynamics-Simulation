@@ -6,7 +6,8 @@ use nalgebra::Vector3;
 use crate::data::ParticleConfig;
 use crate::data::types::AtomType::{C, Fe};
 use crate::particle::{Particle, SafeAtomFactory};
-use crate::simulations::generators::generate::Generator;
+use crate::simulations::generators::core::generate::Generator;
+use crate::simulations::generators::core::generate::GeneratorError;
 
 pub struct DenseGenerator {
   potential_gravity_max: f64,
@@ -32,7 +33,7 @@ impl DenseGenerator {
 }
 
 impl Generator for DenseGenerator {
-  fn generate(&self) -> Result<ParticleConfig, crate::simulations::generators::generate::GeneratorError> {
+  fn generate(&self) -> Result<ParticleConfig, GeneratorError> {
     let atom_factory = SafeAtomFactory::new(self.potential_gravity_max, self.world_size.z);
 
     let mut atoms: Vec<Particle> = Vec::new();

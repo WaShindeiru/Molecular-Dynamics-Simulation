@@ -86,6 +86,10 @@ impl ComputationCollector {
     let box_cache = self.integration_cache.box_cache();
 
     for (id, particle) in self.particles_modified.iter_mut() {
+      if particle.is_custom_velocity_atom() {
+        continue;
+      }
+
       let half_velocity = half_velocity_cache.get(id).unwrap();
       let compliance = particle_compliance.get(id).unwrap();
 
@@ -114,11 +118,33 @@ impl ComputationCollector {
     }
   }
 
+  /// Sets the velocity on all `CustomVelocityAtom` particles to the prescribed value for
+  /// the *next* iteration.  Workers will read this velocity directly from history to
+  /// advance the particle's position in the next step.
+  pub fn apply_custom_velocities(&mut self, custom_velocities: &HashMap<usize, Vector3<f64>>) {
+    for (id, particle) in self.particles_modified.iter_mut() {
+      if let Particle::CustomVelocityAtom(p) = particle {
+        if let Some(&vel) = custom_velocities.get(id) {
+          p.set_velocity(vel);
+        }
+      }
+    }
+  }
+
   pub fn get_mean_temperature(&self) -> f64 {
-    let count = self.particles_modified.len();
-    let temperature: f64 = self
+    let relevant: Vec<_> = self
       .particles_modified
       .values()
+      .filter(|p| !p.is_custom_velocity_atom())
+      .collect();
+    
+    let count = relevant.len();
+    if count == 0 {
+      return 0.0;
+    }
+
+    let temperature: f64 = relevant
+      .iter()
       .map(|p| p.get_mass() * p.get_velocity().magnitude().powi(2) / (3. * K_B))
       .sum();
     temperature / count as f64

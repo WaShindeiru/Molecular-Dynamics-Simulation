@@ -9,6 +9,7 @@ use crate::data::{ParticleConfig, SimulationConfig};
 use crate::persistence::dto::world::WorldDTO;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 
+use crate::particle::Particle;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManager;
 use crate::sim_core::world::boxed_world::computation_collector::ComputationCollector;
@@ -28,6 +29,9 @@ pub mod history_manager;
 pub mod integration;
 mod integration_cache;
 pub mod persistance_reset;
+mod velocity_manager;
+
+use velocity_manager::VelocityManager;
 
 pub struct BoxedWorld {
   config: SimulationConfig,
@@ -36,6 +40,7 @@ pub struct BoxedWorld {
   integration_cache: Option<Arc<IntegrationCache>>,
   computation_collector: Option<ComputationCollector>,
   task_manager: TaskManager,
+  velocity_manager: VelocityManager,
 
   iteration: usize,
 
@@ -44,13 +49,30 @@ pub struct BoxedWorld {
 }
 
 impl BoxedWorld {
-  pub fn with_config(config: SimulationConfig, particle_config: ParticleConfig) -> Self {
+  pub fn with_config(config: SimulationConfig, mut particle_config: ParticleConfig) -> Self {
     let task_manager_config = match config.world_type {
       WorldType::BoxedWorld {
         task_manager_config,
       } => task_manager_config,
       _ => unreachable!(),
     };
+
+    // Build VelocityManager first so we can seed the initial velocity on each
+    // CustomVelocityAtom before the particles are handed to HistoryManager.
+    // The first update() call will use next_iteration=1, so we compute velocities
+    // for iteration 1 here and store them directly in the particle's velocity field.
+    let mut velocity_manager = VelocityManager::from_schedules(&particle_config.velocity_schedules);
+    // Seed velocity_0 on the initial particles.  Workers in the first call
+    // (next_iteration=1) will read velocity_0 from history and advance position:
+    // new_pos_1 = pos_0 + velocity_0 * dt.
+    let initial_velocities = velocity_manager.compute_velocities_for_iteration(0);
+    for atom in particle_config.atoms.iter_mut() {
+      if let Particle::CustomVelocityAtom(p) = atom {
+        if let Some(&vel) = initial_velocities.get(&p.get_id()) {
+          p.set_velocity(vel);
+        }
+      }
+    }
 
     let num_of_atoms = particle_config.num_of_atoms;
     let history_manager = HistoryManager::with_config(config.clone(), particle_config);
@@ -93,6 +115,7 @@ impl BoxedWorld {
       integration_cache: None,
       computation_collector: None,
       task_manager,
+      velocity_manager,
       iteration: 0,
     }
   }

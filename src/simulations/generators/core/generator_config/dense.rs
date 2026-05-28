@@ -3,7 +3,7 @@ use std::{fs, io};
 
 use crate::data::SimulationConfig;
 use crate::data::units::{R_U, ValueUnits};
-use crate::simulations::generators::generate::dense::DenseGenerator;
+use crate::simulations::generators::core::generate::dense::DenseGenerator;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DenseGeneratorConfig {

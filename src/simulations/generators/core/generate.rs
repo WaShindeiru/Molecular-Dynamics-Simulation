@@ -2,13 +2,15 @@ use std::fmt;
 
 use crate::data::ParticleConfig;
 use crate::data::SimulationConfig;
-use crate::simulations::generators::generator_config::GeneratorConfig;
-use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
+use crate::simulations::generators::core::generator_config::GeneratorConfig;
+use crate::simulations::generators::core::generator_config::dense::DenseGeneratorConfig;
 use dense::DenseGenerator;
 use nanotube::NanotubeGenerator;
+use velocity_nanotube::VelocityNanotubeGenerator;
 
 pub mod dense;
 pub mod nanotube;
+pub mod velocity_nanotube;
 
 #[derive(Debug)]
 pub struct GeneratorError(pub String);
@@ -30,6 +32,7 @@ impl From<GeneratorError> for std::io::Error {
 pub enum GeneratorType {
   Dense(DenseGenerator),
   Nanotube(NanotubeGenerator),
+  VelocityNanotube(VelocityNanotubeGenerator),
 }
 
 pub trait Generator {
@@ -41,6 +44,7 @@ impl Generator for GeneratorType {
     match self {
       GeneratorType::Dense(g) => g.generate(),
       GeneratorType::Nanotube(g) => g.generate(),
+      GeneratorType::VelocityNanotube(g) => g.generate(),
     }
   }
 }

@@ -8,8 +8,8 @@ use crate::persistence::json::generator_config::GeneratorConfigFile;
 use crate::persistence::json::particle_config::read_particle_config_from_json_file;
 use crate::persistence::json::simulation_config::read_simulation_config_from_json_file;
 use crate::sim_core::Engine;
-use crate::simulations::generators::generate::Generator;
-use crate::simulations::generators::generator_config::GeneratorConfig;
+use crate::simulations::generators::core::generate::Generator;
+use crate::simulations::generators::core::generator_config::GeneratorConfig;
 use crate::utils::logging;
 
 pub fn run_with_particle_config(

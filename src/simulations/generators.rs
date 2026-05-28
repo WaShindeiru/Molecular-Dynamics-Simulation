@@ -1,2 +1,2 @@
-pub mod generate;
-pub mod generator_config;
+pub mod core;
+pub mod config_helpers;

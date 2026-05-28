@@ -1,52 +1,36 @@
 use std::io;
-use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
-use crate::simulations::run::run_from_paths;
+use self::combine::{CombineCommand, combine_command};
+use self::parse::{ParseCommand, parse_command};
+use self::run::{RunCommand, run_simulation_command};
+
+pub mod combine;
+pub mod parse;
+pub mod run;
 
 /// Run molecular dynamics simulation from JSON config files.
 #[derive(Debug, Parser)]
 #[command(name = "carbon_nanotube", version, about)]
 pub struct Cli {
-  /// Path to simulation config JSON file.
-  #[arg(short = 's', long)]
-  pub simulation_config: PathBuf,
-
-  #[command(flatten)]
-  pub particle_or_generator: ParticleOrGenerator,
+  #[command(subcommand)]
+  pub command: Command,
 }
 
-#[derive(Debug, clap::Args)]
-#[group(required = true, multiple = false)]
-pub struct ParticleOrGenerator {
-  /// Path to particles config JSON file.
-  #[arg(short = 'p', long)]
-  pub particles_config: Option<PathBuf>,
-
-  /// Path to generator config JSON file.
-  #[arg(short = 'g', long)]
-  pub generator_config: Option<PathBuf>,
+#[derive(Debug, Subcommand)]
+pub enum Command {
+  Run(RunCommand),
+  Parse(ParseCommand),
+  Combine(CombineCommand),
 }
 
 pub fn run() -> io::Result<()> {
   let cli = Cli::parse();
 
-  let simulation = cli.simulation_config.to_string_lossy().into_owned();
-  let particle = cli
-    .particle_or_generator
-    .particles_config
-    .as_ref()
-    .map(|p| p.to_string_lossy().into_owned());
-  let generator = cli
-    .particle_or_generator
-    .generator_config
-    .as_ref()
-    .map(|p| p.to_string_lossy().into_owned());
-
-  run_from_paths(
-    simulation.as_str(),
-    particle.as_deref(),
-    generator.as_deref(),
-  )
+  match cli.command {
+    Command::Run(command) => run_simulation_command(command),
+    Command::Parse(command) => parse_command(command),
+    Command::Combine(command) => combine_command(command),
+  }
 }

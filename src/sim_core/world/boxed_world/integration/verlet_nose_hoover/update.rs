@@ -78,6 +78,13 @@ impl BoxedWorld {
 
     computation_collector.set_velocity(new_thermostat_epsilon);
 
+    // Store the prescribed velocity for this iteration on the particles before they are
+    // pushed to history.  Workers in the next call will read it directly from history to
+    // advance the particle's position: new_pos = pos + velocity * dt.
+    let current_custom_velocities =
+      self.velocity_manager.compute_velocities_for_iteration(next_iteration);
+    computation_collector.apply_custom_velocities(&current_custom_velocities);
+
     let simulation_temperature = computation_collector.get_mean_temperature();
 
     let result = self.integration_algorithm_state.update_state(

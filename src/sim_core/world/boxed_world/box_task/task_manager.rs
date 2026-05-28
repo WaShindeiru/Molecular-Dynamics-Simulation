@@ -128,7 +128,7 @@ impl TaskManager {
     let particles = box_container.all_particles_reset();
     let mut builder = IntegrationCacheBuilder::new(
       self.simulation_config.clone(),
-      self.container_config, 
+      self.container_config,
       particles);
 
     for (task_id, box_ids) in mapping {

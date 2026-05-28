@@ -10,9 +10,9 @@ use crate::particle::SafeAtomFactory;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::thermostat::{TemperatureInfo, TimeIterationDistance};
 use crate::persistence::json::particle_config::Vector3Record;
-use crate::simulations::generators::generator_config::GeneratorConfig;
-use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
-use crate::simulations::generators::generator_config::nanotube::{NanotubeGeneratorConfig, NanotubeGeneratorParticleFile};
+use crate::simulations::generators::core::generator_config::GeneratorConfig;
+use crate::simulations::generators::core::generator_config::dense::DenseGeneratorConfig;
+use crate::simulations::generators::core::generator_config::nanotube::{NanotubeGeneratorConfig, NanotubeGeneratorParticleFile};
 
 pub fn see_config_json() {
   let simulation_size = Vector3::new(10., 10., 10.);

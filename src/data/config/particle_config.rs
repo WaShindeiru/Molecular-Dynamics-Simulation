@@ -1,5 +1,13 @@
 use crate::data::types::AtomType;
 use crate::particle::Particle;
+use nalgebra::Vector3;
+
+#[derive(Clone)]
+pub struct VelocityScheduleConfig {
+  pub particle_id: usize,
+  /// Iteration-velocity pairs; must include an entry for iteration 0.
+  pub velocities: Vec<(usize, Vector3<f64>)>,
+}
 
 #[derive(Clone)]
 pub struct ParticleConfig {
@@ -7,10 +15,18 @@ pub struct ParticleConfig {
   pub num_of_atoms: usize,
   pub num_of_carbon_atoms: usize,
   pub num_of_iron_atoms: usize,
+  pub velocity_schedules: Vec<VelocityScheduleConfig>,
 }
 
 impl ParticleConfig {
   pub fn new(atoms: Vec<Particle>) -> Self {
+    Self::new_with_schedules(atoms, vec![])
+  }
+
+  pub fn new_with_schedules(
+    atoms: Vec<Particle>,
+    velocity_schedules: Vec<VelocityScheduleConfig>,
+  ) -> Self {
     let (num_of_carbon_atoms, num_of_iron_atoms) =
       atoms
         .iter()
@@ -24,6 +40,7 @@ impl ParticleConfig {
       num_of_carbon_atoms,
       num_of_iron_atoms,
       atoms,
+      velocity_schedules,
     }
   }
 

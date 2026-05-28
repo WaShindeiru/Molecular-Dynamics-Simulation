@@ -1,8 +1,8 @@
 use std::{fs, io};
 
 use crate::data::ValueUnits;
-use crate::simulations::generators::generator_config::GeneratorConfig;
-use crate::simulations::generators::generator_config::dense::DenseGeneratorConfig;
+use crate::simulations::generators::core::generator_config::GeneratorConfig;
+use crate::simulations::generators::core::generator_config::dense::DenseGeneratorConfig;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GeneratorConfigFile {

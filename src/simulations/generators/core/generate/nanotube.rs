@@ -4,7 +4,7 @@ use rand_distr::{Distribution, Normal};
 use crate::data::ParticleConfig;
 use crate::data::types::AtomType;
 use crate::particle::{Particle, SafeAtomFactory};
-use crate::simulations::generators::generate::{Generator, GeneratorError};
+use crate::simulations::generators::core::generate::{Generator, GeneratorError};
 
 #[derive(Debug, Clone)]
 pub struct NanotubeGeneratorParticle {

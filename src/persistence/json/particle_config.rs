@@ -1,5 +1,6 @@
 pub mod particle_type_file;
 
+use std::collections::HashMap;
 use std::{fs, io};
 
 use nalgebra::Vector3;
@@ -8,8 +9,9 @@ use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::data::units::{R_U, VELOCITY_U};
 use crate::data::{ParticleConfig, ValueUnits};
-use crate::particle::{Atom, Particle};
+use crate::particle::{Atom, Particle, CustomVelocityAtom};
 use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
+use crate::persistence::json::velocity_manager_file::VelocityManagerFile;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct ParticleConfigFile {
@@ -19,14 +21,34 @@ pub struct ParticleConfigFile {
   pub num_of_atoms: usize,
   pub num_of_carbon_atoms: usize,
   pub num_of_iron_atoms: usize,
+  #[serde(default)]
+  pub velocity_managers: Vec<VelocityManagerFile>,
 }
 
 impl ParticleConfigFile {
   pub fn from_runtime(config: &ParticleConfig, target_units: ValueUnits) -> Self {
+    let velocity_manager_ids: HashMap<usize, usize> = config
+      .velocity_schedules
+      .iter()
+      .map(|schedule| (schedule.particle_id, schedule.particle_id))
+      .collect();
+
     let particles = config
       .atoms
       .iter()
-      .map(ParticleInitialState::from_runtime)
+      .map(|particle| {
+        let mut particle_file = ParticleInitialState::from_runtime(particle);
+        if particle.is_custom_velocity_atom() {
+          particle_file.velocity_manager_id = velocity_manager_ids.get(&particle.get_id()).copied();
+        }
+        particle_file
+      })
+      .collect();
+
+    let velocity_managers = config
+      .velocity_schedules
+      .iter()
+      .map(VelocityManagerFile::from_schedule)
       .collect();
 
     let unitless = Self {
@@ -35,6 +57,7 @@ impl ParticleConfigFile {
       num_of_atoms: config.num_of_atoms,
       num_of_carbon_atoms: config.num_of_carbon_atoms,
       num_of_iron_atoms: config.num_of_iron_atoms,
+      velocity_managers,
     };
 
     unitless.to_value_units(target_units)
@@ -44,13 +67,34 @@ impl ParticleConfigFile {
     let unitless = self.to_value_units(ValueUnits::Unitless);
     debug_assert_eq!(unitless.value_units, ValueUnits::Unitless);
 
+    // Build a map from velocity_manager_id -> particle_id for lookup during schedule construction.
+    let manager_id_to_particle: HashMap<usize, usize> = unitless
+      .particles
+      .iter()
+      .filter_map(|p| p.velocity_manager_id.map(|mid| (mid, p.id)))
+      .collect();
+
+    let velocity_schedules = unitless
+      .velocity_managers
+      .iter()
+      .map(|vm| {
+        let particle_id = *manager_id_to_particle.get(&vm.id).ok_or_else(|| {
+          io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("velocity_manager id={} is not referenced by any particle", vm.id),
+          )
+        })?;
+        Ok(vm.to_schedule(particle_id))
+      })
+      .collect::<io::Result<Vec<_>>>()?;
+
     let atoms = unitless
       .particles
       .iter()
       .map(ParticleInitialState::try_to_runtime)
       .collect::<io::Result<Vec<_>>>()?;
 
-    Ok(ParticleConfig::new(atoms))
+    Ok(ParticleConfig::new_with_schedules(atoms, velocity_schedules))
   }
 
   pub fn to_value_units(&self, target: ValueUnits) -> Self {
@@ -65,23 +109,33 @@ impl ParticleConfigFile {
       .map(|particle| particle.to_value_units(position_scale, velocity_scale))
       .collect();
 
+    let velocity_managers = self
+      .velocity_managers
+      .iter()
+      .map(|vm| vm.scale_velocities(velocity_scale))
+      .collect();
+
     Self {
       value_units: target,
       particles,
       num_of_atoms: self.num_of_atoms,
       num_of_carbon_atoms: self.num_of_carbon_atoms,
       num_of_iron_atoms: self.num_of_iron_atoms,
+      velocity_managers,
     }
   }
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct ParticleInitialState {
-  id: usize,
+  pub id: usize,
   atom_type: AtomType,
   particle_type: ParticleTypeFile,
   position: Vector3Record,
   velocity: Vector3Record,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(default)]
+  pub velocity_manager_id: Option<usize>,
 }
 
 impl ParticleInitialState {
@@ -91,6 +145,7 @@ impl ParticleInitialState {
     particle_type: ParticleTypeFile,
     position: Vector3<f64>,
     velocity: Vector3<f64>,
+    velocity_manager_id: Option<usize>,
   ) -> Self {
     Self {
       id,
@@ -98,6 +153,7 @@ impl ParticleInitialState {
       particle_type,
       position: Vector3Record::from(position),
       velocity: Vector3Record::from(velocity),
+      velocity_manager_id,
     }
   }
 
@@ -108,6 +164,7 @@ impl ParticleInitialState {
       ParticleTypeFile::from_runtime(particle),
       *particle.get_position(),
       *particle.get_velocity(),
+      None,
     )
   }
 
@@ -134,6 +191,14 @@ impl ParticleInitialState {
           "Cannot read CustomPathAtom from ParticleInitialState: path data is not stored in this JSON format.",
         ));
       }
+      ParticleTypeFile::CustomVelocityAtom => {
+        Particle::CustomVelocityAtom(CustomVelocityAtom::new(
+          self.id,
+          self.atom_type,
+          mass,
+          self.position.to_runtime(),
+        ))
+      }
     })
   }
 
@@ -144,6 +209,7 @@ impl ParticleInitialState {
       particle_type: self.particle_type,
       position: self.position.scale(position_scale),
       velocity: self.velocity.scale(velocity_scale),
+      velocity_manager_id: self.velocity_manager_id,
     }
   }
 }

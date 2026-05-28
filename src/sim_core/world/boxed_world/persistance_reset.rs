@@ -171,6 +171,7 @@ impl PersistanceReset {
       num_of_atoms: c_count + fe_count,
       num_of_carbon_atoms: c_count,
       num_of_iron_atoms: fe_count,
+      velocity_managers: vec![],
     }
     .to_value_units(ValueUnits::Si);
 

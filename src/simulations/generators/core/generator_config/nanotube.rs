@@ -2,7 +2,7 @@ use crate::data::SimulationConfig;
 use crate::data::types::AtomType;
 use crate::data::units::{R_U, VELOCITY_U, ValueUnits};
 use crate::persistence::json::particle_config::Vector3Record;
-use crate::simulations::generators::generate::nanotube::{NanotubeGenerator, NanotubeGeneratorParticle};
+use crate::simulations::generators::core::generate::nanotube::{NanotubeGenerator, NanotubeGeneratorParticle};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NanotubeGeneratorParticleFile {

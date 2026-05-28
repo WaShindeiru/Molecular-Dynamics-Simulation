@@ -2,11 +2,14 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::sync::Arc;
 
+use nalgebra::Vector3;
+
 use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
+use ParticleKind::*;
+
 use crate::particle::particle::{Particle, ParticleKind};
 use crate::persistence::dto::atom::AtomDTO;
-use nalgebra::Vector3;
 
 #[derive(PartialEq)]
 pub struct VelocityParticle {
@@ -31,12 +34,15 @@ impl PartialOrd for VelocityParticle {
 impl Ord for VelocityParticle {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     match (&self.kind, &other.kind) {
-      (ParticleKind::Atom, ParticleKind::Atom) => {
-        self.velocity.magnitude().total_cmp(&other.velocity.magnitude())
-      }
-      (ParticleKind::Atom, ParticleKind::CustomPathAtom) => std::cmp::Ordering::Greater,
-      (ParticleKind::CustomPathAtom, ParticleKind::Atom) => std::cmp::Ordering::Less,
-      (ParticleKind::CustomPathAtom, ParticleKind::CustomPathAtom) => std::cmp::Ordering::Equal,
+      (Atom, Atom) => self.velocity.magnitude().total_cmp(&other.velocity.magnitude()),
+    
+      (Atom, CustomPathAtom) | (Atom, CustomVelocityAtom) => std::cmp::Ordering::Greater,
+      (CustomPathAtom, Atom) | (CustomVelocityAtom, Atom) => std::cmp::Ordering::Less,
+
+      (CustomPathAtom, CustomPathAtom)
+      | (CustomVelocityAtom, CustomVelocityAtom)
+      | (CustomPathAtom, CustomVelocityAtom)
+      | (CustomVelocityAtom, CustomPathAtom) => std::cmp::Ordering::Equal,
     }
   }
 }
@@ -46,6 +52,7 @@ impl From<&Particle> for VelocityParticle {
     let kind = match p {
       Particle::Atom(_) => ParticleKind::Atom,
       Particle::CustomPathAtom(_) => ParticleKind::CustomPathAtom,
+      Particle::CustomVelocityAtom(_) => ParticleKind::CustomVelocityAtom,
     };
     
     VelocityParticle {
