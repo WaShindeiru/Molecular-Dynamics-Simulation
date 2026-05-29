@@ -120,21 +120,30 @@ def compare_different_temps(path_: str):
   print(deviation_2)
 
 
-def show_energy_plot(path: str, thermostat: bool) -> None:
+def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end: int | None = None) -> None:
   energy_data = pd.read_csv(path + '/energy.csv', header=0)
-  iteration = energy_data.iloc[:, 0]
-  kinetic_energy = energy_data.iloc[:, 1]
-  potential_energy = energy_data.iloc[:, 2]
-  potential_gravity_energy = energy_data.iloc[:, 3]
-  total_energy = energy_data.iloc[:, 4]
-  if thermostat:
-    thermostat_work = energy_data.iloc[:, 5]
-    thermostat_epsilon = energy_data.iloc[:, 6]
+  energy_data = energy_data[energy_data["iteration"] >= 1].reset_index(drop=True)
+  if start is not None:
+    energy_data = energy_data[energy_data["iteration"] >= start]
+  if end is not None:
+    energy_data = energy_data[energy_data["iteration"] <= end]
+  energy_data = energy_data.reset_index(drop=True)
 
-  total_energy_show = kinetic_energy + potential_energy
+  iteration = energy_data["iteration"]
+  kinetic_energy = energy_data["kinetic_energy"]
+  potential_energy = energy_data["potential_energy"]
+  phantom_energy = energy_data["phantom_energy"]
+  potential_gravity_energy = energy_data["potential_gravity_energy"]
+  total_energy = energy_data["total_energy"]
+  if thermostat:
+    thermostat_work = energy_data["thermostat_work_total"]
+    thermostat_epsilon = energy_data["thermostat_epsilon"]
+
+  total_energy_show = kinetic_energy + potential_energy + phantom_energy + potential_gravity_energy
 
   plt.plot(iteration, kinetic_energy, label="kinetic energy")
   plt.plot(iteration, potential_energy, label="potential energy")
+  plt.plot(iteration, phantom_energy, label="phantom energy")
   plt.plot(iteration, total_energy_show, label="total energy")
   if thermostat:
     plt.plot(iteration, thermostat_work, label="thermostat work")
@@ -157,14 +166,14 @@ def show_energy_plot(path: str, thermostat: bool) -> None:
   plt.show()
 
   if thermostat:
-    total_energy_difference = total_energy + thermostat_work - total_energy[0]
+    total_energy_difference = total_energy + thermostat_work - total_energy.iloc[0]
   else:
-    total_energy_difference = total_energy - total_energy[0]
+    total_energy_difference = total_energy - total_energy.iloc[0]
 
   plt.figure()
   # plt.xlim(225000, 230000)
   # plt.xlim(50000, 53000)
-  plt.plot(iteration[0:], total_energy_difference[0:], label="Total energy error")
+  plt.plot(iteration, total_energy_difference, label="Total energy error")
 
   plt.xlabel("iteration")
   plt.ylabel("Energy [eV]")
@@ -227,10 +236,10 @@ def show_energy_plot_from_text(path: str) -> None:
   # for col in energy_data.columns:
   #     energy_data[col] = pd.to_numeric(energy_data[col].astype(str).str.strip(), errors='coerce')
 
-  iteration = energy_data.iloc[:, 0]
-  potential_energy = energy_data.iloc[:, 2]  # 3rd column (index 2)
-  kinetic_energy = energy_data.iloc[:, 3]  # 4th column (index 3)
-  total_energy = energy_data.iloc[:, 4]  # 5th column (index 4)
+  iteration = energy_data.iloc[1:, 0]
+  potential_energy = energy_data.iloc[1:, 2]  # 3rd column (index 2)
+  kinetic_energy = energy_data.iloc[1:, 3]  # 4th column (index 3)
+  total_energy = energy_data.iloc[1:, 4]  # 5th column (index 4)
 
   plt.plot(iteration, kinetic_energy, label="kinetic energy")
   plt.plot(iteration, potential_energy, label="potential energy")
@@ -243,7 +252,7 @@ def show_energy_plot_from_text(path: str) -> None:
   plt.legend()
   plt.show()
 
-  total_energy_difference = total_energy - total_energy.iloc[0]
+  total_energy_difference = total_energy - total_energy.iloc[1]
   plt.figure()
   plt.plot(iteration, total_energy_difference, label="total energy difference")
 
@@ -259,10 +268,17 @@ if __name__ == "__main__":
   # output_dir = "../../output"
   output_dir = "/media/washindeiru/7E442D59442D1585/md"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-28_18-18-44"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026-05-15_01-49-32"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v2"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4"
+
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_lower_gravity"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v2_with_lower_gravity"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_1e-3_gravity"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v4_from_begining_with_2e-3_gravity"
+
+
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")
-  show_energy_plot(newest_folder, thermostat)
+  show_energy_plot(newest_folder, thermostat, start=0, end=5e6)
   # compare_different_temps(newest_folder)
