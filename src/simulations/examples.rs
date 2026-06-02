@@ -61,7 +61,10 @@ pub fn symmetric_triangle_test(
     ..SaveOptions::default()
   };
 
-  let edge_condition = EdgeCondition::Simple { trigger_small_subtask_size: 1 };
+  let edge_condition = EdgeCondition::Simple {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  };
 
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)
@@ -129,7 +132,10 @@ pub fn triangle(
     ..SaveOptions::default()
   };
 
-  let edge_condition = EdgeCondition::Simple { trigger_small_subtask_size: 1 };
+  let edge_condition = EdgeCondition::Simple {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  };
 
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)
@@ -365,7 +371,10 @@ pub fn sphere_particles(
     ..SaveOptions::default()
   };
 
-  let edge_condition = EdgeCondition::Simple { trigger_small_subtask_size: 1 };
+  let edge_condition = EdgeCondition::Simple {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  };
 
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)

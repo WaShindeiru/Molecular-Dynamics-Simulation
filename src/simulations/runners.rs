@@ -49,7 +49,10 @@ pub fn dense_runner() {
       task_worker_multiplier: 6.0,
     },
   };
-  let edge_condition = EdgeCondition::Periodic { trigger_small_subtask_size: 1 };
+  let edge_condition = EdgeCondition::Periodic {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  };
 
   let world_size = Vector3::new(50., 50., 50.);
   let offset = Vector3::new(1.7, 1.7, 1.7);
@@ -97,7 +100,10 @@ pub fn one_particle_edge_runner() {
       task_worker_multiplier: 2.0,
     },
   };
-  let edge_condition = EdgeCondition::Periodic { trigger_small_subtask_size: 1 };
+  let edge_condition = EdgeCondition::Periodic {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  };
 
   one_particle_edge(
     TIME_STEP,
@@ -139,7 +145,10 @@ pub fn two_particles_edge_runner() {
       task_worker_multiplier: 2.0,
     },
   };
-  let edge_condition = EdgeCondition::Periodic { trigger_small_subtask_size: 1 };
+  let edge_condition = EdgeCondition::Periodic {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  };
 
   two_particles_edge(
     TIME_STEP,

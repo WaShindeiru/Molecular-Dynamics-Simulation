@@ -5,24 +5,42 @@ use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConf
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum EdgeConditionFile {
-  Simple { trigger_small_subtask_size: usize },
-  Periodic { trigger_small_subtask_size: usize },
+  Simple {
+    split: bool,
+    trigger_small_subtask_size: usize,
+  },
+  Periodic {
+    split: bool,
+    trigger_small_subtask_size: usize,
+  },
   PeriodicAll,
 }
 
 impl EdgeConditionFile {
   pub fn from_runtime(value: EdgeCondition) -> Self {
     match value {
-      EdgeCondition::Simple { trigger_small_subtask_size } => EdgeConditionFile::Simple { trigger_small_subtask_size },
-      EdgeCondition::Periodic { trigger_small_subtask_size } => EdgeConditionFile::Periodic { trigger_small_subtask_size },
+      EdgeCondition::Simple { trigger_small_subtask_size, split } => EdgeConditionFile::Simple {
+        trigger_small_subtask_size,
+        split,
+      },
+      EdgeCondition::Periodic { trigger_small_subtask_size, split } => EdgeConditionFile::Periodic {
+        trigger_small_subtask_size,
+        split,
+      },
       EdgeCondition::PeriodicAll => EdgeConditionFile::PeriodicAll,
     }
   }
 
   pub fn to_runtime(&self) -> EdgeCondition {
     match self {
-      EdgeConditionFile::Simple { trigger_small_subtask_size } => EdgeCondition::Simple { trigger_small_subtask_size: *trigger_small_subtask_size },
-      EdgeConditionFile::Periodic { trigger_small_subtask_size } => EdgeCondition::Periodic { trigger_small_subtask_size: *trigger_small_subtask_size },
+      EdgeConditionFile::Simple { trigger_small_subtask_size, split } => EdgeCondition::Simple {
+        trigger_small_subtask_size: *trigger_small_subtask_size,
+        split: *split,
+      },
+      EdgeConditionFile::Periodic { trigger_small_subtask_size, split } => EdgeCondition::Periodic {
+        trigger_small_subtask_size: *trigger_small_subtask_size,
+        split: *split,
+      },
       EdgeConditionFile::PeriodicAll => EdgeCondition::PeriodicAll,
     }
   }

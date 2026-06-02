@@ -70,15 +70,19 @@ pub fn handle_velocity_batch_task(
   let mut particles = apply_velocity_constraint(compliant, edge_condition);
 
   if !non_compliant.is_empty() {
-    let corrected = handle_partial_velocity_step(
-      history,
-      non_compliant,
-      container_size,
-      edge_condition,
-      previous_thermostat_epsilon,
-      time_step,
-    );
-    particles.extend(corrected);
+    if edge_condition.collision_split_enabled() {
+      let corrected = handle_partial_velocity_step(
+        history,
+        non_compliant,
+        container_size,
+        edge_condition,
+        previous_thermostat_epsilon,
+        time_step,
+      );
+      particles.extend(corrected);
+    } else {
+      particles.extend(apply_velocity_constraint(non_compliant, edge_condition));
+    }
   }
 
   // CustomVelocityAtom: velocity is prescribed. The current velocity (set in the previous

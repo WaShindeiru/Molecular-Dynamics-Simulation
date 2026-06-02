@@ -143,7 +143,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
 
   plt.plot(iteration, kinetic_energy, label="kinetic energy")
   plt.plot(iteration, potential_energy, label="potential energy")
-  plt.plot(iteration, phantom_energy, label="phantom energy")
+  # plt.plot(iteration, phantom_energy, label="phantom energy")
   plt.plot(iteration, total_energy_show, label="total energy")
   if thermostat:
     plt.plot(iteration, thermostat_work, label="thermostat work")
@@ -269,16 +269,18 @@ if __name__ == "__main__":
   output_dir = "/media/washindeiru/7E442D59442D1585/md"
   newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
   newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v2"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4"
 
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_lower_gravity"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v2_with_lower_gravity"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_1e-3_gravity"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v4_from_begining_with_2e-3_gravity"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v4_from_begining_with_2e-3_gravity"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_dense_v4_from_begining_with_lower_gravity_constant_temp"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/one_particle_edge_1"
 
 
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")
-  show_energy_plot(newest_folder, thermostat, start=0, end=5e6)
+  show_energy_plot(newest_folder, thermostat, start=0, end=5e5)
   # compare_different_temps(newest_folder)

@@ -18,7 +18,24 @@ pub enum Compliance {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum EdgeCondition {
-  Simple { trigger_small_subtask_size: usize },
-  Periodic { trigger_small_subtask_size: usize },
+  Simple {
+    trigger_small_subtask_size: usize,
+    split: bool,
+  },
+  Periodic {
+    trigger_small_subtask_size: usize,
+    split: bool,
+  },
   PeriodicAll,
+}
+
+impl EdgeCondition {
+  pub const DEFAULT_SPLIT: bool = true;
+
+  pub fn collision_split_enabled(self) -> bool {
+    match self {
+      EdgeCondition::Simple { split, .. } | EdgeCondition::Periodic { split, .. } => split,
+      EdgeCondition::PeriodicAll => false,
+    }
+  }
 }

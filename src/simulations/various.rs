@@ -37,7 +37,10 @@ pub fn see_config_json() {
   let config = SimulationConfigBuilder::new()
     .atoms(atoms)
     .world_size(simulation_size)
-    .edge_condition(EdgeCondition::Periodic { trigger_small_subtask_size: 1 })
+    .edge_condition(EdgeCondition::Periodic {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    })
     .integration_algorithm(
       crate::sim_core::world::thermostat::IntegrationAlgorithm::NoseHooverVerlet {
         desired_temperature: (desired_temperatures),

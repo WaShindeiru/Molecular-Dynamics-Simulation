@@ -40,8 +40,8 @@ pub fn handle_partial_velocity_step(
   time_step: f64,
 ) -> HashMap<usize, VelocityTaskParticleData> {
   let trigger_small_subtask_size = match edge_condition {
-    EdgeCondition::Simple { trigger_small_subtask_size }
-    | EdgeCondition::Periodic { trigger_small_subtask_size } => trigger_small_subtask_size,
+    EdgeCondition::Simple { trigger_small_subtask_size, .. }
+    | EdgeCondition::Periodic { trigger_small_subtask_size, .. } => trigger_small_subtask_size,
     EdgeCondition::PeriodicAll => panic!("can't call handle_partial_velocity_step for PeriodicAll"),
   };
 

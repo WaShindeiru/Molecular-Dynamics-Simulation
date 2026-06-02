@@ -46,12 +46,18 @@ fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
 #[test]
 #[ignore]
 fn test_box_container_simple_partition_simple() {
-  test_box_container_simple_partition_runner(EdgeCondition::Simple { trigger_small_subtask_size: 1 })
+  test_box_container_simple_partition_runner(EdgeCondition::Simple {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  })
 }
 
 #[test]
 fn test_box_container_simple_partition_periodic() {
-  test_box_container_simple_partition_runner(EdgeCondition::Periodic { trigger_small_subtask_size: 1 })
+  test_box_container_simple_partition_runner(EdgeCondition::Periodic {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  })
 }
 
 fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
@@ -171,10 +177,16 @@ fn box_container_non_uniform_partition_runner(edge_condition: EdgeCondition) {
 #[ignore]
 #[test]
 fn test_box_container_non_uniform_partition_simple() {
-  box_container_non_uniform_partition_runner(EdgeCondition::Simple { trigger_small_subtask_size: 1 })
+  box_container_non_uniform_partition_runner(EdgeCondition::Simple {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  })
 }
 
 #[test]
 fn test_box_container_non_uniform_partition_periodic() {
-  box_container_non_uniform_partition_runner(EdgeCondition::Periodic { trigger_small_subtask_size: 1 })
+  box_container_non_uniform_partition_runner(EdgeCondition::Periodic {
+    trigger_small_subtask_size: 1,
+    split: EdgeCondition::DEFAULT_SPLIT,
+  })
 }

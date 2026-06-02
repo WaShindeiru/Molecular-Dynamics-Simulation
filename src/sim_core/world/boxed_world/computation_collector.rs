@@ -78,11 +78,13 @@ impl ComputationCollector {
 
   pub fn set_velocity(&mut self, thermostat_epsilon: f64) {
     let time_step = self.config.time_step;
-    let subtask_size = match self.config.edge_condition {
-      EdgeCondition::Periodic { trigger_small_subtask_size }
-      | EdgeCondition::Simple { trigger_small_subtask_size } => trigger_small_subtask_size,
+    let edge_condition = self.config.edge_condition;
+    let subtask_size = match edge_condition {
+      EdgeCondition::Periodic { trigger_small_subtask_size, .. }
+      | EdgeCondition::Simple { trigger_small_subtask_size, .. } => trigger_small_subtask_size,
       EdgeCondition::PeriodicAll => 1,
     };
+    let collision_split = edge_condition.collision_split_enabled();
     let half_velocity_cache = self.integration_cache.half_velocity_cache();
     let particle_compliance = self.integration_cache.particle_compliance();
     let box_cache = self.integration_cache.box_cache();
@@ -95,10 +97,9 @@ impl ComputationCollector {
       let half_velocity = half_velocity_cache.get(id).unwrap();
       let compliance = particle_compliance.get(id).unwrap();
 
-      // Non-compliant particles went through PartialVelocityStep with sub-steps of
-      // time_step/subtask_size, so their returned half_velocity was computed with that
-      // smaller step and must be combined with the same step here to stay time-symmetric.
-      let effective_time_step = if !compliance.compliant && subtask_size > 1 {
+      // Non-compliant particles that went through PartialVelocityStep use sub-steps of
+      // time_step/subtask_size; their half_velocity must be combined with the same step here.
+      let effective_time_step = if !compliance.compliant && collision_split && subtask_size > 1 {
         time_step / subtask_size as f64
       } else {
         time_step

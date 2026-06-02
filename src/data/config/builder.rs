@@ -264,7 +264,10 @@ impl SimulationConfigBuilder {
           task_worker_multiplier: 4.0,
         },
       }),
-      edge_condition: self.edge_condition.unwrap_or(EdgeCondition::Periodic { trigger_small_subtask_size: 1 }),
+      edge_condition: self.edge_condition.unwrap_or(EdgeCondition::Periodic {
+        trigger_small_subtask_size: 1,
+        split: EdgeCondition::DEFAULT_SPLIT,
+      }),
     })
   }
 

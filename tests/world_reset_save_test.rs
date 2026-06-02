@@ -19,7 +19,10 @@ fn test_reset_world_no_missing_iterations_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
+    EdgeCondition::Simple {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   )
 }
 
@@ -32,7 +35,10 @@ fn test_reset_world_no_missing_iterations_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
+    EdgeCondition::Periodic {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   )
 }
 
@@ -46,7 +52,10 @@ fn test_reset_world_with_thermostat_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
+    EdgeCondition::Simple {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
 
@@ -59,7 +68,10 @@ fn test_reset_world_with_thermostat_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
+    EdgeCondition::Periodic {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
 
@@ -73,7 +85,10 @@ fn test_save_files_completeness_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
+    EdgeCondition::Simple {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
 
@@ -86,7 +101,10 @@ fn test_save_files_completeness_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
+    EdgeCondition::Periodic {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
 
@@ -100,7 +118,10 @@ fn test_single_reset_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
+    EdgeCondition::Simple {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
 
@@ -113,7 +134,10 @@ fn test_single_reset_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
+    EdgeCondition::Periodic {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
 
@@ -127,7 +151,10 @@ fn test_no_reset_boxed_simple() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Simple { trigger_small_subtask_size: 1 },
+    EdgeCondition::Simple {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
 
@@ -140,6 +167,9 @@ fn test_no_reset_boxed_periodic() {
         task_worker_multiplier: 2.0,
       },
     },
-    EdgeCondition::Periodic { trigger_small_subtask_size: 1 },
+    EdgeCondition::Periodic {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    },
   );
 }
