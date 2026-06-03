@@ -236,8 +236,8 @@ where
 
       let potential_energy_partial = 0.5 * fc_ij * (vr_ij - b_ij * va_ij);
       potential_energy_total = potential_energy_total + potential_energy_partial;
-      let fp_j = fp.get_mut(&j_id).unwrap();
-      fp_j.potential_energy += potential_energy_partial;
+      let fp_i = fp.get_mut(&i_id).unwrap();
+      fp_i.potential_energy += potential_energy_partial;
     }
   }
 
