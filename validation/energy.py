@@ -172,7 +172,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
 
   plt.figure()
   # plt.xlim(225000, 230000)
-  # plt.xlim(50000, 53000)
+  # plt.xlim(0, 1000)
   plt.plot(iteration, total_energy_difference, label="Total energy error")
 
   plt.xlabel("iteration")
@@ -276,7 +276,7 @@ if __name__ == "__main__":
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_1e-3_gravity"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v4_from_begining_with_2e-3_gravity"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_dense_v4_from_begining_with_lower_gravity_constant_temp"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/one_particle_edge_1"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/error_investigation_with_correction/triangle/2026-06-06_01-43-45"
 
 
   thermostat = True

@@ -10,6 +10,7 @@ use crate::sim_core::world::boxed_world::box_task::force_task_box_container::{
   ForceTaskBoxContainer, get_needed_box_id_periodic,
 };
 use crate::sim_core::world::boxed_world::box_task::handle_task::handle_partial_velocity_step::{apply_velocity_constraint, handle_partial_velocity_step};
+use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::box_task::{
   ForceTaskParticleData, ForceTaskResult, VelocityTaskParticleData, VelocityTaskResult,
 };
@@ -17,8 +18,13 @@ use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::comput
 use crate::sim_core::world::computation::{ForceComputationOperations, compute_forces_potential};
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
-mod partial_velocity_step;
+mod compute_forces;
 mod handle_partial_velocity_step;
+pub mod pair_detection;
+pub mod partial_all_step;
+mod partial_velocity_step;
+
+use partial_all_step::PartialAllStep;
 
 pub fn handle_velocity_batch_task(
   task_id: usize,
@@ -261,4 +267,29 @@ pub fn handle_force_batch_task(
     optimization_ignored: optimization_ignored_total,
     particles,
   }
+}
+
+pub fn handle_pair_correction_task(
+  task_id: usize,
+  component_blocks: &[Vec<usize>],
+  history: Arc<BoxContainer<Arc<SimulationBox>>>,
+  config: SimulationConfig,
+  thermostat_epsilon: f64,
+  current_iteration: usize,
+) -> VelocityTaskResult {
+  let mut particles = HashMap::new();
+
+  for primary_box_ids in component_blocks {
+    let result = PartialAllStep::new(
+      primary_box_ids,
+      Arc::clone(&history),
+      config.clone(),
+      thermostat_epsilon,
+      current_iteration,
+    )
+    .run();
+    particles.extend(result.particles);
+  }
+
+  VelocityTaskResult { task_id, particles }
 }

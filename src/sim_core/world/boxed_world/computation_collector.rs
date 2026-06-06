@@ -85,6 +85,8 @@ impl ComputationCollector {
       EdgeCondition::PeriodicAll => 1,
     };
     let collision_split = edge_condition.collision_split_enabled();
+    let pair_corrected_ids = self.integration_cache.pair_corrected_ids();
+    let pair_substep_count = self.config.correction.small_distance.substep_count.max(1);
     let half_velocity_cache = self.integration_cache.half_velocity_cache();
     let particle_compliance = self.integration_cache.particle_compliance();
     let box_cache = self.integration_cache.box_cache();
@@ -97,12 +99,21 @@ impl ComputationCollector {
       let half_velocity = half_velocity_cache.get(id).unwrap();
       let compliance = particle_compliance.get(id).unwrap();
 
-      // Non-compliant particles that went through PartialVelocityStep use sub-steps of
-      // time_step/subtask_size; their half_velocity must be combined with the same step here.
-      let effective_time_step = if !compliance.compliant && collision_split && subtask_size > 1 {
-        time_step / subtask_size as f64
+      let edge_reduced_dt = if !compliance.compliant && collision_split && subtask_size > 1 {
+        Some(time_step / subtask_size as f64)
       } else {
-        time_step
+        None
+      };
+      let pair_reduced_dt = if pair_corrected_ids.contains(id) && pair_substep_count > 1 {
+        Some(time_step / pair_substep_count as f64)
+      } else {
+        None
+      };
+
+      let effective_time_step = match (edge_reduced_dt, pair_reduced_dt) {
+        (Some(edge_dt), Some(pair_dt)) => pair_dt,
+        (Some(dt), None) | (None, Some(dt)) => dt,
+        (None, None) => time_step,
       };
 
       let new_velocity = compute_new_velocity(*half_velocity, *particle.get_acceleration(), thermostat_epsilon, effective_time_step);

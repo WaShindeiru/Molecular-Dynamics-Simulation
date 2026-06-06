@@ -9,7 +9,10 @@ pub mod box_container_config;
 pub mod box_container_mutual;
 pub mod box_container_option;
 pub mod box_container_value;
+pub mod periodic;
 pub mod sim_box;
+
+pub use periodic::{face_neighbor_box_ids_periodic, get_needed_box_id_periodic};
 
 pub struct BoxContainer<B = Arc<SimulationBox>> {
   config: BoxContainerConfig,

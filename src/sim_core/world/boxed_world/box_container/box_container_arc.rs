@@ -131,6 +131,26 @@ impl BoxContainer<Arc<SimulationBox>> {
     self.get_box(box_id).particle(particle_id)
   }
 
+  pub fn to_force_option_view(&self) -> BoxContainer<Option<Arc<SimulationBox>>> {
+    let (nx, ny, nz) = self.simulation_boxes.dimensions();
+    let mut result: Cube<Option<Arc<SimulationBox>>> = Cube::new(nx, ny, nz);
+
+    for ((x, y, z), sim_box) in self.simulation_boxes.iter_with_coords() {
+      let value = if sim_box.empty() {
+        None
+      } else {
+        Some(Arc::clone(sim_box))
+      };
+      result.set(x, y, z, value).unwrap();
+    }
+
+    BoxContainer {
+      config: self.config,
+      simulation_boxes: result,
+      box_id_cache: self.box_id_cache.clone(),
+    }
+  }
+
   // TODO: change this so that don't have to iterate over whole cube maybe?
   pub fn view_select_boxes(&self, box_ids: &[usize]) -> BoxContainer<Option<Arc<SimulationBox>>> {
     let id_set: HashSet<usize> = box_ids.iter().copied().collect();

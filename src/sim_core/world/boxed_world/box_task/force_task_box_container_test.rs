@@ -1,7 +1,20 @@
-use crate::data::InteractionType::FeC;
+use std::collections::HashSet;
+  use std::sync::Arc;
+
+  use nalgebra::Vector3;
+
+  use crate::data::InteractionType::FeC;
   use crate::data::types::AtomType::C;
   use crate::particle::SafeAtomFactory;
-  use super::*;
+  use crate::sim_core::world::boundary_constraint::EdgeCondition;
+  use crate::sim_core::world::computation::ForceComputationOperations;
+  use crate::sim_core::world::boxed_world::box_container::BoxContainer;
+  use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+  use crate::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
+  use crate::sim_core::world::boxed_world::box_task::force_task_box_container::particle_proxy::{
+    AxisPlacement, ParticlePlacement, ParticlePositionProxy,
+  };
+  use super::{ForceTaskBoxContainer, get_needed_box_id_periodic};
 
   fn test_box_container_config() -> BoxContainerConfig {
     BoxContainerConfig {

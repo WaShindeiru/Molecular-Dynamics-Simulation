@@ -10,6 +10,7 @@ use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::FrameSamplingConfig;
 use crate::utils::logging::get_save_path;
 
+use super::correction_param::CorrectionParamFile;
 use super::save_options::SaveOptionsFile;
 use super::types::{EdgeConditionFile, WorldTypeFile};
 
@@ -97,6 +98,8 @@ pub struct SimulationConfigFile {
   pub integration_algorithm: IntegrationAlgorithm,
   pub world_type: WorldTypeFile,
   pub edge_condition: EdgeConditionFile,
+  #[serde(default)]
+  pub correction: CorrectionParamFile,
 }
 
 impl SimulationConfigFile {
@@ -112,6 +115,7 @@ impl SimulationConfigFile {
       integration_algorithm: config.integration_algorithm.clone(),
       world_type: WorldTypeFile::from_runtime(config.world_type),
       edge_condition: EdgeConditionFile::from_runtime(config.edge_condition),
+      correction: CorrectionParamFile::from_runtime(config.correction),
     };
 
     unitless.to_value_units(target_units)
@@ -131,6 +135,7 @@ impl SimulationConfigFile {
       integration_algorithm: unitless.integration_algorithm,
       world_type: unitless.world_type.to_runtime(),
       edge_condition: unitless.edge_condition.to_runtime(),
+      correction: unitless.correction.to_runtime(),
     }
   }
 
@@ -172,6 +177,7 @@ impl SimulationConfigFile {
       integration_algorithm: self.integration_algorithm.to_value_units(source, target),
       world_type: self.world_type,
       edge_condition: self.edge_condition,
+      correction: self.correction.to_value_units(source, target),
     }
   }
 

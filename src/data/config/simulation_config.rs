@@ -1,3 +1,4 @@
+use crate::data::config::correction_param::CorrectionParam;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::thermostat::IntegrationAlgorithm;
@@ -15,6 +16,7 @@ pub struct SimulationConfig {
   pub integration_algorithm: IntegrationAlgorithm,
   pub world_type: WorldType,
   pub edge_condition: EdgeCondition,
+  pub correction: CorrectionParam,
 }
 
 impl SimulationConfig {
@@ -28,6 +30,7 @@ impl SimulationConfig {
     integration_algorithm: IntegrationAlgorithm,
     world_type: WorldType,
     edge_condition: EdgeCondition,
+    correction: CorrectionParam,
   ) -> Self {
     SimulationConfig {
       world_size,
@@ -39,6 +42,7 @@ impl SimulationConfig {
       integration_algorithm,
       world_type,
       edge_condition,
+      correction,
     }
   }
 }

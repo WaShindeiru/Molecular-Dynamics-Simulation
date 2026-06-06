@@ -203,6 +203,7 @@ impl Particle {
       Particle::CustomVelocityAtom(p) => Particle::CustomVelocityAtom(p.reset_clone()),
     }
   }
+
 }
 
 impl AsRef<Particle> for Particle {

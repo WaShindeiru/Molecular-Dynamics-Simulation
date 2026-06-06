@@ -1,9 +1,7 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::{
   SimBoxEdge, SimulationBox, get_coordinates_from_simulation_box_id, get_id_simulation_box,
 };
@@ -15,32 +13,7 @@ use nalgebra::Vector3;
 
 mod particle_proxy;
 
-pub fn get_needed_box_id_periodic(box_ids: &Vec<usize>, config: &BoxContainerConfig) -> Vec<usize> {
-  let mut temp: HashSet<usize> = HashSet::new();
-  let box_count_dim = config.box_count_dim;
-
-  for id in box_ids {
-    let coordinates = get_coordinates_from_simulation_box_id(*id, &box_count_dim);
-
-    for x_offset in -1..=1isize {
-      for y_offset in -1..=1isize {
-        for z_offset in -1..=1isize {
-          let new_x = ((coordinates.x as isize + x_offset + box_count_dim.x as isize) as usize)
-            % box_count_dim.x;
-          let new_y = ((coordinates.y as isize + y_offset + box_count_dim.y as isize) as usize)
-            % box_count_dim.y;
-          let new_z = ((coordinates.z as isize + z_offset + box_count_dim.z as isize) as usize)
-            % box_count_dim.z;
-
-          let new_id = get_id_simulation_box(&Vector3::new(new_x, new_y, new_z), &box_count_dim);
-          temp.insert(new_id);
-        }
-      }
-    }
-  }
-
-  temp.into_iter().collect()
-}
+pub use crate::sim_core::world::boxed_world::box_container::get_needed_box_id_periodic;
 
 pub struct ForceTaskBoxContainer {
   container: BoxContainer<Option<Arc<SimulationBox>>>,

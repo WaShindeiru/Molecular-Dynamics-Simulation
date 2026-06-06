@@ -1,4 +1,5 @@
 pub mod builder;
+pub mod correction_param;
 pub mod particle_config;
 pub mod simulation_config;
 

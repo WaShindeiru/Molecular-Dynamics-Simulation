@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::particle::Particle;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
@@ -86,6 +88,27 @@ impl BoxContainer<SimulationBox> {
     }
   }
 
+  pub fn new_local_with_particles_with_box_ids<I: IntoArcParticle>(
+    config: BoxContainerConfig,
+    particles: &[I],
+  ) -> (Self, HashSet<usize>) {
+    let mut box_ids: HashSet<usize> = HashSet::new();
+    
+    let mut container = Self::new_local(config);
+    for particle in particles {
+      let box_id = container.add_particle(particle.into_arc_particle());
+      box_ids.insert(box_id);
+    }
+    (container, box_ids)
+  }
+
+  pub fn new_local_with_particles<I: IntoArcParticle>(
+    config: BoxContainerConfig,
+    particles: &[I],
+  ) -> Self {
+    Self::new_local_with_particles_with_box_ids(config, particles).0
+  }
+
   pub fn get_box_mut(&mut self, box_id: usize) -> &mut SimulationBox {
     let coordinates = get_coordinates_from_simulation_box_id(box_id, &self.config.box_count_dim);
     self
@@ -94,7 +117,7 @@ impl BoxContainer<SimulationBox> {
       .unwrap()
   }
 
-  pub fn add_particle(&mut self, particle: Arc<Particle>) {
+  pub fn add_particle(&mut self, particle: Arc<Particle>) -> usize {
     let particle_id = particle.get_id();
     let box_coordinates = self
       .config()
@@ -106,6 +129,28 @@ impl BoxContainer<SimulationBox> {
       .add_particle(particle);
 
     let box_id = get_id_simulation_box(&box_coordinates, &self.config().box_count_dim);
+    self.box_id_cache.insert(particle_id, box_id);
+
+    box_id
+  }
+
+  pub fn add_particle_with_box_id(&mut self, particle: Arc<Particle>, box_id: usize) {
+    let particle_id = particle.get_id();
+
+    #[cfg(debug_assertions)]
+    {
+      let box_coordinates = self
+        .config()
+        .box_coordinates_for_position(particle.get_position());
+      let computed_box_id =
+        get_id_simulation_box(&box_coordinates, &self.config().box_count_dim);
+      assert_eq!(
+        computed_box_id, box_id,
+        "particle {particle_id} box mapping mismatch"
+      );
+    }
+
+    self.get_box_mut(box_id).add_particle(particle);
     self.box_id_cache.insert(particle_id, box_id);
   }
 
@@ -140,5 +185,21 @@ impl BoxContainer<SimulationBox> {
       simulation_boxes: shared_boxes,
       box_id_cache: self.box_id_cache,
     }
+  }
+}
+
+pub trait IntoArcParticle {
+  fn into_arc_particle(&self) -> Arc<Particle>;
+}
+
+impl IntoArcParticle for Particle {
+  fn into_arc_particle(&self) -> Arc<Particle> {
+    Arc::new(self.clone())
+  }
+}
+
+impl IntoArcParticle for Arc<Particle> {
+  fn into_arc_particle(&self) -> Arc<Particle> {
+    Arc::clone(self)
   }
 }

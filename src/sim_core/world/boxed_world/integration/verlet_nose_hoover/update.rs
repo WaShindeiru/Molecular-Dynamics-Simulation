@@ -53,6 +53,13 @@ impl BoxedWorld {
       next_iteration,
     );
 
+    let integration_cache = self.task_manager.pair_correction_step(
+      integration_cache,
+      Arc::clone(&current_box_container),
+      current_thermostat_epsilon,
+      next_iteration,
+    );
+
     self.integration_cache = Some(Arc::clone(&integration_cache));
 
     let new_thermostat_epsilon;

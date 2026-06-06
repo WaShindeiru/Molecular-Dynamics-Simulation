@@ -1,3 +1,4 @@
+use crate::data::config::correction_param::CorrectionParam;
 use crate::data::{ParticleConfig, SimulationConfig, config::ConfigAll};
 use crate::particle::Particle;
 use crate::sim_core::world::WorldType;
@@ -26,6 +27,7 @@ pub struct SimulationConfigBuilder {
   integration_algorithm: Option<IntegrationAlgorithm>,
   world_type: Option<WorldType>,
   edge_condition: Option<EdgeCondition>,
+  correction: Option<CorrectionParam>,
 }
 
 impl SimulationConfigBuilder {
@@ -47,6 +49,7 @@ impl SimulationConfigBuilder {
       integration_algorithm: None,
       world_type: None,
       edge_condition: None,
+      correction: None,
     }
   }
 
@@ -268,6 +271,7 @@ impl SimulationConfigBuilder {
         trigger_small_subtask_size: 1,
         split: EdgeCondition::DEFAULT_SPLIT,
       }),
+      correction: self.correction.unwrap_or_default(),
     })
   }
 

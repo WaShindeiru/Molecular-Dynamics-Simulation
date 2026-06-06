@@ -1,3 +1,4 @@
+pub mod correction_param;
 pub mod frame_sampling;
 pub mod generator_config;
 pub mod particle_config;

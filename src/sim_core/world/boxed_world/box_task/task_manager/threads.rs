@@ -1,5 +1,5 @@
 use crate::sim_core::world::boxed_world::box_task::handle_task::{
-  handle_force_batch_task, handle_velocity_batch_task,
+  handle_force_batch_task, handle_pair_correction_task, handle_velocity_batch_task,
 };
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use log::info;
@@ -55,6 +55,27 @@ pub fn worker_task_handle(
             handle_force_batch_task(task_id, boundary_condition, &box_ids, &integration_cache);
           result_tx_clone
             .send(BoxResult::ForceResult(force_result))
+            .unwrap();
+        }
+
+        BoxTask::PairCorrectionTask {
+          task_id,
+          component_blocks,
+          history,
+          thermostat_epsilon,
+          current_iteration,
+          simulation_config,
+        } => {
+          let velocity_result = handle_pair_correction_task(
+            task_id,
+            &component_blocks,
+            history,
+            simulation_config,
+            thermostat_epsilon,
+            current_iteration,
+          );
+          result_tx_clone
+            .send(BoxResult::VelocityResult(velocity_result))
             .unwrap();
         }
       },

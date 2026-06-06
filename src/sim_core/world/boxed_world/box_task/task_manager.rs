@@ -13,6 +13,9 @@ use crate::sim_core::world::boxed_world::box_container::sim_box::{
   SimulationBox, get_id_simulation_box,
 };
 use crate::sim_core::world::boxed_world::box_task::task_manager::threads::create_threads;
+use crate::sim_core::world::boxed_world::box_task::handle_task::pair_detection::{
+  cluster_contiguous_marked_boxes, detect_marked_boxes, distribute_marked_components,
+};
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::computation_collector::ComputationCollector;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
@@ -164,6 +167,92 @@ impl TaskManager {
       builder
         .build()
         .expect("Not all particles received velocity results"),
+    )
+  }
+
+  pub fn pair_correction_step(
+    &self,
+    half_step_cache: Arc<IntegrationCache>,
+    history: Arc<BoxContainer<Arc<SimulationBox>>>,
+    thermostat_epsilon: f64,
+    current_iteration: usize,
+  ) -> Arc<IntegrationCache> {
+    if !self.simulation_config.correction.small_distance.enabled {
+      return half_step_cache;
+    }
+
+    let marked = detect_marked_boxes(&half_step_cache, &self.simulation_config);
+    let components = cluster_contiguous_marked_boxes(
+      &marked,
+      self.container_config.box_count_dim,
+    );
+
+    if components.is_empty() {
+      return half_step_cache;
+    }
+
+    let num_tasks = self
+      .task_box_mapping
+      .as_ref()
+      .expect("split_into_tasks must be called before pair_correction_step")
+      .len();
+
+    let (assignments, largest_contiguous_block) =
+      distribute_marked_components(components, num_tasks);
+
+    // log::info!(
+    //   "Pair correction: {} task(s), {} marked box(es), largest contiguous block {} box(es)",
+    //   num_tasks,
+    //   marked.len(),
+    //   largest_contiguous_block
+    // );
+
+    let particles = half_step_cache.box_cache().all_particles_cloned();
+    let mut builder = IntegrationCacheBuilder::new(
+      self.simulation_config.clone(),
+      self.container_config,
+      particles,
+    );
+
+    let tasks_sent = assignments.iter().filter(|b| !b.is_empty()).count();
+
+    for (task_id, component_blocks) in assignments.into_iter().enumerate() {
+      if component_blocks.is_empty() {
+        continue;
+      }
+      let task = BoxTask::PairCorrectionTask {
+        task_id,
+        component_blocks,
+        history: Arc::clone(&history),
+        thermostat_epsilon,
+        current_iteration,
+        simulation_config: self.simulation_config.clone(),
+      };
+      self.tx_task.send(task).unwrap();
+      debug!("Sent PairCorrectionTask for task_id {}", task_id);
+    }
+
+    for _ in 0..tasks_sent {
+      match self.rx_result.recv_timeout(Duration::from_secs(20)) {
+        Ok(BoxResult::VelocityResult(result)) => {
+          debug!(
+            "Received pair correction VelocityResult for task_id {}",
+            result.task_id
+          );
+          builder.add_corrected_partial_all_results(result.particles);
+        }
+        Ok(_) => panic!("Expected VelocityResult from pair correction, got wrong result type"),
+        Err(RecvTimeoutError::Timeout) => {
+          panic!("Pair correction step timed out after 20 seconds")
+        }
+        Err(RecvTimeoutError::Disconnected) => panic!("Worker channel disconnected"),
+      }
+    }
+
+    Arc::new(
+      builder
+        .build_from_partial(&half_step_cache)
+        .expect("pair correction cache build failed"),
     )
   }
 

@@ -2,6 +2,7 @@ use nalgebra::Vector3;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::data::SimulationConfig;
 
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 
@@ -29,6 +30,14 @@ pub enum BoxTask {
     boundary_condition: EdgeCondition,
     box_ids: Vec<usize>,
     integration_cache: Arc<IntegrationCache>,
+  },
+  PairCorrectionTask {
+    task_id: usize,
+    component_blocks: Vec<Vec<usize>>,
+    history: Arc<BoxContainer<Arc<SimulationBox>>>,
+    thermostat_epsilon: f64,
+    current_iteration: usize,
+    simulation_config: SimulationConfig,
   },
 }
 
