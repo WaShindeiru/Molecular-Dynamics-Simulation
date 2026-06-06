@@ -47,14 +47,7 @@ impl BoxedWorld {
       panic!("Expected NoseHooverVerlet integration!")
     }
 
-    let integration_cache = self.task_manager.half_velocity_step(
-      Arc::clone(&current_box_container),
-      current_thermostat_epsilon,
-      next_iteration,
-    );
-
-    let integration_cache = self.task_manager.pair_correction_step(
-      integration_cache,
+    let integration_cache = self.task_manager.velocity_integration_step(
       Arc::clone(&current_box_container),
       current_thermostat_epsilon,
       next_iteration,

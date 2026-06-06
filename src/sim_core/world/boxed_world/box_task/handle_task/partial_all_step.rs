@@ -210,9 +210,7 @@ impl PartialAllStep {
     }
   }
 
-  fn do_one_substep(&mut self) {
-    debug_assert!(self.current_substep < self.substep_count);
-
+  fn half_position_and_edge_constraints(&mut self) {
     let half_result = verlet_noose_hoover_half_velocity_position(
       self.working.values(),
       self.dt_sub,
@@ -225,12 +223,20 @@ impl PartialAllStep {
 
     self.apply_half_velocity(&half_result);
     self.apply_edge_constraints();
+  }
+
+  fn do_one_full_substep(&mut self) {
+    self.half_position_and_edge_constraints();
 
     let (force_container, working_box_ids) = self.build_force_container();
     self.working_box_ids = working_box_ids;
 
     self.apply_forces_and_velocity(&force_container);
+    self.current_substep += 1;
+  }
 
+  fn do_one_position_substep(&mut self) {
+    self.half_position_and_edge_constraints();
     self.current_substep += 1;
   }
 
@@ -256,9 +262,10 @@ impl PartialAllStep {
   }
 
   pub fn run(mut self) -> PartialAllStepResult {
-    for _ in 0..self.substep_count {
-      self.do_one_substep();
+    for _ in 0..self.substep_count.saturating_sub(1) {
+      self.do_one_full_substep();
     }
+    self.do_one_position_substep();
 
     debug_assert!(self.current_substep == self.substep_count);
 

@@ -56,12 +56,19 @@ pub fn detect_marked_boxes_in_cache(
 }
 
 pub fn detect_marked_boxes(cache: &IntegrationCache, config: &SimulationConfig) -> HashSet<usize> {
+  detect_marked_boxes_from_history(cache.box_cache(), config)
+}
+
+pub fn detect_marked_boxes_from_history(
+  history: &BoxContainer<Arc<SimulationBox>>,
+  config: &SimulationConfig,
+) -> HashSet<usize> {
   let small_distance = &config.correction.small_distance;
   if !small_distance.enabled {
     return HashSet::new();
   }
 
-  detect_marked_boxes_in_cache(cache.box_cache(), small_distance.distance_threshold)
+  detect_marked_boxes_in_cache(history, small_distance.distance_threshold)
 }
 
 fn collect_particles(
