@@ -67,7 +67,8 @@ impl PartialWorldSaver {
       let potential_energy_i = *potential_energy.get(i).unwrap();
       potential_gravity_energy.push(potential_gravity_energy_i);
       total_energy.push(
-        kinetic_energy_i + potential_energy_i + phantom_energy_i + potential_gravity_energy_i,
+        // kinetic_energy_i + potential_energy_i + phantom_energy_i + potential_gravity_energy_i,
+        kinetic_energy_i + potential_energy_i + potential_gravity_energy_i,
       );
       thermostat_work.push(self.thermostat_work_total);
     }

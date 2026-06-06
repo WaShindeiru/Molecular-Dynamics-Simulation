@@ -132,14 +132,14 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
   iteration = energy_data["iteration"]
   kinetic_energy = energy_data["kinetic_energy"]
   potential_energy = energy_data["potential_energy"]
-  phantom_energy = energy_data["phantom_energy"]
+  # phantom_energy = energy_data["phantom_energy"]
   potential_gravity_energy = energy_data["potential_gravity_energy"]
   total_energy = energy_data["total_energy"]
   if thermostat:
     thermostat_work = energy_data["thermostat_work_total"]
     thermostat_epsilon = energy_data["thermostat_epsilon"]
 
-  total_energy_show = kinetic_energy + potential_energy + phantom_energy + potential_gravity_energy
+  total_energy_show = kinetic_energy + potential_energy  + potential_gravity_energy
 
   plt.plot(iteration, kinetic_energy, label="kinetic energy")
   plt.plot(iteration, potential_energy, label="potential energy")
@@ -276,7 +276,8 @@ if __name__ == "__main__":
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_1e-3_gravity"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v4_from_begining_with_2e-3_gravity"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_dense_v4_from_begining_with_lower_gravity_constant_temp"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/one_particle_edge_1"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/plyn/from_top_v1"
+
 
 
   thermostat = True
