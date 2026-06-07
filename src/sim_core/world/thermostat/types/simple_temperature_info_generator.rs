@@ -147,7 +147,7 @@ fn build_temperature_series(
     }
   }
 
-  if temperatures.last().copied() != Some(end_temperature) {
+  if !((temperatures.last().copied().unwrap() - Some(end_temperature).unwrap()).abs() < 2.0) {
     temperatures.push(end_temperature);
   }
 

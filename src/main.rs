@@ -12,12 +12,12 @@ mod utils;
 fn main() {
   // dense_runner()
 
-  // if let Err(e) = cmd::run() {
-  //   eprintln!("{e}");
-  //   std::process::exit(1);
-  // }
+  if let Err(e) = cmd::run() {
+    eprintln!("{e}");
+    std::process::exit(1);
+  }
 
-  see_temperature_info_generator_config();
+  // see_temperature_info_generator_config();
 
   // see_config_json()
 

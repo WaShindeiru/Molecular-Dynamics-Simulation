@@ -5,6 +5,7 @@ use std::path::Path;
 use crate::data::ValueUnits;
 use crate::data::{ParticleConfig, SimulationConfig};
 use crate::persistence::json::generator_config::GeneratorConfigFile;
+use crate::persistence::json::save_path::json_save_path_avoiding_overwrite;
 use crate::persistence::json::particle_config::read_particle_config_from_json_file;
 use crate::persistence::json::simulation_config::read_simulation_config_from_json_file;
 use crate::sim_core::Engine;
@@ -75,7 +76,8 @@ fn save_generator_config(
   }
 
   fs::create_dir_all(save_path)?;
-  let generator_config_path = Path::new(save_path).join("generator_config.json");
+  let generator_config_path =
+    json_save_path_avoiding_overwrite(Path::new(save_path), "generator_config.json");
   GeneratorConfigFile::new(generator_config.clone(), ValueUnits::Unitless)
     .to_value_units(ValueUnits::Si)
     .to_json_file(generator_config_path.to_string_lossy().as_ref())

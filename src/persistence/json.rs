@@ -1,4 +1,5 @@
 pub mod frame_sampling;
+pub mod save_path;
 pub mod generator_config;
 pub mod gravity_manager_file;
 pub mod integration_algorithm_file;

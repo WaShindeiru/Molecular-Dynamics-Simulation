@@ -2,6 +2,7 @@ use crate::data::{ConfigAll, ParticleConfig, SimulationConfig, ValueUnits};
 use crate::persistence::dto::engine::EngineDTO;
 use crate::persistence::json::SimulationConfigFile;
 use crate::persistence::json::particle_config::particle_config_to_initial_json_file;
+use crate::persistence::json::save_path::json_save_path_avoiding_overwrite;
 use crate::sim_core::world::World;
 
 use crate::sim_core::world::saver::SaveOptions;
@@ -188,11 +189,13 @@ impl Engine {
     )?;
     writeln!(file, "Simulation Time: {:?} seconds", self.simulation_time)?;
 
-    let parameters_path = save_dir.join("parameters.json");
+    let parameters_path =
+      json_save_path_avoiding_overwrite(save_dir, "parameters.json");
     SimulationConfigFile::from_runtime(&self.config, ValueUnits::Si)
       .to_json_file(parameters_path.to_string_lossy().as_ref())?;
 
-    let particles_initial_path = save_dir.join("particles_initial.json");
+    let particles_initial_path =
+      json_save_path_avoiding_overwrite(save_dir, "particles_initial.json");
     particle_config_to_initial_json_file(
       &self.particle_config,
       particles_initial_path.to_string_lossy().as_ref(),
