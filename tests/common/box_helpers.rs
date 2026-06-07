@@ -250,7 +250,7 @@ pub fn test_reset_world_with_thermostat_runner(
     .integration_algorithm(integration_algorithm)
     .world_type(world_type)
     .edge_condition(edge_condition)
-    .potential_gravity_max(potential_gravity_max)
+    .constant_gravity(potential_gravity_max)
     .build_all()
     .unwrap();
 
@@ -343,7 +343,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     .integration_algorithm(integration_algorithm)
     .world_type(world_type)
     .edge_condition(edge_condition)
-    .potential_gravity_max(potential_gravity_max)
+    .constant_gravity(potential_gravity_max)
     .build_all()
     .unwrap();
 

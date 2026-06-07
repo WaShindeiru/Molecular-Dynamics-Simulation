@@ -1,3 +1,4 @@
+use crate::data::TimeIterationDistance;
 use crate::data::units::TEMPERATURE_U;
 use crate::data::units::TIME_U;
 use crate::data::units::ValueUnits;
@@ -18,26 +19,6 @@ fn default_achieved_distance() -> TimeIterationDistance {
 
 fn default_temperature_threshold() -> f64 {
   DEFAULT_TEMP_THRESHOLD_UNITLESS
-}
-
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "type")]
-pub enum TimeIterationDistance {
-  Time { value: f64 },
-  Iteration { value: usize },
-}
-
-impl TimeIterationDistance {
-  pub fn to_value_units(&self, source: ValueUnits, target: ValueUnits) -> Self {
-    match self {
-      TimeIterationDistance::Time { value } => TimeIterationDistance::Time {
-        value: value * ValueUnits::scale_between(source, target, TIME_U),
-      },
-      TimeIterationDistance::Iteration { value } => {
-        TimeIterationDistance::Iteration { value: *value }
-      }
-    }
-  }
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]

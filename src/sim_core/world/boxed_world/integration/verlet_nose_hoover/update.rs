@@ -74,7 +74,7 @@ impl BoxedWorld {
 
     let mut computation_collector = self.task_manager.force_step(Arc::clone(&integration_cache));
 
-    computation_collector.apply_gravity();
+    computation_collector.apply_gravity(next_iteration);
 
     computation_collector.set_velocity(new_thermostat_epsilon);
 

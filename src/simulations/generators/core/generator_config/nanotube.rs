@@ -35,7 +35,7 @@ impl NanotubeGeneratorConfig {
 
     NanotubeGenerator::new(
       particles,
-      simulation_config.potential_gravity_max,
+      simulation_config.initial_gravity(),
       simulation_config.world_size,
       self.offset.to_runtime(),
       self.vel_mean.to_runtime(),

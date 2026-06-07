@@ -375,6 +375,129 @@ use crate::data::InteractionType::FeC;
   }
 
   #[test]
+  fn test_force_task_box_container_neighbour_atoms_periodic_corner_left_edge_placement() {
+    let container_config = test_box_container_config();
+
+    // Home box at grid (0, y-1, z-1) with box_count_dim = (10, 10, 10) -> (0, 9, 9).
+    let home_box_id = get_id_simulation_box(
+      &Vector3::new(0, 9, 9),
+      &container_config.box_count_dim,
+    );
+    let needed_box_ids = get_needed_box_id_periodic(&vec![home_box_id], &container_config);
+
+    let mut box_container = BoxContainer::new_local(container_config);
+    let atom_factory = SafeAtomFactory::new(1.0, container_config.world_size.z);
+
+    for x in 0..container_config.box_count_dim.x {
+      for y in 0..container_config.box_count_dim.y {
+        for z in 0..container_config.box_count_dim.z {
+          let position = Vector3::new(
+            (x as f64 + 0.5) * container_config.box_length.x,
+            (y as f64 + 0.5) * container_config.box_length.y,
+            (z as f64 + 0.5) * container_config.box_length.z,
+          );
+          let particle = atom_factory.get_atom(C, position, Vector3::zeros());
+          box_container.add_particle(Arc::new(particle));
+        }
+      }
+    }
+
+    let view = box_container
+      .into_shared()
+      .view_select_boxes(&needed_box_ids);
+    let force_container = ForceTaskBoxContainer::new(view, EdgeCondition::Periodic {
+      trigger_small_subtask_size: 1,
+      split: EdgeCondition::DEFAULT_SPLIT,
+    });
+
+    let particles: Vec<Box<dyn ForceComputationOperations>> =
+      force_container.neighbour_atoms_periodic(home_box_id).collect();
+
+    assert_eq!(particles.len(), 26);
+    assert_eq!(needed_box_ids.len(), 27);
+
+    let normal_placement = ParticlePlacement {
+      x: AxisPlacement::Normal,
+      y: AxisPlacement::Normal,
+      z: AxisPlacement::Normal,
+    };
+    let left_x_placement = ParticlePlacement {
+      x: AxisPlacement::Left,
+      y: AxisPlacement::Normal,
+      z: AxisPlacement::Normal,
+    };
+    let left_y_placement = ParticlePlacement {
+      x: AxisPlacement::Normal,
+      y: AxisPlacement::Left,
+      z: AxisPlacement::Normal,
+    };
+    let left_xy_placement = ParticlePlacement {
+      x: AxisPlacement::Left,
+      y: AxisPlacement::Left,
+      z: AxisPlacement::Normal,
+    };
+
+    let mut expected_particles: Vec<(Vector3<f64>, ParticlePlacement)> = vec![
+      // x-offset -1 (wrapped to x=9)
+      (Vector3::new(95.0, 85.0, 85.0), normal_placement),
+      (Vector3::new(95.0, 85.0, 95.0), normal_placement),
+      (Vector3::new(95.0, 85.0, 5.0), normal_placement),
+      (Vector3::new(95.0, 95.0, 85.0), normal_placement),
+      (Vector3::new(95.0, 95.0, 95.0), normal_placement),
+      (Vector3::new(95.0, 95.0, 5.0), normal_placement),
+      (Vector3::new(95.0, 105.0, 85.0), left_y_placement),
+      (Vector3::new(95.0, 105.0, 95.0), left_y_placement),
+      (Vector3::new(95.0, 105.0, 5.0), left_y_placement),
+      // x-offset 0 (same x column as home)
+      (Vector3::new(105.0, 85.0, 85.0), left_x_placement),
+      (Vector3::new(105.0, 85.0, 95.0), left_x_placement),
+      (Vector3::new(105.0, 85.0, 5.0), left_x_placement),
+      (Vector3::new(105.0, 95.0, 85.0), left_x_placement),
+      (Vector3::new(105.0, 95.0, 5.0), left_x_placement),
+      (Vector3::new(105.0, 105.0, 85.0), left_xy_placement),
+      (Vector3::new(105.0, 105.0, 95.0), left_xy_placement),
+      (Vector3::new(105.0, 105.0, 5.0), left_xy_placement),
+      // x-offset +1
+      (Vector3::new(115.0, 85.0, 85.0), left_x_placement),
+      (Vector3::new(115.0, 85.0, 95.0), left_x_placement),
+      (Vector3::new(115.0, 85.0, 5.0), left_x_placement),
+      (Vector3::new(115.0, 95.0, 85.0), left_x_placement),
+      (Vector3::new(115.0, 95.0, 95.0), left_x_placement),
+      (Vector3::new(115.0, 95.0, 5.0), left_x_placement),
+      (Vector3::new(115.0, 105.0, 85.0), left_xy_placement),
+      (Vector3::new(115.0, 105.0, 95.0), left_xy_placement),
+      (Vector3::new(115.0, 105.0, 5.0), left_xy_placement),
+    ];
+
+    for particle in particles {
+      let proxy = particle
+        .as_any()
+        .downcast_ref::<ParticlePositionProxy>()
+        .expect("neighbour_atoms_periodic should return particle position proxies");
+      let actual_position = particle.get_position();
+      let actual_placement = *proxy.particle_placement();
+      let expected_index = expected_particles
+        .iter()
+        .position(|(expected_position, expected_placement)| {
+          *expected_position == actual_position && *expected_placement == actual_placement
+        })
+        .unwrap_or_else(|| {
+          panic!(
+            "Neighbour particle not matched: position ({}, {}, {}), placement {:?}",
+            actual_position.x,
+            actual_position.y,
+            actual_position.z,
+            actual_placement,
+          );
+        });
+
+      expected_particles.remove(expected_index);
+    }
+
+    assert!(expected_particles.is_empty());
+  }
+
+  #[test]
   fn test_force_task_box_container_with_one_particle_in_each_box_center_atoms_for_box_left_edge_placement() {
     let container_config = test_box_container_config();
 

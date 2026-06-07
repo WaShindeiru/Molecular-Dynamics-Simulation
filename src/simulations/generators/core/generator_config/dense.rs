@@ -21,7 +21,7 @@ impl DenseGeneratorConfig {
 
   pub fn to_generator(&self, simulation_config: &SimulationConfig) -> DenseGenerator {
     DenseGenerator::new(
-      simulation_config.potential_gravity_max,
+      simulation_config.initial_gravity(),
       simulation_config.world_size,
       self.particle_distance,
       self.offset,

@@ -61,8 +61,13 @@ impl ComputationCollector {
     }
   }
 
-  pub fn apply_gravity(&mut self) {
-    let potential_gravity_max = self.config.potential_gravity_max;
+  pub fn apply_gravity(&mut self, iteration: usize) {
+    let potential_gravity_max = self
+      .config
+      .gravity_manager
+      .lock()
+      .expect("gravity manager lock poisoned")
+      .get_gravity(iteration);
     let z_max = self.integration_cache.box_cache().config().world_size.z;
 
     for particle in self.particles_modified.values_mut() {

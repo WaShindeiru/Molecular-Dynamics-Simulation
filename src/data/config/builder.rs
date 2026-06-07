@@ -12,7 +12,7 @@ use nalgebra::Vector3;
 pub struct SimulationConfigBuilder {
   atoms: Option<Vec<Particle>>,
   world_size: Option<Vector3<f64>>,
-  potential_gravity_max: Option<f64>,
+  gravity_schedule: Option<Vec<(usize, f64)>>,
   time_step: Option<f64>,
   num_of_iterations: Option<usize>,
   max_iteration_till_reset: Option<usize>,
@@ -33,7 +33,7 @@ impl SimulationConfigBuilder {
     SimulationConfigBuilder {
       atoms: None,
       world_size: None,
-      potential_gravity_max: None,
+      gravity_schedule: None,
       time_step: None,
       num_of_iterations: None,
       max_iteration_till_reset: None,
@@ -60,8 +60,13 @@ impl SimulationConfigBuilder {
     self
   }
 
-  pub fn potential_gravity_max(mut self, potential_gravity_max: f64) -> Self {
-    self.potential_gravity_max = Some(potential_gravity_max);
+  pub fn gravity_schedule(mut self, gravity_schedule: Vec<(usize, f64)>) -> Self {
+    self.gravity_schedule = Some(gravity_schedule);
+    self
+  }
+
+  pub fn constant_gravity(mut self, gravity: f64) -> Self {
+    self.gravity_schedule = Some(vec![(0, gravity)]);
     self
   }
 
@@ -136,9 +141,6 @@ impl SimulationConfigBuilder {
     if self.world_size.is_none() {
       missing_fields.push("world_size");
     }
-    if self.potential_gravity_max.is_none() {
-      missing_fields.push("potential_gravity_max");
-    }
     if self.time_step.is_none() {
       missing_fields.push("time_step");
     }
@@ -176,9 +178,6 @@ impl SimulationConfigBuilder {
 
     if self.world_size.is_none() {
       missing.push("world_size");
-    }
-    if self.potential_gravity_max.is_none() {
-      missing.push("potential_gravity_max");
     }
     if self.time_step.is_none() {
       missing.push("time_step");
@@ -242,14 +241,18 @@ impl SimulationConfigBuilder {
       save_all_iterations_energy,
     );
 
-    Ok(SimulationConfig {
+    let gravity_schedule = self
+      .gravity_schedule
+      .unwrap_or_else(|| vec![(0, 1.0)]);
+
+    Ok(SimulationConfig::new(
       world_size,
-      potential_gravity_max: self.potential_gravity_max.unwrap_or(1.0),
+      gravity_schedule,
       time_step,
-      num_of_iterations: self.num_of_iterations.unwrap_or(1000),
-      max_iteration_till_reset: self.max_iteration_till_reset.unwrap_or(1000),
+      self.num_of_iterations.unwrap_or(1000),
+      self.max_iteration_till_reset.unwrap_or(1000),
       save_options,
-      integration_algorithm: self.integration_algorithm.unwrap_or(
+      self.integration_algorithm.unwrap_or(
         IntegrationAlgorithm::NoseHooverVerlet {
           q_effective_mass: 1.,
           desired_temperature: vec![TemperatureInfo::new(
@@ -258,17 +261,17 @@ impl SimulationConfigBuilder {
           )],
         },
       ),
-      world_type: self.world_type.unwrap_or(WorldType::BoxedWorld {
+      self.world_type.unwrap_or(WorldType::BoxedWorld {
         task_manager_config: TaskManagerConfig {
           debug: false,
           task_worker_multiplier: 4.0,
         },
       }),
-      edge_condition: self.edge_condition.unwrap_or(EdgeCondition::Periodic {
+      self.edge_condition.unwrap_or(EdgeCondition::Periodic {
         trigger_small_subtask_size: 1,
         split: EdgeCondition::DEFAULT_SPLIT,
       }),
-    })
+    ))
   }
 
   pub fn build_all(self) -> Result<ConfigAll, String> {

@@ -10,6 +10,7 @@ use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::FrameSamplingConfig;
 use crate::utils::logging::get_save_path;
 
+use super::gravity_manager_file::GravityChangeEntry;
 use super::save_options::SaveOptionsFile;
 use super::types::{EdgeConditionFile, WorldTypeFile};
 
@@ -89,7 +90,8 @@ pub struct SimulationConfigFile {
   #[serde(default)]
   pub value_units: ValueUnits,
   pub world_size: Vector3<f64>,
-  pub potential_gravity_max: f64,
+  #[serde(default)]
+  pub gravity_changes: Vec<GravityChangeEntry>,
   pub time_step: f64,
   pub num_of_iterations: usize,
   pub max_iteration_till_reset: usize,
@@ -101,10 +103,19 @@ pub struct SimulationConfigFile {
 
 impl SimulationConfigFile {
   pub fn from_runtime(config: &SimulationConfig, target_units: ValueUnits) -> Self {
+    let gravity_changes = config
+      .gravity_manager
+      .lock()
+      .expect("gravity manager lock poisoned")
+      .scheduled_changes()
+      .into_iter()
+      .map(|(iteration, value)| GravityChangeEntry::from_runtime(iteration, value))
+      .collect();
+
     let unitless = Self {
       value_units: ValueUnits::Unitless,
       world_size: config.world_size,
-      potential_gravity_max: config.potential_gravity_max,
+      gravity_changes,
       time_step: config.time_step,
       num_of_iterations: config.num_of_iterations,
       max_iteration_till_reset: config.max_iteration_till_reset,
@@ -121,17 +132,29 @@ impl SimulationConfigFile {
     let unitless = self.to_value_units(ValueUnits::Unitless);
     debug_assert_eq!(unitless.value_units, ValueUnits::Unitless);
 
-    SimulationConfig {
-      world_size: unitless.world_size,
-      potential_gravity_max: unitless.potential_gravity_max,
-      time_step: unitless.time_step,
-      num_of_iterations: unitless.num_of_iterations,
-      max_iteration_till_reset: unitless.max_iteration_till_reset,
-      save_options: unitless.save_options.to_runtime(unitless.time_step),
-      integration_algorithm: unitless.integration_algorithm,
-      world_type: unitless.world_type.to_runtime(),
-      edge_condition: unitless.edge_condition.to_runtime(),
+    let mut gravity_schedule: Vec<(usize, f64)> = unitless
+      .gravity_changes
+      .iter()
+      .map(|entry| entry.to_runtime(unitless.time_step))
+      .collect();
+    gravity_schedule.sort_unstable_by_key(|(iteration, _)| *iteration);
+    gravity_schedule.dedup_by_key(|(iteration, _)| *iteration);
+
+    if gravity_schedule.is_empty() {
+      gravity_schedule.push((0, 1.0));
     }
+
+    SimulationConfig::new(
+      unitless.world_size,
+      gravity_schedule,
+      unitless.time_step,
+      unitless.num_of_iterations,
+      unitless.max_iteration_till_reset,
+      unitless.save_options.to_runtime(unitless.time_step),
+      unitless.integration_algorithm,
+      unitless.world_type.to_runtime(),
+      unitless.edge_condition.to_runtime(),
+    )
   }
 
   /// Unit conversion, [`SaveOptionsFile`] -> [`SaveOptions`] (including `keep_path` / path refresh), and sampling validation when `frame_iteration_count` is present in `raw_json`.
@@ -164,7 +187,7 @@ impl SimulationConfigFile {
     Self {
       value_units: target,
       world_size: self.world_size * ValueUnits::scale_between(source, target, R_U),
-      potential_gravity_max: self.potential_gravity_max,
+      gravity_changes: self.gravity_changes.clone(),
       time_step: self.time_step * ValueUnits::scale_between(source, target, TIME_U),
       num_of_iterations: self.num_of_iterations,
       max_iteration_till_reset: self.max_iteration_till_reset,

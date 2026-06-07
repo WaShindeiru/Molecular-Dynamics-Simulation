@@ -2,13 +2,13 @@ use std::io;
 use std::path::Path;
 
 use crate::data::units::TEMPERATURE_U;
-use crate::data::{ParticleConfig, ValueUnits};
+use crate::data::{ParticleConfig, TimeIterationDistance, ValueUnits};
 use crate::particle::Particle;
 use crate::persistence::json::particle_config::ParticleConfigFile;
 
 use super::types::{
   IntegrationAlgorithm, IntegrationStateUpdateResponse, NoseHooverStage, TemperatureHistoryEntry,
-  TemperatureIteration, TimeIterationDistance,
+  TemperatureIteration,
 };
 
 pub enum IntegrationAlgorithmState {

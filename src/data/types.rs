@@ -1,3 +1,43 @@
+use crate::data::units::{TIME_U, ValueUnits};
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
+pub enum TimeIterationDistance {
+  Time { value: f64 },
+  Iteration { value: usize },
+}
+
+impl TimeIterationDistance {
+  pub fn to_iteration(self, time_step: f64) -> usize {
+    match self {
+      TimeIterationDistance::Iteration { value } => value,
+      TimeIterationDistance::Time { value } => {
+        let ratio = value / time_step;
+        if !ratio.is_finite() || ratio <= 0.0 {
+          return 1;
+        }
+        let rounded = ratio.round();
+        if !rounded.is_finite() || rounded <= 0.0 {
+          return 1;
+        }
+        let capped = rounded.min(usize::MAX as f64);
+        (capped as usize).max(1)
+      }
+    }
+  }
+
+  pub fn to_value_units(&self, source: ValueUnits, target: ValueUnits) -> Self {
+    match self {
+      TimeIterationDistance::Time { value } => TimeIterationDistance::Time {
+        value: value * ValueUnits::scale_between(source, target, TIME_U),
+      },
+      TimeIterationDistance::Iteration { value } => {
+        TimeIterationDistance::Iteration { value: *value }
+      }
+    }
+  }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 #[repr(u64)]
 pub enum AtomType {

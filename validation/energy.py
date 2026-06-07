@@ -210,7 +210,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
     plt.xlabel("iteration")
     plt.ylabel("Temperature [K]")
     plt.title(f"Temperature")
-    # plt.ylim([0, 3000])
+    plt.ylim([0, 2400])
     plt.legend()
     plt.savefig(path + '/Temperature.png')
     plt.show()
@@ -277,11 +277,13 @@ if __name__ == "__main__":
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v4_from_begining_with_2e-3_gravity"
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_dense_v4_from_begining_with_lower_gravity_constant_temp"
   newest_folder = "/media/washindeiru/7E442D59442D1585/md/plyn/from_top_v1"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/from_top_v2"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/small_timestamp/z_edge"
 
 
 
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")
-  show_energy_plot(newest_folder, thermostat, start=0, end=5e5)
+  show_energy_plot(newest_folder, thermostat, start=0, end=5e10)
   # compare_different_temps(newest_folder)
