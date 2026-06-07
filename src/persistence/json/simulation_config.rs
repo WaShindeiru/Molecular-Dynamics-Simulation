@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::data::SimulationConfig;
 use crate::data::units::{R_U, TIME_U, ValueUnits};
-use crate::sim_core::world::thermostat::IntegrationAlgorithm;
+use super::integration_algorithm_file::IntegrationAlgorithmFile;
 use crate::sim_core::world::saver::FrameSamplingConfig;
 use crate::utils::logging::get_save_path;
 
@@ -96,7 +96,7 @@ pub struct SimulationConfigFile {
   pub num_of_iterations: usize,
   pub max_iteration_till_reset: usize,
   pub save_options: SaveOptionsFile,
-  pub integration_algorithm: IntegrationAlgorithm,
+  pub integration_algorithm: IntegrationAlgorithmFile,
   pub world_type: WorldTypeFile,
   pub edge_condition: EdgeConditionFile,
 }
@@ -120,7 +120,7 @@ impl SimulationConfigFile {
       num_of_iterations: config.num_of_iterations,
       max_iteration_till_reset: config.max_iteration_till_reset,
       save_options: SaveOptionsFile::from_runtime(&config.save_options),
-      integration_algorithm: config.integration_algorithm.clone(),
+      integration_algorithm: IntegrationAlgorithmFile::from_runtime(&config.integration_algorithm),
       world_type: WorldTypeFile::from_runtime(config.world_type),
       edge_condition: EdgeConditionFile::from_runtime(config.edge_condition),
     };
@@ -128,9 +128,14 @@ impl SimulationConfigFile {
     unitless.to_value_units(target_units)
   }
 
-  pub fn into_runtime_unitless(self) -> SimulationConfig {
+  pub fn into_runtime_unitless(self) -> io::Result<SimulationConfig> {
     let unitless = self.to_value_units(ValueUnits::Unitless);
     debug_assert_eq!(unitless.value_units, ValueUnits::Unitless);
+
+    let integration_algorithm = unitless
+      .integration_algorithm
+      .to_runtime()
+      .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
     let mut gravity_schedule: Vec<(usize, f64)> = unitless
       .gravity_changes
@@ -144,22 +149,22 @@ impl SimulationConfigFile {
       gravity_schedule.push((0, 1.0));
     }
 
-    SimulationConfig::new(
+    Ok(SimulationConfig::new(
       unitless.world_size,
       gravity_schedule,
       unitless.time_step,
       unitless.num_of_iterations,
       unitless.max_iteration_till_reset,
       unitless.save_options.to_runtime(unitless.time_step),
-      unitless.integration_algorithm,
+      integration_algorithm,
       unitless.world_type.to_runtime(),
       unitless.edge_condition.to_runtime(),
-    )
+    ))
   }
 
   /// Unit conversion, [`SaveOptionsFile`] -> [`SaveOptions`] (including `keep_path` / path refresh), and sampling validation when `frame_iteration_count` is present in `raw_json`.
   pub fn try_into_simulation_config(self, raw_json: &Value) -> io::Result<SimulationConfig> {
-    let config = self.into_runtime_unitless();
+    let config = self.into_runtime_unitless()?;
 
     validate_sampling_if_present(
       &config,

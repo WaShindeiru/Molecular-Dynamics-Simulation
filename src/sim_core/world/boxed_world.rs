@@ -44,7 +44,6 @@ pub struct BoxedWorld {
 
   iteration: usize,
 
-  // TODO: improve the integration_algorithm_logic
   integration_algorithm_state: IntegrationAlgorithmState,
 }
 

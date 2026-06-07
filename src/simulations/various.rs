@@ -1,8 +1,13 @@
 use nalgebra::Vector3;
 
+use crate::data::ValueUnits::{Si, Unitless};
 use crate::data::config::builder::SimulationConfigBuilder;
 use crate::data::types::AtomType;
 use crate::data::units::{TEMPERATURE_U, ValueUnits};
+use crate::persistence::json::integration_algorithm_file::IntegrationAlgorithmFile;
+use crate::persistence::json::simple_temperature_info_generator_file::SimpleTemperatureInfoGeneratorFile;
+use crate::persistence::json::temperature_info_file::TemperatureInfoFile;
+use crate::persistence::json::temperature_info_source_file::TemperatureInfoSourceFile;
 use crate::persistence::json::{GeneratorConfigFile, SimulationConfigFile};
 
 use crate::particle::SafeAtomFactory;
@@ -86,4 +91,58 @@ pub fn see_nanotube_generator_configuration() {
   let config_file = GeneratorConfigFile::new(config_local, ValueUnits::Unitless).to_value_units(ValueUnits::Unitless);
   let result = config_file.to_json_string().unwrap();
   println!("{result}");
+}
+
+pub fn see_temperature_info_generator_config() {
+  let to_unitless = |info: TemperatureInfo| TemperatureInfo {
+    desired_temperature: info.desired_temperature / TEMPERATURE_U,
+    ..info
+  };
+
+  let high_temperature = to_unitless(TemperatureInfo::new(
+    2000.,
+    TimeIterationDistance::Iteration { value: 20_000 },
+  ));
+  let low_temperature = to_unitless(TemperatureInfo::new(
+    200.,
+    TimeIterationDistance::Iteration { value: 2_000 },
+  ));
+
+  let desired_temperature = vec![
+    TemperatureInfoSourceFile::Direct(TemperatureInfoFile::from_runtime(&high_temperature)),
+    TemperatureInfoSourceFile::Simple(SimpleTemperatureInfoGeneratorFile {
+      start_temperature: 2000. / TEMPERATURE_U,
+      end_temperature: 500. / TEMPERATURE_U,
+      acceptance_distance: TimeIterationDistance::Iteration { value: 0 },
+      achieved_distance: TimeIterationDistance::Iteration { value: 5_000 },
+      temperature_step: Some(-500.0 / TEMPERATURE_U),
+      threshold: Some(60.0 / TEMPERATURE_U),
+      save_step: Some(3),
+    }),
+    TemperatureInfoSourceFile::Direct(TemperatureInfoFile::from_runtime(&low_temperature)),
+  ];
+
+  let algorithm = IntegrationAlgorithmFile::NoseHooverVerlet {
+    desired_temperature,
+    q_effective_mass: 1.0,
+  };
+
+  let json = serde_json::to_string_pretty(&algorithm.to_value_units(Unitless, Si)).unwrap();
+  println!("{json}");
+
+  let expanded = algorithm.to_runtime().unwrap();
+  if let crate::sim_core::world::thermostat::IntegrationAlgorithm::NoseHooverVerlet {
+    desired_temperature,
+    ..
+  } = expanded
+  {
+    println!("\nExpanded temperature schedule:");
+    for (index, info) in desired_temperature.iter().enumerate() {
+      println!(
+        "  [{index}] {:.1} K (save={})",
+        info.desired_temperature * TEMPERATURE_U,
+        info.save,
+      );
+    }
+  }
 }

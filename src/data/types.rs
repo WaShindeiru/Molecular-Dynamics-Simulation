@@ -1,6 +1,6 @@
 use crate::data::units::{TIME_U, ValueUnits};
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum TimeIterationDistance {
   Time { value: f64 },

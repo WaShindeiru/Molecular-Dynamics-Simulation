@@ -4,8 +4,50 @@ use crate::data::units::TIME_U;
 use crate::data::units::ValueUnits;
 use crate::particle::Particle;
 
+pub mod simple_temperature_info_generator;
+
 pub const DEFAULT_TEMP_THRESHOLD_UNITLESS: f64 = 30. / TEMPERATURE_U;
 pub const DEFAULT_ACCEPTANCE_TIME_UNITLESS: f64 = 2000. * 1e-18 / TIME_U;
+
+pub trait TemperatureInfoGenerator {
+  fn generate(&self) -> Result<Vec<TemperatureInfo>, String>;
+}
+
+/// A single [`TemperatureInfo`] entry or a generator that expands to many.
+pub enum TemperatureInfoSource {
+  Direct(TemperatureInfo),
+  Generated(Box<dyn TemperatureInfoGenerator>),
+}
+
+impl From<TemperatureInfo> for TemperatureInfoSource {
+  fn from(info: TemperatureInfo) -> Self {
+    TemperatureInfoSource::Direct(info)
+  }
+}
+
+impl<G: TemperatureInfoGenerator + 'static> From<G> for TemperatureInfoSource {
+  fn from(generator: G) -> Self {
+    TemperatureInfoSource::Generated(Box::new(generator))
+  }
+}
+
+/// Expands each source in order and concatenates the results.
+pub fn collect_temperature_infos(
+  sources: &[TemperatureInfoSource],
+) -> Result<Vec<TemperatureInfo>, String> {
+  let mut result = Vec::new();
+
+  for source in sources {
+    match source {
+      TemperatureInfoSource::Direct(info) => result.push(*info),
+      TemperatureInfoSource::Generated(generator) => {
+        result.extend(generator.generate()?);
+      }
+    }
+  }
+
+  Ok(result)
+}
 
 fn default_acceptance_distance() -> TimeIterationDistance {
   TimeIterationDistance::Time {
@@ -21,14 +63,11 @@ fn default_temperature_threshold() -> f64 {
   DEFAULT_TEMP_THRESHOLD_UNITLESS
 }
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct TemperatureInfo {
   pub desired_temperature: f64,
-  #[serde(default = "default_acceptance_distance")]
   pub acceptance_distance: TimeIterationDistance,
-  #[serde(alias = "distance", default = "default_achieved_distance")]
   pub achieved_distance: TimeIterationDistance,
-  #[serde(default = "default_temperature_threshold")]
   pub threshold: f64,
   pub save: bool,
 }
@@ -71,8 +110,7 @@ impl TemperatureInfo {
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "type")]
+#[derive(Debug, Clone)]
 pub enum IntegrationAlgorithm {
   SemiImplicitEuler,
   VelocityVerlet,
@@ -127,4 +165,86 @@ pub enum IntegrationStateUpdateResponse {
   SemiImplicitEuler,
   VelocityVerlet,
   NoseHooverVerlet { updated: bool, temperature: f64 },
+}
+
+#[cfg(test)]
+mod collect_tests {
+  use crate::data::TimeIterationDistance;
+
+  use super::simple_temperature_info_generator::SimpleTemperatureInfoGenerator;
+  use super::{collect_temperature_infos, TemperatureInfo, TemperatureInfoSource};
+
+  #[test]
+  fn preserves_order_across_direct_entries_and_generators() {
+    let first = TemperatureInfo::new(5000., TimeIterationDistance::Iteration { value: 10 });
+    let second = TemperatureInfo::new(4000., TimeIterationDistance::Iteration { value: 20 });
+    let generator = SimpleTemperatureInfoGenerator::new()
+      .start_temperature(3000.)
+      .end_temperature(3000.)
+      .acceptance_distance(TimeIterationDistance::Iteration { value: 30 })
+      .achieved_distance(TimeIterationDistance::Iteration { value: 30 });
+    let third = TemperatureInfo::new(1000., TimeIterationDistance::Iteration { value: 40 });
+
+    let sources = [
+      TemperatureInfoSource::from(first),
+      TemperatureInfoSource::from(second),
+      TemperatureInfoSource::from(generator),
+      TemperatureInfoSource::from(third),
+    ];
+
+    let infos = collect_temperature_infos(&sources).unwrap();
+    let temps: Vec<f64> = infos.iter().map(|i| i.desired_temperature).collect();
+
+    assert_eq!(temps, vec![5000., 4000., 3000., 1000.]);
+  }
+
+  #[test]
+  fn preserves_order_across_direct_entries_and_generators_v2() {
+    let first = TemperatureInfo::new(5000., TimeIterationDistance::Iteration { value: 10 });
+    let second = TemperatureInfo::new(4000., TimeIterationDistance::Iteration { value: 20 });
+    let generator = SimpleTemperatureInfoGenerator::new()
+      .start_temperature(1000.)
+      .end_temperature(3000.)
+      .acceptance_distance(TimeIterationDistance::Iteration { value: 0 })
+      .achieved_distance(TimeIterationDistance::Iteration { value: 500 })
+      .temperature_step(500.0);
+    let third = TemperatureInfo::new(1000., TimeIterationDistance::Iteration { value: 40 });
+
+    let sources = [
+      TemperatureInfoSource::from(first),
+      TemperatureInfoSource::from(second),
+      TemperatureInfoSource::from(generator),
+      TemperatureInfoSource::from(third),
+    ];
+
+    let infos = collect_temperature_infos(&sources).unwrap();
+    let temps: Vec<f64> = infos.iter().map(|i| i.desired_temperature).collect();
+
+    assert_eq!(temps, vec![5000., 4000., 1000., 1500., 2000., 2500., 3000., 1000.]);
+  }
+
+  #[test]
+  fn expands_generator_sequence_in_place() {
+    let generator = SimpleTemperatureInfoGenerator::new()
+      .start_temperature(300.)
+      .end_temperature(500.)
+      .temperature_step(100.)
+      .acceptance_distance(TimeIterationDistance::Iteration { value: 0 })
+      .achieved_distance(TimeIterationDistance::Iteration { value: 0 });
+
+    let sources = [TemperatureInfoSource::from(generator)];
+    let infos = collect_temperature_infos(&sources).unwrap();
+    let temps: Vec<f64> = infos.iter().map(|i| i.desired_temperature).collect();
+
+    assert_eq!(temps, vec![300., 400., 500.]);
+  }
+
+  #[test]
+  fn propagates_generator_errors() {
+    let generator = SimpleTemperatureInfoGenerator::new();
+    let sources = [TemperatureInfoSource::from(generator)];
+
+    let err = collect_temperature_infos(&sources).unwrap_err();
+    assert_eq!(err, "start_temperature must be set");
+  }
 }
