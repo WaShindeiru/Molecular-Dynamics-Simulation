@@ -140,23 +140,8 @@ if __name__ == "__main__":
   # output_dir = "../../output"
   # output_dir = "/media/washindeiru/7E442D59442D1585/md"
   # newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v2"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4"
 
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_lower_gravity"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v2_with_lower_gravity"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_more_dense_v4_with_1e-3_gravity"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2025_05_29_more_dense_v4_from_begining_with_2e-3_gravity"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/2026_05_29_dense_v4_from_begining_with_lower_gravity_constant_temp"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/from_top_v2"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/plyn/from_top_v1_bigger_step"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/from_top_v2_07_06_2026_20_25_24"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/small_timestamp/z_edge"
-  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/static_tube_results/2025_06_07_static_nanotube_test"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/from_top_v2"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/all/2026_05_29_more_dense_v4"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/plyn/from_top_v2_continued_local_v2"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/from_top_v2"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/error_investigation_final?/static_investigation/static_v2"
 
 
   thermostat = True

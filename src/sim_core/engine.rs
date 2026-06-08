@@ -132,9 +132,13 @@ impl Engine {
         break;
       }
 
+      if i % 20000 == 0 {
+        info!("Current interation: {}/{}", i, self.config.num_of_iterations);
+      }
+
       if i % 100 == 0 {
         let frame = counter % spinner.len();
-        info!(
+        print!(
           "\rProgress: {}/{} {}",
           i, self.config.num_of_iterations, spinner[frame]
         );
