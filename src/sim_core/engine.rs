@@ -134,7 +134,7 @@ impl Engine {
 
       if i % 100 == 0 {
         let frame = counter % spinner.len();
-        print!(
+        info!(
           "\rProgress: {}/{} {}",
           i, self.config.num_of_iterations, spinner[frame]
         );

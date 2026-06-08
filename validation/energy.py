@@ -156,6 +156,7 @@ if __name__ == "__main__":
   newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/from_top_v2"
   newest_folder = "/media/washindeiru/7E442D59442D1585/md/all/2026_05_29_more_dense_v4"
   newest_folder = "/media/washindeiru/7E442D59442D1585/md/plyn/from_top_v2_continued_local_v2"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/trash/results_cached/from_top_v2"
 
 
   thermostat = True
