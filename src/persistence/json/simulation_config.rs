@@ -192,7 +192,14 @@ impl SimulationConfigFile {
     Self {
       value_units: target,
       world_size: self.world_size * ValueUnits::scale_between(source, target, R_U),
-      gravity_changes: self.gravity_changes.clone(),
+      gravity_changes: self
+        .gravity_changes
+        .iter()
+        .map(|e| GravityChangeEntry {
+          distance: e.distance.to_value_units(source, target),
+          value: e.value,
+        })
+        .collect(),
       time_step: self.time_step * ValueUnits::scale_between(source, target, TIME_U),
       num_of_iterations: self.num_of_iterations,
       max_iteration_till_reset: self.max_iteration_till_reset,
