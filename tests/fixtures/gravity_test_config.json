@@ -21,8 +21,19 @@
       "value": 0.0
     }
   ],
-  "time_step": 1.75e-18,
-  "num_of_iterations": 10000000,
+  "timestep_changes": [
+    {
+      "distance": {
+        "type": "Iteration",
+        "value": 0
+      },
+      "value": 1.75e-18
+    }
+  ],
+  "num_of_iterations": {
+    "type": "Iteration",
+    "value": 10000000
+  },
   "max_iteration_till_reset": 2000,
   "save_options": {
     "save": true,

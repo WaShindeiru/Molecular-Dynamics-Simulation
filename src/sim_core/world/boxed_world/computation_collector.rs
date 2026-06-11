@@ -82,7 +82,7 @@ impl ComputationCollector {
   }
 
   pub fn set_velocity(&mut self, thermostat_epsilon: f64) {
-    let time_step = self.config.time_step;
+    let time_step = self.config.initial_time_step();
     let edge_condition = self.config.edge_condition;
     let subtask_size = match edge_condition {
       EdgeCondition::Periodic { trigger_small_subtask_size, .. }

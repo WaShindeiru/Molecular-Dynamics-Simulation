@@ -61,7 +61,7 @@ impl BoxedWorld {
         current_thermostat_epsilon,
         integration_cache.half_velocity_cache(),
         integration_cache.box_cache().all_particles(),
-        self.config.time_step,
+        self.config.initial_time_step(),
         q_effective_mass,
         current_desired_temperature,
       )
@@ -93,7 +93,7 @@ impl BoxedWorld {
 
     let result = self.integration_algorithm_state.update_state(
       next_iteration,
-      self.config.time_step,
+      self.config.initial_time_step(),
       &self.config.integration_algorithm,
       simulation_temperature,
       computation_collector.particles(),

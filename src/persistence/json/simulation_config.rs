@@ -4,13 +4,14 @@ use std::{fs, io};
 use nalgebra::Vector3;
 use serde_json::Value;
 
-use crate::data::SimulationConfig;
+use crate::data::{SimulationConfig, TimeIterationDistance};
 use crate::data::units::{R_U, TIME_U, ValueUnits};
 use super::integration_algorithm_file::IntegrationAlgorithmFile;
 use crate::sim_core::world::saver::FrameSamplingConfig;
 use crate::utils::logging::get_save_path;
 
 use super::gravity_manager_file::GravityChangeEntry;
+use super::timestep_manager_file::TimestepChangeEntry;
 use super::save_options::SaveOptionsFile;
 use super::types::{EdgeConditionFile, WorldTypeFile};
 
@@ -41,18 +42,20 @@ fn validate_sampling_if_present(
     return Ok(());
   }
 
-  if config.time_step <= 0.0 {
+  let time_step = config.initial_time_step();
+
+  if time_step <= 0.0 {
     return Err(io::Error::new(
       io::ErrorKind::InvalidData,
       format!(
         "Cannot validate {}: time_step must be > 0, got {}",
-        sampling_name, config.time_step
+        sampling_name, time_step
       ),
     ));
   }
 
   let expected =
-    FrameSamplingConfig::iterations_from_duration(sampling.one_frame_duration, config.time_step);
+    FrameSamplingConfig::iterations_from_duration(sampling.one_frame_duration, time_step);
   let actual = sampling.frame_iteration_count;
 
   let valid = if save_all_iterations {
@@ -76,7 +79,7 @@ fn validate_sampling_if_present(
         expected,
         expected_message,
         sampling.one_frame_duration,
-        config.time_step,
+        time_step,
         save_all_iterations
       ),
     ));
@@ -90,10 +93,9 @@ pub struct SimulationConfigFile {
   #[serde(default)]
   pub value_units: ValueUnits,
   pub world_size: Vector3<f64>,
-  #[serde(default)]
   pub gravity_changes: Vec<GravityChangeEntry>,
-  pub time_step: f64,
-  pub num_of_iterations: usize,
+  pub timestep_changes: Vec<TimestepChangeEntry>,
+  pub num_of_iterations: TimeIterationDistance,
   pub max_iteration_till_reset: usize,
   pub save_options: SaveOptionsFile,
   pub integration_algorithm: IntegrationAlgorithmFile,
@@ -112,12 +114,21 @@ impl SimulationConfigFile {
       .map(|(iteration, value)| GravityChangeEntry::from_runtime(iteration, value))
       .collect();
 
+    let timestep_changes = config
+      .timestep_manager
+      .lock()
+      .expect("timestep manager lock poisoned")
+      .scheduled_changes()
+      .into_iter()
+      .map(|(iteration, value)| TimestepChangeEntry::from_runtime(iteration, value))
+      .collect();
+
     let unitless = Self {
       value_units: ValueUnits::Unitless,
       world_size: config.world_size,
       gravity_changes,
-      time_step: config.time_step,
-      num_of_iterations: config.num_of_iterations,
+      timestep_changes,
+      num_of_iterations: TimeIterationDistance::Iteration { value: config.num_of_iterations },
       max_iteration_till_reset: config.max_iteration_till_reset,
       save_options: SaveOptionsFile::from_runtime(&config.save_options),
       integration_algorithm: IntegrationAlgorithmFile::from_runtime(&config.integration_algorithm),
@@ -137,25 +148,56 @@ impl SimulationConfigFile {
       .to_runtime()
       .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
+    // Resolve the initial timestep first — needed to convert any Time-based distances.
+    let initial_timestep = unitless
+      .timestep_changes
+      .iter()
+      .find_map(|e| {
+        if e.distance.to_iteration(1.0) == 0 {
+          Some(e.value)
+        } else {
+          None
+        }
+      })
+      .ok_or_else(|| {
+        io::Error::new(
+          io::ErrorKind::InvalidData,
+          "timestep_changes must include an entry at iteration 0",
+        )
+      })?;
+
+    let mut timestep_schedule: Vec<(usize, f64)> = unitless
+      .timestep_changes
+      .iter()
+      .map(|entry| entry.to_runtime(initial_timestep))
+      .collect();
+    timestep_schedule.sort_unstable_by_key(|(iteration, _)| *iteration);
+    timestep_schedule.dedup_by_key(|(iteration, _)| *iteration);
+
     let mut gravity_schedule: Vec<(usize, f64)> = unitless
       .gravity_changes
       .iter()
-      .map(|entry| entry.to_runtime(unitless.time_step))
+      .map(|entry| entry.to_runtime(initial_timestep))
       .collect();
     gravity_schedule.sort_unstable_by_key(|(iteration, _)| *iteration);
     gravity_schedule.dedup_by_key(|(iteration, _)| *iteration);
 
-    if gravity_schedule.is_empty() {
-      gravity_schedule.push((0, 1.0));
+    if gravity_schedule.is_empty() || !gravity_schedule.iter().any(|(i, _)| *i == 0) {
+      return Err(io::Error::new(
+        io::ErrorKind::InvalidData,
+        "gravity_changes must include an entry at iteration 0",
+      ));
     }
+
+    let num_of_iterations = unitless.num_of_iterations.to_iteration(initial_timestep);
 
     Ok(SimulationConfig::new(
       unitless.world_size,
       gravity_schedule,
-      unitless.time_step,
-      unitless.num_of_iterations,
+      timestep_schedule,
+      num_of_iterations,
       unitless.max_iteration_till_reset,
-      unitless.save_options.to_runtime(unitless.time_step),
+      unitless.save_options.to_runtime(initial_timestep),
       integration_algorithm,
       unitless.world_type.to_runtime(),
       unitless.edge_condition.to_runtime(),
@@ -200,8 +242,12 @@ impl SimulationConfigFile {
           value: e.value,
         })
         .collect(),
-      time_step: self.time_step * ValueUnits::scale_between(source, target, TIME_U),
-      num_of_iterations: self.num_of_iterations,
+      timestep_changes: self
+        .timestep_changes
+        .iter()
+        .map(|e| e.to_value_units(source, target))
+        .collect(),
+      num_of_iterations: self.num_of_iterations.to_value_units(source, target),
       max_iteration_till_reset: self.max_iteration_till_reset,
       save_options: self.save_options.to_value_units(source, target),
       integration_algorithm: self.integration_algorithm.to_value_units(source, target),

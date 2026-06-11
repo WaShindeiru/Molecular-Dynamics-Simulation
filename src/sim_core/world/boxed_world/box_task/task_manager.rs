@@ -136,7 +136,7 @@ impl TaskManager {
         task_id: *task_id,
         box_ids: box_ids.clone(),
         history: Arc::clone(&box_container),
-        time_step: self.simulation_config.time_step,
+        time_step: self.simulation_config.initial_time_step(),
         previous_thermostat_epsilon: thermostat_epsilon,
         current_iteration,
         container_size: self.container_config.world_size,

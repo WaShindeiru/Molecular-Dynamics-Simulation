@@ -1,12 +1,7 @@
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
-
-use log::info;
+use crate::sim_core::world::utils::SparseManager;
 
 pub struct GravityManager {
-  current_gravity: f64,
-  gravity_list: HashMap<usize, f64>,
-  gravity_heap: BinaryHeap<Reverse<usize>>,
+  inner: SparseManager<f64>,
 }
 
 impl GravityManager {
@@ -15,74 +10,21 @@ impl GravityManager {
   }
 
   pub fn new(gravities: Vec<(usize, f64)>) -> Self {
-    assert!(
-      !gravities.is_empty(),
-      "GravityManager requires at least one gravity entry"
-    );
-    assert!(
-      gravities.iter().any(|(i, _)| *i == 0),
-      "GravityManager requires an entry for iteration 0 (initial gravity)"
-    );
-
-    let gravity_list: HashMap<usize, f64> = gravities.into_iter().collect();
-    let initial_gravity = *gravity_list.get(&0).unwrap();
-
-    // Iteration 0 is consumed immediately as the initial state — it must not sit in
-    // the heap, otherwise the first real call (e.g. get_gravity(1)) would see
-    // heap-top 0 < 1 and panic with "iteration skipped".
-    let gravity_heap: BinaryHeap<Reverse<usize>> = gravity_list
-      .keys()
-      .filter(|&&k| k != 0)
-      .map(|k| Reverse(*k))
-      .collect();
-
     GravityManager {
-      current_gravity: initial_gravity,
-      gravity_list,
-      gravity_heap,
+      inner: SparseManager::new(gravities, "GravityManager"),
     }
   }
 
-  /// Returns the gravity for the given iteration, advancing the internal state if needed.
-  /// Panics if `iteration` skips over a scheduled change (heap top < iteration).
   pub fn get_gravity(&mut self, iteration: usize) -> f64 {
-    loop {
-      match self.gravity_heap.peek() {
-        None => return self.current_gravity,
-        Some(Reverse(top)) if *top > iteration => return self.current_gravity,
-        Some(Reverse(top)) if *top == iteration => {
-          let top = *top;
-          self.gravity_heap.pop();
-          self.current_gravity = *self.gravity_list.get(&top).unwrap();
-
-          info!("Gravity changed to: {}", self.current_gravity);
-
-          return self.current_gravity;
-        }
-        Some(Reverse(top)) => panic!(
-          "GravityManager: iteration {} was skipped (heap top: {}). \
-           Iterations must be consumed in order.",
-          iteration, top
-        ),
-      }
-    }
+    self.inner.get(iteration)
   }
 
   pub fn initial_gravity(&self) -> f64 {
-    *self
-      .gravity_list
-      .get(&0)
-      .expect("GravityManager requires an entry for iteration 0")
+    self.inner.initial_value()
   }
 
   pub fn scheduled_changes(&self) -> Vec<(usize, f64)> {
-    let mut entries: Vec<_> = self
-      .gravity_list
-      .iter()
-      .map(|(&iteration, &gravity)| (iteration, gravity))
-      .collect();
-    entries.sort_unstable_by_key(|(iteration, _)| *iteration);
-    entries
+    self.inner.scheduled_changes()
   }
 }
 

@@ -146,17 +146,18 @@ impl Engine {
         counter += 1;
       }
 
+      let time_step = self.config.initial_time_step();
       self
         .world
         .update(
           &self.config.integration_algorithm,
-          self.config.time_step,
+          time_step,
           self.current_iteration + 1,
         )
         .unwrap();
 
       self.current_iteration += 1;
-      self.current_time += self.config.time_step;
+      self.current_time += time_step;
     }
 
     self.simulation_time = start.elapsed();
@@ -166,7 +167,7 @@ impl Engine {
   pub fn to_transfer_struct(&self) -> EngineDTO {
     EngineDTO {
       world: self.world.to_transfer_struct(),
-      time_step: self.config.time_step,
+      time_step: self.config.initial_time_step(),
       num_of_iterations: self.config.num_of_iterations,
     }
   }

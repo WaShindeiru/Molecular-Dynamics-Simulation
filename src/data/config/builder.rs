@@ -245,10 +245,12 @@ impl SimulationConfigBuilder {
       .gravity_schedule
       .unwrap_or_else(|| vec![(0, 1.0)]);
 
+    let timestep_schedule = vec![(0, time_step)];
+
     Ok(SimulationConfig::new(
       world_size,
       gravity_schedule,
-      time_step,
+      timestep_schedule,
       self.num_of_iterations.unwrap_or(1000),
       self.max_iteration_till_reset.unwrap_or(1000),
       save_options,

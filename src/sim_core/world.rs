@@ -16,6 +16,8 @@ pub mod saver;
 pub mod simple_world;
 pub mod velocity_heap;
 pub mod gravity;
+pub mod timestep;
+pub mod utils;
 
 fn get_index_for_iteration(
   current_iteration: usize,
