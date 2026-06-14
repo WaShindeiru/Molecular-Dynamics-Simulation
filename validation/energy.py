@@ -119,7 +119,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
     plt.xlabel("time elapsed [s]")
     plt.ylabel("Temperature [K]")
     plt.title(f"Temperature")
-    plt.ylim([0, 2400])
+    # plt.ylim([0, 2400])
     plt.legend()
     plt.savefig(path + '/Temperature.png')
     plt.show()
@@ -141,7 +141,7 @@ if __name__ == "__main__":
   # output_dir = "/media/washindeiru/7E442D59442D1585/md"
   # newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
 
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/error_investigation/error_investigation_final?/static_investigation/static_v2"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/timestamp_investigation/triangle/e-15"
 
 
   thermostat = True

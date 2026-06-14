@@ -4,7 +4,7 @@ use std::{fs, io};
 use nalgebra::Vector3;
 use serde_json::Value;
 
-use crate::data::SimulationConfig;
+use crate::data::{SimulationConfig, TimeIterationDistance};
 use crate::data::units::{R_U, TIME_U, ValueUnits};
 use super::integration_algorithm_file::IntegrationAlgorithmFile;
 use crate::sim_core::world::saver::FrameSamplingConfig;
@@ -90,10 +90,9 @@ pub struct SimulationConfigFile {
   #[serde(default)]
   pub value_units: ValueUnits,
   pub world_size: Vector3<f64>,
-  #[serde(default)]
   pub gravity_changes: Vec<GravityChangeEntry>,
   pub time_step: f64,
-  pub num_of_iterations: usize,
+  pub num_of_iterations: TimeIterationDistance,
   pub max_iteration_till_reset: usize,
   pub save_options: SaveOptionsFile,
   pub integration_algorithm: IntegrationAlgorithmFile,
@@ -117,7 +116,7 @@ impl SimulationConfigFile {
       world_size: config.world_size,
       gravity_changes,
       time_step: config.time_step,
-      num_of_iterations: config.num_of_iterations,
+      num_of_iterations: TimeIterationDistance::Iteration { value: config.num_of_iterations },
       max_iteration_till_reset: config.max_iteration_till_reset,
       save_options: SaveOptionsFile::from_runtime(&config.save_options),
       integration_algorithm: IntegrationAlgorithmFile::from_runtime(&config.integration_algorithm),
@@ -149,11 +148,13 @@ impl SimulationConfigFile {
       gravity_schedule.push((0, 1.0));
     }
 
+    let num_of_iterations = unitless.num_of_iterations.to_iteration(unitless.time_step);
+
     Ok(SimulationConfig::new(
       unitless.world_size,
       gravity_schedule,
       unitless.time_step,
-      unitless.num_of_iterations,
+      num_of_iterations,
       unitless.max_iteration_till_reset,
       unitless.save_options.to_runtime(unitless.time_step),
       integration_algorithm,
@@ -201,7 +202,7 @@ impl SimulationConfigFile {
         })
         .collect(),
       time_step: self.time_step * ValueUnits::scale_between(source, target, TIME_U),
-      num_of_iterations: self.num_of_iterations,
+      num_of_iterations: self.num_of_iterations.to_value_units(source, target),
       max_iteration_till_reset: self.max_iteration_till_reset,
       save_options: self.save_options.to_value_units(source, target),
       integration_algorithm: self.integration_algorithm.to_value_units(source, target),
