@@ -58,6 +58,12 @@ impl Default for FrameSamplingConfig {
 }
 
 #[derive(Clone)]
+pub enum PeriodicSave {
+  Disabled,
+  Enabled { iteration_distance: usize },
+}
+
+#[derive(Clone)]
 pub struct SaveOptions {
   pub save: bool,
   pub save_path: String,
@@ -69,6 +75,7 @@ pub struct SaveOptions {
   pub energy_sampling: FrameSamplingConfig,
   pub velocity_particles_num: usize,
   pub save_final_particles: bool,
+  pub periodic_save: PeriodicSave,
 }
 
 impl Default for SaveOptions {
@@ -84,6 +91,7 @@ impl Default for SaveOptions {
       energy_sampling: FrameSamplingConfig::default(),
       velocity_particles_num: 100,
       save_final_particles: false,
+      periodic_save: PeriodicSave::Disabled,
     }
   }
 }
@@ -94,6 +102,7 @@ pub struct PartialWorldSaver {
   thermostat_work_total: f64,
   laamps_frame_iteration_count_current_iteration: usize,
   energy_frame_iteration_count_current_iteration: usize,
+  periodic_save_iteration_count: usize,
 
   velocity_heap: VelocityHeap,
 }
@@ -105,6 +114,7 @@ impl PartialWorldSaver {
       thermostat_work_total: 0.,
       laamps_frame_iteration_count_current_iteration: 0,
       energy_frame_iteration_count_current_iteration: 0,
+      periodic_save_iteration_count: 0,
       velocity_heap,
       save_options,
     }

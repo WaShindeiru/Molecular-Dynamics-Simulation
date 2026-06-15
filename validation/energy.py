@@ -15,7 +15,7 @@ def load_time_step(path: str) -> float:
   return float(parameters["time_step"])
 
 
-def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end: int | None = None) -> None:
+def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: int | None = None, end: int | None = None) -> None:
   energy_data = pd.read_csv(path + '/energy.csv', header=0)
   energy_data = energy_data[energy_data["iteration"] >= 1].reset_index(drop=True)
   if start is not None:
@@ -25,8 +25,15 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
   energy_data = energy_data.reset_index(drop=True)
 
   iteration = energy_data["iteration"]
-  time_step = load_time_step(path)
-  time_elapsed = iteration * time_step
+
+  if use_time:
+    time_step = load_time_step(path)
+    time_elapsed = iteration * time_step
+    x_label = "time elapsed [s]"
+  else:
+    time_elapsed = iteration
+    x_label = "iteration"
+
   kinetic_energy = energy_data["kinetic_energy"]
   potential_energy = energy_data["potential_energy"]
   # phantom_energy = energy_data["phantom_energy"]
@@ -45,7 +52,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
   # plt.plot(time_elapsed, total_energy, label="all_energy")
   if thermostat:
     plt.plot(time_elapsed, thermostat_work, label="thermostat work")
-  plt.xlabel("time elapsed [s]")
+  plt.xlabel(x_label)
   plt.ylabel("Energy [eV]")
   # plt.xlim([130000, 140000])
   # plt.ylim(40000, 40100)
@@ -57,7 +64,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
 
   plt.figure()
   plt.plot(time_elapsed, potential_gravity_energy, label="gravitational pot energy")
-  plt.xlabel("time elapsed [s]")
+  plt.xlabel(x_label)
   plt.ylabel("Energy [eV]")
   plt.title("Gravitational Potential Energy")
   plt.legend()
@@ -72,20 +79,23 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
   plt.figure()
   plt.plot(time_elapsed, total_energy_difference, label="Total energy error")
 
-  diff = total_energy_difference[(time_elapsed > 0.7e-11) & (time_elapsed < 0.71e-11)]
-  print(diff)
+  max_error_label = total_energy_difference.diff().argmax()
+  print(max_error_label)
+  print(iteration[max_error_label])
+  # diff = total_energy_difference[(time_elapsed > 0.7e-11) & (time_elapsed < 0.71e-11)]
+  # print(diff)
 
-  plt.xlabel("time elapsed [s]")
+  plt.xlabel(x_label)
   plt.ylabel("Energy [eV]")
   plt.title("Total energy error")
-  # plt.xlim([2000000, 2100000])
+  # plt.xlim([400000, 500000])
   # plt.ylim([28, 31])
   plt.savefig(path + '/energy_difference.png')
   plt.show()
 
   plt.figure()
   plt.plot(time_elapsed, total_energy_show, label="Total energy")
-  plt.xlabel("time elapsed [s]")
+  plt.xlabel(x_label)
   plt.ylabel("Energy [eV]")
   plt.title("Total energy")
   plt.savefig(path + '/total_energy.png')
@@ -108,7 +118,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
 
     plt.figure()
     plt.plot(time_elapsed, thermostat_epsilon, label="Thermostat epsilon")
-    plt.xlabel("time elapsed [s]")
+    plt.xlabel(x_label)
     plt.ylabel("thermostat epsilon")
     plt.title("Thermostat epsilon")
     plt.savefig(path + "/thermostat_epsilon.png")
@@ -116,7 +126,7 @@ def show_energy_plot(path: str, thermostat: bool, start: int | None = None, end:
 
     plt.figure()
     plt.plot(time_elapsed, T, label="Temperature")
-    plt.xlabel("time elapsed [s]")
+    plt.xlabel(x_label)
     plt.ylabel("Temperature [K]")
     plt.title(f"Temperature")
     # plt.ylim([0, 2400])
@@ -141,11 +151,12 @@ if __name__ == "__main__":
   # output_dir = "/media/washindeiru/7E442D59442D1585/md"
   # newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
 
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/timestamp_investigation/triangle/e-15"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/timestamp_investigation/trash/trash_v1_continued"
+  newest_folder = "/media/washindeiru/7E442D59442D1585/md/timestamp_investigation/constant_temp/const_temp/e-17"
 
 
   thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")
-  show_energy_plot(newest_folder, thermostat, start=0, end=5e10)
+  show_energy_plot(newest_folder, thermostat, use_time=False, start=0, end=5e10)
   # compare_different_temps(newest_folder)

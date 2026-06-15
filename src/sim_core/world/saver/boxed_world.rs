@@ -4,8 +4,12 @@ use std::{fs, io};
 use log::info;
 use nalgebra::Vector3;
 
+use crate::data::types::AtomType;
+use crate::data::ValueUnits;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
-use crate::sim_core::world::saver::{PartialWorldSaver, csv_writer_with_header};
+use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
+use crate::persistence::json::particle_config::{ParticleConfigFile, ParticleInitialState};
+use crate::sim_core::world::saver::{PartialWorldSaver, PeriodicSave, csv_writer_with_header};
 use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 
 impl PartialWorldSaver {
@@ -28,7 +32,68 @@ impl PartialWorldSaver {
       self.append_positions_in_one_file_boxed_world(world)?;
     }
 
+    self.save_periodic_particles_boxed_world(world)?;
+
     info!("Batch {} saved", world.number_of_resets);
+
+    Ok(())
+  }
+
+  fn save_periodic_particles_boxed_world(&mut self, world: &BoxedWorldDTO) -> io::Result<()> {
+    let iteration_distance = match self.save_options.periodic_save {
+      PeriodicSave::Disabled => return Ok(()),
+      PeriodicSave::Enabled { iteration_distance } => iteration_distance,
+    };
+
+    let dir = Path::new(&self.save_options.save_path)
+      .join("particles")
+      .join("periodic");
+    fs::create_dir_all(&dir)?;
+
+    for (i, box_container) in world.history.box_container.iter().enumerate() {
+      let should_save = self.periodic_save_iteration_count % iteration_distance == 0;
+      self.periodic_save_iteration_count += 1;
+
+      if !should_save {
+        continue;
+      }
+
+      let global_iteration = world.number_of_resets * world.max_iteration_till_reset + i;
+
+      let mut c_count = 0usize;
+      let mut fe_count = 0usize;
+      let mut particles = Vec::with_capacity(box_container.atoms.len());
+
+      for atom in box_container.atoms.iter() {
+        match atom.atom_type {
+          AtomType::C | AtomType::C_nanotube => c_count += 1,
+          AtomType::Fe => fe_count += 1,
+        }
+        particles.push(ParticleInitialState::new(
+          atom.id,
+          atom.atom_type,
+          ParticleTypeFile::from(atom.kind),
+          atom.position,
+          atom.velocity,
+          None,
+        ));
+      }
+
+      let config_file = ParticleConfigFile {
+        value_units: ValueUnits::Unitless,
+        particles,
+        num_of_atoms: c_count + fe_count,
+        num_of_carbon_atoms: c_count,
+        num_of_iron_atoms: fe_count,
+        velocity_managers: vec![],
+      }
+      .to_value_units(ValueUnits::Si);
+
+      let json = serde_json::to_string_pretty(&config_file)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+      fs::write(dir.join(format!("{global_iteration}.json")), json)?;
+    }
 
     Ok(())
   }
