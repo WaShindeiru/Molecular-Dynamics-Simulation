@@ -22,7 +22,10 @@
     }
   ],
   "time_step": 1.75e-18,
-  "num_of_iterations": 10000000,
+  "num_of_iterations": {
+    "type": "Time",
+    "value": 1e-10
+  },
   "max_iteration_till_reset": 2000,
   "save_options": {
     "save": true,
