@@ -5,6 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+import argparse
+import os
+
 k_b = 8.617333e-5
 
 
@@ -62,6 +65,17 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.savefig(path + '/energy.png')
   plt.show()
 
+  # plt.figure()
+  # plt.plot(time_elapsed, kinetic_energy, label="kinetic energy")
+  # plt.plot(time_elapsed, potential_energy, label="potential energy")
+  # plt.plot(time_elapsed, total_energy_show, label="total energy")
+  # plt.xlabel(x_label)
+  # plt.ylabel("Energy [eV]")
+  # plt.title("Energy plot")
+  # plt.legend()
+  # plt.savefig(path + '/energy_simple.png')
+  # plt.show()
+
   plt.figure()
   plt.plot(time_elapsed, potential_gravity_energy, label="gravitational pot energy")
   plt.xlabel(x_label)
@@ -88,10 +102,21 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.xlabel(x_label)
   plt.ylabel("Energy [eV]")
   plt.title("Total energy error")
-  # plt.xlim([400000, 500000])
-  # plt.ylim([28, 31])
+  # plt.xlim([0, 2.3e-10])
+  # plt.ylim([0, 60])
   plt.savefig(path + '/energy_difference.png')
   plt.show()
+
+  # plt.figure()
+  # plt.plot(time_elapsed, total_energy_difference, label="Total energy error")
+
+  # plt.xlabel(x_label)
+  # plt.ylabel("Energy [eV]")
+  # plt.title("Total energy error")
+  # plt.xlim([0, 1e-10])
+  # plt.ylim([-2, 20])
+  # plt.savefig(path + '/energy_difference_small.png')
+  # plt.show()
 
   plt.figure()
   plt.plot(time_elapsed, total_energy_show, label="Total energy")
@@ -144,19 +169,24 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
 
 
 if __name__ == "__main__":
-  # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check")
-  # show_energy_plot_from_text("/home/washindeiru/studia/sem9/md/prog_check_v2/prog_check")
-  import os
+
+  parser = argparse.ArgumentParser(description="Plot energy data from a simulation output directory.")
+  parser.add_argument("path", type=str, help="Path to the simulation output directory")
+  parser.add_argument("--use-time", action=argparse.BooleanOptionalAction, default=True, help="Use time as x-axis (default: True)")
+  parser.add_argument("--start", type=float, default=0, help="Start iteration (default: 0)")
+  parser.add_argument("--end", type=float, default=5e50, help="End iteration (default: 5e50)")
+  parser.add_argument("--thermostat", action=argparse.BooleanOptionalAction, default=True, help="Whether thermostat data is present (default: True)")
+  args = parser.parse_args()
+
   # output_dir = "../../output"
   # output_dir = "/media/washindeiru/7E442D59442D1585/md"
   # newest_folder = max([os.path.join(output_dir, d) for d in os.listdir(output_dir)], key=os.path.getmtime)
 
   # newest_folder = "/media/washindeiru/7E442D59442D1585/md/timestamp_investigation/trash/trash_v1_continued"
-  newest_folder = "/media/washindeiru/7E442D59442D1585/md/timestamp_investigation/constant_temp/const_temp/e-17"
+  # newest_folder = "/media/washindeiru/7E442D59442D1585/md/timestamp_investigation/triangle/e-17"
 
-
-  thermostat = True
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")
-  show_energy_plot(newest_folder, thermostat, use_time=False, start=0, end=5e10)
-  # compare_different_temps(newest_folder)
+
+  show_energy_plot(args.path, args.thermostat, use_time=args.use_time, start=args.start, end=args.end)
+  # compare_different_temps(args.path)
