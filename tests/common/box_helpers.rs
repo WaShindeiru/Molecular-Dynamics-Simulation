@@ -8,7 +8,7 @@ use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
-use carbon_nanotube::sim_core::world::saver::{FrameSamplingConfig, SaveOptions};
+use carbon_nanotube::sim_core::world::saver::{FrameSamplingConfig, PeriodicSave, SaveOptions};
 use nalgebra::Vector3;
 use std::collections::HashSet;
 use std::fs;
@@ -227,6 +227,7 @@ pub fn test_reset_world_with_thermostat_runner(
     },
     velocity_particles_num: 10,
     save_final_particles: false,
+    periodic_save: PeriodicSave::Disabled,
   };
 
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
@@ -320,6 +321,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     },
     velocity_particles_num: 10,
     save_final_particles: false,
+    periodic_save: PeriodicSave::Disabled,
   };
 
   // TODO: change back to verlet

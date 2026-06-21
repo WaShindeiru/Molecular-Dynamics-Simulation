@@ -5,6 +5,10 @@ use crate::data::InteractionType::FeC;
   use crate::sim_core::world::computation::compute_forces_potential;
   use super::*;
 
+  // Serialises every test that touches the SafeAtomFactory singleton, so that
+  // reset_for_testing() is never called while another test is actively using it.
+  static FACTORY_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
   fn test_box_container_config() -> BoxContainerConfig {
     BoxContainerConfig {
       box_type: FeC,
@@ -68,6 +72,8 @@ use crate::data::InteractionType::FeC;
 
   #[test]
   fn test_force_task_box_container_with_one_particle_in_each_box_center_atoms_for_box_normal_placement() {
+    let _lock = FACTORY_TEST_LOCK.lock().unwrap();
+    SafeAtomFactory::reset_for_testing();
     let container_config = test_box_container_config();
 
     let mut needed_box_ids: Vec<usize> = Vec::new();
@@ -173,6 +179,8 @@ use crate::data::InteractionType::FeC;
 
   #[test]
   fn test_force_task_box_container_with_one_particle_in_each_box_center_neighbour_atoms_periodic_normal_placement() {
+    let _lock = FACTORY_TEST_LOCK.lock().unwrap();
+    SafeAtomFactory::reset_for_testing();
     let container_config = test_box_container_config();
 
     let mut needed_box_ids: Vec<usize> = Vec::new();
@@ -267,6 +275,8 @@ use crate::data::InteractionType::FeC;
 
   #[test]
   fn test_force_task_box_container_with_one_particle_in_each_box_center_neighbour_atoms_periodic_left_edge_placement() {
+    let _lock = FACTORY_TEST_LOCK.lock().unwrap();
+    SafeAtomFactory::reset_for_testing();
     let container_config = test_box_container_config();
 
     let mut needed_box_ids: Vec<usize> = Vec::new();
@@ -378,6 +388,8 @@ use crate::data::InteractionType::FeC;
 
   #[test]
   fn test_force_task_box_container_neighbour_atoms_periodic_corner_left_edge_placement() {
+    let _lock = FACTORY_TEST_LOCK.lock().unwrap();
+    SafeAtomFactory::reset_for_testing();
     let container_config = test_box_container_config();
 
     // Home box at grid (0, y-1, z-1) with box_count_dim = (10, 10, 10) -> (0, 9, 9).
@@ -501,6 +513,8 @@ use crate::data::InteractionType::FeC;
 
   #[test]
   fn test_force_task_box_container_with_one_particle_in_each_box_center_atoms_for_box_left_edge_placement() {
+    let _lock = FACTORY_TEST_LOCK.lock().unwrap();
+    SafeAtomFactory::reset_for_testing();
     let container_config = test_box_container_config();
 
     let mut needed_box_ids: Vec<usize> = Vec::new();
@@ -662,6 +676,8 @@ use crate::data::InteractionType::FeC;
 
   #[test]
   fn test_force_task_box_container_with_one_particle_in_each_box_center_atoms_for_box_right_edge_placement() {
+    let _lock = FACTORY_TEST_LOCK.lock().unwrap();
+    SafeAtomFactory::reset_for_testing();
     let container_config = test_box_container_config();
 
     let mut needed_box_ids: Vec<usize> = Vec::new();
@@ -904,6 +920,8 @@ use crate::data::InteractionType::FeC;
   //   (c) force on the home atom is nonzero  →  actual physical interaction happens
   #[test]
   fn periodic_x_edge_interacts_with_one_away_not_two_away() {
+    let _lock = FACTORY_TEST_LOCK.lock().unwrap();
+    SafeAtomFactory::reset_for_testing();
     use std::collections::HashSet;
 
     const BOX_SIZE: f64 = 3.35;

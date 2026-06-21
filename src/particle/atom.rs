@@ -311,10 +311,11 @@ pub struct SafeAtomFactory {
   inner: Mutex<AtomFactory>,
 }
 
+static SAFE_ATOM_FACTORY_INSTANCE: OnceLock<SafeAtomFactory> = OnceLock::new();
+
 impl SafeAtomFactory {
   pub fn new(potential_gravity_max: f64, z_max: f64) -> &'static Self {
-    static INSTANCE: OnceLock<SafeAtomFactory> = OnceLock::new();
-    let instance = INSTANCE.get_or_init(|| Self {
+    let instance = SAFE_ATOM_FACTORY_INSTANCE.get_or_init(|| Self {
       potential_gravity_max,
       z_max,
       inner: Mutex::new(AtomFactory::new(potential_gravity_max, z_max)),
@@ -331,6 +332,17 @@ impl SafeAtomFactory {
     );
 
     instance
+  }
+
+  #[cfg(test)]
+  pub fn reset_for_testing() {
+    // SAFETY: Only called from tests that hold the FACTORY_TEST_LOCK, which serialises all
+    // callers. No thread can be concurrently reading SAFE_ATOM_FACTORY_INSTANCE while this
+    // runs because they are all blocked on the same lock.
+    unsafe {
+      let ptr = &raw const SAFE_ATOM_FACTORY_INSTANCE as *mut OnceLock<SafeAtomFactory>;
+      std::mem::replace(&mut *ptr, OnceLock::new());
+    }
   }
 
   pub fn get_atom(
