@@ -11,7 +11,7 @@ use nalgebra::Vector3;
 use std::any::Any;
 use std::collections::HashMap;
 
-const OPTIMIZATION: bool = true;
+const OPTIMIZATION: bool = false;
 
 pub fn compute_new_velocity(
   half_velocity: Vector3<f64>,
