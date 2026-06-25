@@ -149,7 +149,7 @@ impl BoxedWorld {
         unimplemented!("semi implicit euler for boxed world")
       }
       IntegrationAlgorithm::VelocityVerlet => {
-        unimplemented!("velocity verlet for boxed world!")
+        self.update_velocity_verlet(next_iteration);
       }
       IntegrationAlgorithm::NoseHooverVerlet { .. } => {
         self.update_verlet_nose_hoover(next_iteration);

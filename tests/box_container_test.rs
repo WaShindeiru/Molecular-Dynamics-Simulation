@@ -31,7 +31,7 @@ fn test_box_container_simple_partition_runner(edge_condition: EdgeCondition) {
   assert_eq!(&container.box_container_config().world_size, &size);
   assert_eq!(
     &container.box_container_config().box_type,
-    &SimulationBoxType::CC
+    &SimulationBoxType::FeFe
   );
 
   // With CC interaction (box_size = 2.0), we should have:
