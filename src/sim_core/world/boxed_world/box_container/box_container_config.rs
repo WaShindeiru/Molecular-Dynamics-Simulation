@@ -78,13 +78,15 @@ pub fn detect_box_type(atoms: &[Particle]) -> SimulationBoxType {
     }
   }
 
-  if fe && c {
-    InteractionType::FeC
-  } else if fe {
-    InteractionType::FeFe
-  } else {
-    InteractionType::CC
-  }
+  // if fe && c {
+  //   InteractionType::FeC
+  // } else if fe {
+  //   InteractionType::FeFe
+  // } else {
+  //   InteractionType::CC
+  // }
+
+  InteractionType::FeFe
 }
 
 pub fn new_config(atoms: &[Particle], world_size: Vector3<f64>) -> BoxContainerConfig {
