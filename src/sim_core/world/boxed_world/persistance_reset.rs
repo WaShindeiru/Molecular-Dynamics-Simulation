@@ -4,17 +4,13 @@ mod saver_worker;
 use std::fs;
 use std::io;
 use std::path::Path;
-use std::sync::Arc;
 
 use log::info;
 
 use crate::data::types::AtomType;
 use crate::data::{SimulationConfig, ValueUnits};
-use crate::persistence::dto::world::boxed::BoxedWorldDTO;
-use crate::persistence::dto::world::history::HistoryDTO;
+use crate::persistence::dto::world::boxed::BoxedWorldDTOWithoutHistory;
 use crate::persistence::json::particle_config::{ParticleConfigFile, ParticleInitialState};
-use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
 
@@ -76,15 +72,10 @@ impl PersistanceReset {
     self.energy_frame_iteration_count
   }
 
-  fn build_boxed_snapshot_dto(&self, num_of_world_iterations: usize) -> BoxedWorldDTO {
-    let lower_index = if self.number_of_resets > 0 { 1 } else { 0 };
-    let (containers, thermostat_epsilon) = self.history_manager.clone_for_cache();
-    let history = history_dto_from_snapshot(containers, thermostat_epsilon, lower_index);
-
-    BoxedWorldDTO {
+  fn build_partial_dto(&self, num_of_world_iterations: usize) -> BoxedWorldDTOWithoutHistory {
+    BoxedWorldDTOWithoutHistory {
       num_of_atoms: self.num_of_atoms,
       size: self.config.world_size,
-      history,
       integration_algorithm: self.config.integration_algorithm.clone(),
       num_of_world_iterations,
       number_of_resets: self.number_of_resets,
@@ -101,15 +92,18 @@ impl PersistanceReset {
 
     if self.reset_counter == self.config.max_iteration_till_reset {
       if self.save_options.save {
-        let dto = self.build_boxed_snapshot_dto(num_of_world_iterations);
-        self.saver_handle.send_dto(dto)?;
+        let partial = self.build_partial_dto(num_of_world_iterations);
+        let fresh = self.history_manager.reset_clone();
+        let old = std::mem::replace(&mut self.history_manager, fresh);
+        self.saver_handle.send_msg((partial, old))?;
+      } else {
+        self.history_manager.reset_container();
       }
 
       info!(
         "Resetting boxed world, reset number: {}",
         self.number_of_resets
       );
-      self.history_manager.reset_container();
       self.number_of_resets += 1;
       self.reset_counter = 0;
     }
@@ -136,8 +130,10 @@ impl PersistanceReset {
       return Ok(());
     }
     self.saver_handle.drain_finished_results()?;
-    let dto = self.build_boxed_snapshot_dto(num_of_world_iterations);
-    self.saver_handle.send_dto_wait_result(dto)
+    let partial = self.build_partial_dto(num_of_world_iterations);
+    let fresh = self.history_manager.reset_clone();
+    let old = std::mem::replace(&mut self.history_manager, fresh);
+    self.saver_handle.send_msg_wait_result((partial, old))
   }
 
   pub fn save_final_particles(&self) -> io::Result<()> {
@@ -188,21 +184,5 @@ impl PersistanceReset {
 impl Drop for PersistanceReset {
   fn drop(&mut self) {
     self.saver_handle.shutdown_inner();
-  }
-}
-
-fn history_dto_from_snapshot(
-  containers: Vec<Arc<BoxContainer<Arc<SimulationBox>>>>,
-  thermostat_epsilon: Vec<f64>,
-  lower_index: usize,
-) -> HistoryDTO {
-  let box_container = containers[lower_index..]
-    .iter()
-    .map(|c| c.to_transfer_struct())
-    .collect();
-
-  HistoryDTO {
-    box_container,
-    thermostat_epsilon,
   }
 }

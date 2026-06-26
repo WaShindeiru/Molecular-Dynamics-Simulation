@@ -2,20 +2,19 @@ use std::io;
 use std::sync::mpsc::{self, TryRecvError};
 use std::thread::JoinHandle;
 
-use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::sim_core::world::saver::PartialWorldSaver;
 
-use super::saver_worker::SaverWorker;
+use super::saver_worker::{SaverMessage, SaverWorker};
 
 pub(super) struct SaverHandle {
-  dto_sender: Option<mpsc::SyncSender<BoxedWorldDTO>>,
+  dto_sender: Option<mpsc::SyncSender<SaverMessage>>,
   result_receiver: mpsc::Receiver<io::Result<()>>,
   join: Option<JoinHandle<()>>,
 }
 
 impl SaverHandle {
   pub(super) fn spawn(saver: PartialWorldSaver, save_enabled: bool) -> Self {
-    let (dto_tx, dto_rx) = mpsc::sync_channel::<BoxedWorldDTO>(1);
+    let (dto_tx, dto_rx) = mpsc::sync_channel::<SaverMessage>(1);
     let (result_tx, result_rx) = mpsc::channel::<io::Result<()>>();
     let join = if save_enabled {
       Some(std::thread::spawn(move || {
@@ -49,20 +48,19 @@ impl SaverHandle {
     }
   }
 
-  pub(super) fn send_dto(&self, dto: BoxedWorldDTO) -> io::Result<()> {
+  pub(super) fn send_msg(&self, msg: SaverMessage) -> io::Result<()> {
     let sender = self
       .dto_sender
       .as_ref()
       .ok_or_else(|| io::Error::new(io::ErrorKind::NotConnected, "saver disconnected"))?;
 
     sender
-      .send(dto)
+      .send(msg)
       .map_err(|_| io::Error::new(io::ErrorKind::BrokenPipe, "saver worker terminated"))
   }
 
-  /// Used for final snapshots: waits until the saver has finished persist for this dto.
-  pub(super) fn send_dto_wait_result(&self, dto: BoxedWorldDTO) -> io::Result<()> {
-    self.send_dto(dto)?;
+  pub(super) fn send_msg_wait_result(&self, msg: SaverMessage) -> io::Result<()> {
+    self.send_msg(msg)?;
     match self.result_receiver.recv() {
       Ok(Ok(())) => Ok(()),
       Ok(Err(e)) => Err(e),

@@ -1,18 +1,21 @@
 use std::io;
 
-use crate::persistence::dto::world::boxed::BoxedWorldDTO;
+use crate::persistence::dto::world::boxed::BoxedWorldDTOWithoutHistory;
+use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::sim_core::world::saver::PartialWorldSaver;
+
+pub(crate) type SaverMessage = (BoxedWorldDTOWithoutHistory, HistoryManager);
 
 pub(crate) struct SaverWorker {
   saver: PartialWorldSaver,
-  receiver: std::sync::mpsc::Receiver<BoxedWorldDTO>,
+  receiver: std::sync::mpsc::Receiver<SaverMessage>,
   result_sender: std::sync::mpsc::Sender<io::Result<()>>,
 }
 
 impl SaverWorker {
   pub(crate) fn new(
     saver: PartialWorldSaver,
-    receiver: std::sync::mpsc::Receiver<BoxedWorldDTO>,
+    receiver: std::sync::mpsc::Receiver<SaverMessage>,
     result_sender: std::sync::mpsc::Sender<io::Result<()>>,
   ) -> Self {
     SaverWorker {
@@ -23,7 +26,10 @@ impl SaverWorker {
   }
 
   pub(crate) fn run(mut self) {
-    while let Ok(dto) = self.receiver.recv() {
+    while let Ok((partial, history_manager)) = self.receiver.recv() {
+      let lower_index = if partial.number_of_resets > 0 { 1 } else { 0 };
+      let dto = history_manager.to_dto(partial, lower_index);
+
       let atoms = dto
         .history
         .box_container

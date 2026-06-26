@@ -1,6 +1,8 @@
 use crate::data::types::AtomType;
 use crate::data::{ParticleConfig, SimulationConfig};
 use crate::particle::Particle;
+use crate::persistence::dto::world::boxed::BoxedWorldDTO;
+use crate::persistence::dto::world::boxed::BoxedWorldDTOWithoutHistory;
 use crate::persistence::dto::world::history::HistoryDTO;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
@@ -45,8 +47,20 @@ impl HistoryManager {
     self.current_index
   }
 
-  pub fn clone_for_cache(&self) -> (Vec<Arc<BoxContainer<Arc<SimulationBox>>>>, Vec<f64>) {
-    (self.history.clone(), self.thermostat_epsilon.clone())
+  pub fn reset_clone(&self) -> HistoryManager {
+    let mut thermostat_epsilon = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
+    thermostat_epsilon.push(*self.thermostat_epsilon.last().unwrap());
+
+    let mut history = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
+    history.push(self.history.last().unwrap().clone());
+
+    HistoryManager {
+      config: self.config.clone(),
+      thermostat_epsilon,
+      box_container_config: self.box_container_config.clone(),
+      history,
+      current_index: 0,
+    }
   }
 
   pub fn current_thermostat_epsilon(&self) -> f64 {
@@ -89,6 +103,23 @@ impl HistoryManager {
     self.current_index = new_index;
     self.history = new_box_container;
     self.thermostat_epsilon = new_thermostat_epsilon;
+  }
+
+  pub fn to_dto(self, partial: BoxedWorldDTOWithoutHistory, lower_index: usize) -> BoxedWorldDTO {
+    let history = self.to_history_dto(lower_index);
+    partial.with_history(history)
+  }
+
+  fn to_history_dto(self, lower_index: usize) -> HistoryDTO {
+    let box_container = self.history[lower_index..]
+      .iter()
+      .map(|container| container.to_transfer_struct())
+      .collect();
+
+    HistoryDTO {
+      box_container,
+      thermostat_epsilon: self.thermostat_epsilon,
+    }
   }
 
   pub fn to_transfer_struct(&self, lower_index: usize) -> HistoryDTO {
