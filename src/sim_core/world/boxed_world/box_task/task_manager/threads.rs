@@ -50,9 +50,10 @@ pub fn worker_task_handle(
           boundary_condition,
           box_ids,
           integration_cache,
+          optimization,
         } => {
           let force_result =
-            handle_force_batch_task(task_id, boundary_condition, &box_ids, &integration_cache);
+            handle_force_batch_task(task_id, boundary_condition, &box_ids, &integration_cache, optimization);
           result_tx_clone
             .send(BoxResult::ForceResult(force_result))
             .unwrap();

@@ -185,6 +185,7 @@ impl TaskManager {
         boundary_condition: self.simulation_config.edge_condition,
         box_ids: box_ids.clone(),
         integration_cache: Arc::clone(&integration_cache),
+        optimization: self.simulation_config.optimization,
       };
       self.tx_task.send(task).unwrap();
       debug!("Sent ForceBatchTask for task_id {}", task_id);

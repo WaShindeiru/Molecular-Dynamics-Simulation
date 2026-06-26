@@ -1010,7 +1010,7 @@ use crate::data::InteractionType::FeC;
     let particles_i: Vec<Box<dyn ForceComputationOperations>> =
       force_container.atoms_for_box(home_box_id).unwrap().collect();
 
-    let result = compute_forces_potential(&particles_i, &particles_j);
+    let result = compute_forces_potential(&particles_i, &particles_j, false);
     let force = result.fp.get(&home_id).expect("home atom must be in force result").force;
     assert!(
       force.magnitude() > 0.0,

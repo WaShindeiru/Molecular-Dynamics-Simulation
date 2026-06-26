@@ -11,8 +11,6 @@ use nalgebra::Vector3;
 use std::any::Any;
 use std::collections::HashMap;
 
-const OPTIMIZATION: bool = false;
-
 pub fn compute_new_velocity(
   half_velocity: Vector3<f64>,
   acceleration: Vector3<f64>,
@@ -46,7 +44,7 @@ pub trait ForceComputationOperations {
   fn prototype_clone(&self) -> Box<dyn ForceComputationOperations>;
 }
 
-pub fn compute_forces_potential<I>(particles_i: I, particles_j: I) -> FPInfoBoxed
+pub fn compute_forces_potential<I>(particles_i: I, particles_j: I, optimization: bool) -> FPInfoBoxed
 where
   I: IntoIterator + Clone,
   I::Item: AsRef<dyn ForceComputationOperations>,
@@ -78,7 +76,7 @@ where
     let i_id = particle_i.get_id();
     neighbours = Vec::new();
 
-    if OPTIMIZATION {
+    if optimization {
       for temp_j in particles_j.clone().into_iter() {
         let particle_j = temp_j.as_ref();
         let j_id = particle_j.get_id();

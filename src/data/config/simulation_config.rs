@@ -18,6 +18,7 @@ pub struct SimulationConfig {
   pub integration_algorithm: IntegrationAlgorithm,
   pub world_type: WorldType,
   pub edge_condition: EdgeCondition,
+  pub optimization: bool,
 }
 
 impl SimulationConfig {
@@ -31,6 +32,7 @@ impl SimulationConfig {
     integration_algorithm: IntegrationAlgorithm,
     world_type: WorldType,
     edge_condition: EdgeCondition,
+    optimization: bool,
   ) -> Self {
     SimulationConfig {
       world_size,
@@ -42,6 +44,7 @@ impl SimulationConfig {
       integration_algorithm,
       world_type,
       edge_condition,
+      optimization,
     }
   }
 

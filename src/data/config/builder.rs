@@ -271,6 +271,7 @@ impl SimulationConfigBuilder {
         trigger_small_subtask_size: 1,
         split: EdgeCondition::DEFAULT_SPLIT,
       }),
+      false,
     ))
   }
 

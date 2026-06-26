@@ -29,6 +29,7 @@ pub enum BoxTask {
     boundary_condition: EdgeCondition,
     box_ids: Vec<usize>,
     integration_cache: Arc<IntegrationCache>,
+    optimization: bool,
   },
 }
 

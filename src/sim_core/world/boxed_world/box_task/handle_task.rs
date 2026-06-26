@@ -114,6 +114,7 @@ pub fn handle_force_batch_task(
   boundary_condition: EdgeCondition,
   box_ids: &[usize],
   integration_cache: &IntegrationCache,
+  optimization: bool,
 ) -> ForceTaskResult {
   assert!(matches!(boundary_condition, EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll), 
     "Only periodic and periodic_all boundary condition is supported for force batch task");
@@ -185,7 +186,7 @@ pub fn handle_force_batch_task(
       );
     }
 
-    let info = compute_forces_potential(&particles_i, &particles_j);
+    let info = compute_forces_potential(&particles_i, &particles_j, optimization);
 
     #[cfg(debug_assertions)]
     for particle in particles_j.iter() {

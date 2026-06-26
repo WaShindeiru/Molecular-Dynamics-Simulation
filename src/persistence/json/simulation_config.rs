@@ -98,6 +98,8 @@ pub struct SimulationConfigFile {
   pub integration_algorithm: IntegrationAlgorithmFile,
   pub world_type: WorldTypeFile,
   pub edge_condition: EdgeConditionFile,
+  #[serde(default)]
+  pub optimization: bool,
 }
 
 impl SimulationConfigFile {
@@ -122,6 +124,7 @@ impl SimulationConfigFile {
       integration_algorithm: IntegrationAlgorithmFile::from_runtime(&config.integration_algorithm),
       world_type: WorldTypeFile::from_runtime(config.world_type),
       edge_condition: EdgeConditionFile::from_runtime(config.edge_condition),
+      optimization: config.optimization,
     };
 
     unitless.to_value_units(target_units)
@@ -160,6 +163,7 @@ impl SimulationConfigFile {
       integration_algorithm,
       unitless.world_type.to_runtime(),
       unitless.edge_condition.to_runtime(),
+      unitless.optimization,
     ))
   }
 
@@ -208,6 +212,7 @@ impl SimulationConfigFile {
       integration_algorithm: self.integration_algorithm.to_value_units(source, target),
       world_type: self.world_type,
       edge_condition: self.edge_condition,
+      optimization: self.optimization,
     }
   }
 
