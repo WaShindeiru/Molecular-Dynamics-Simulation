@@ -16,7 +16,7 @@ pub mod task_manager;
 pub enum BoxTask {
   VelocityBatchTask {
     task_id: usize,
-    box_ids: Vec<usize>,
+    box_ids: Arc<Vec<usize>>,
     history: Arc<BoxContainer<Arc<SimulationBox>>>,
     time_step: f64,
     previous_thermostat_epsilon: f64,
@@ -27,7 +27,7 @@ pub enum BoxTask {
   ForceBatchTask {
     task_id: usize,
     boundary_condition: EdgeCondition,
-    box_ids: Vec<usize>,
+    box_ids: Arc<Vec<usize>>,
     integration_cache: Arc<IntegrationCache>,
     optimization: bool,
   },

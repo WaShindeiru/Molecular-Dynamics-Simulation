@@ -32,6 +32,7 @@ pub mod persistance_reset;
 mod velocity_manager;
 
 use velocity_manager::VelocityManager;
+use crate::perf_log;
 
 pub struct BoxedWorld {
   config: SimulationConfig,
@@ -142,7 +143,9 @@ impl BoxedWorld {
     _time_step: f64,
     next_iteration: usize,
   ) -> io::Result<()> {
+    perf_log!("Persistance Reset being update step start");
     self.persistance_reset.begin_update_step(self.iteration)?;
+    perf_log!("Persistance Reset being update step end");
 
     match algorithm {
       IntegrationAlgorithm::SemiImplicitEuler => {
@@ -156,7 +159,9 @@ impl BoxedWorld {
       }
     }
 
+    perf_log!("Persistance Reset end update step start");
     self.persistance_reset.end_update_step();
+    perf_log!("Persistance Reset end update step end");
 
     Ok(())
   }

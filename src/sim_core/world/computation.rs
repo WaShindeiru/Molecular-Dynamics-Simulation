@@ -65,16 +65,16 @@ where
   let mut optimization_considered: usize = 0;
   let mut optimization_ignored: usize = 0;
 
-  let mut gradients_cache;
+  let mut gradients_cache: HashMap<usize, Vector3<f64>> = HashMap::new();
   let mut potential_energy_total: f64 = 0.;
-  let mut neighbours: Vec<usize>;
+  let mut neighbours: Vec<usize> = Vec::new();
 
   let mut particles_j_cache: HashMap<usize, Box<dyn ForceComputationOperations>> = HashMap::new();
 
   for temp_i in particles_i.into_iter() {
     let particle_i = temp_i.as_ref();
     let i_id = particle_i.get_id();
-    neighbours = Vec::new();
+    neighbours.clear();
 
     if optimization {
       for temp_j in particles_j.clone().into_iter() {
@@ -118,7 +118,7 @@ where
       let j_id = *j_id_;
       assert_ne!(i_id, j_id);
 
-      gradients_cache = HashMap::new();
+      gradients_cache.clear();
 
       let particle_j = particles_j_cache.get(j_id_).unwrap();
       let interaction_type_ij =

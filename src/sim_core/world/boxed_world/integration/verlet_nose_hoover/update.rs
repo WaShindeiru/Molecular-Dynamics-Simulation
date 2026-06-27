@@ -3,7 +3,7 @@ use std::sync::Arc;
 use log::info;
 
 use crate::data::units::TEMPERATURE_U;
-
+use crate::perf_log;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::thermostat::compute_new_thermostat_epsilon;
 
@@ -13,6 +13,8 @@ use crate::sim_core::world::thermostat::IntegrationStateUpdateResponse;
 
 impl BoxedWorld {
   pub fn update_verlet_nose_hoover(&mut self, next_iteration: usize) {
+    perf_log!("Verlet nose hover start");
+
     let current_thermostat_epsilon = self
       .persistance_reset
       .history_manager()
@@ -47,13 +49,16 @@ impl BoxedWorld {
       panic!("Expected NoseHooverVerlet integration!")
     }
 
+    perf_log!("Half velocity step start");
     let integration_cache = self.task_manager.half_velocity_step(
       Arc::clone(&current_box_container),
       current_thermostat_epsilon,
       next_iteration,
     );
+    perf_log!("Half velocity step end");
 
     self.integration_cache = Some(Arc::clone(&integration_cache));
+    perf_log!("Moved integration cache to Arc");
 
     let new_thermostat_epsilon;
     {
@@ -66,17 +71,22 @@ impl BoxedWorld {
         current_desired_temperature,
       )
     }
+    perf_log!("Computed new thermostat epsilon");
 
     self
       .persistance_reset
       .history_manager_mut()
       .add_thermostat_epsilon(new_thermostat_epsilon);
 
+    perf_log!("Begin force step");
     let mut computation_collector = self.task_manager.force_step(Arc::clone(&integration_cache));
+    perf_log!("End force step");
 
     computation_collector.apply_gravity(next_iteration);
+    perf_log!("Applied gravity");
 
     computation_collector.set_velocity(new_thermostat_epsilon);
+    perf_log!("Set velocity");
 
     // Store the prescribed velocity for this iteration on the particles before they are
     // pushed to history.  Workers in the next call will read it directly from history to
@@ -84,12 +94,15 @@ impl BoxedWorld {
     let current_custom_velocities =
       self.velocity_manager.compute_velocities_for_iteration(next_iteration);
     computation_collector.apply_custom_velocities(&current_custom_velocities);
+    perf_log!("Computed custom velocities");
 
     if self.iteration != 0 {
       computation_collector.compute_phantom_energy();
     }
+    perf_log!("Computed phantom energy");
 
     let simulation_temperature = computation_collector.get_mean_temperature();
+    perf_log!("Computed simulation themperature");
 
     let result = self.integration_algorithm_state.update_state(
       next_iteration,
@@ -98,6 +111,8 @@ impl BoxedWorld {
       simulation_temperature,
       computation_collector.particles(),
     );
+    perf_log!("Updated state of nose hoover thermostat");
+
     match result {
       IntegrationStateUpdateResponse::NoseHooverVerlet {
         updated,
@@ -135,8 +150,10 @@ impl BoxedWorld {
       .persistance_reset
       .history_manager_mut()
       .push_box_container(computation_collector.into_box_container());
+    perf_log!("Added boxes into history");
 
     self.iteration += 1;
     assert_eq!(self.iteration, next_iteration);
+    perf_log!("Verlet Nose Hover end");
   }
 }

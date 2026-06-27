@@ -1,4 +1,5 @@
 use crate::data::{ConfigAll, ParticleConfig, SimulationConfig, ValueUnits};
+use crate::perf_log;
 use crate::persistence::dto::engine::EngineDTO;
 use crate::persistence::json::SimulationConfigFile;
 use crate::persistence::json::particle_config::particle_config_to_initial_json_file;
@@ -146,6 +147,7 @@ impl Engine {
         counter += 1;
       }
 
+      perf_log!("iter {} start", i);
       self
         .world
         .update(
@@ -154,6 +156,7 @@ impl Engine {
           self.current_iteration + 1,
         )
         .unwrap();
+      perf_log!("iter {} end", i);
 
       self.current_iteration += 1;
       self.current_time += self.config.time_step;

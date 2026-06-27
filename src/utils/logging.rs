@@ -2,6 +2,14 @@ use chrono::{DateTime, Local};
 use flexi_logger::{Duplicate, FileSpec, Logger, LoggerHandle, WriteMode};
 use std::sync::OnceLock;
 
+#[macro_export]
+macro_rules! perf_log {
+    ($($arg:tt)*) => {
+        #[cfg(feature = "perf")]
+        eprintln!("[PERF {}] {}", chrono::Local::now().format("%H:%M:%S%.6f"), format!($($arg)*));
+    };
+}
+
 static LOGGER_HANDLE: OnceLock<LoggerHandle> = OnceLock::new();
 
 pub fn get_save_path(prefix: String) -> String {

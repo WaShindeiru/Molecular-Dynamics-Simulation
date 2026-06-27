@@ -32,7 +32,7 @@ pub fn worker_task_handle(
         } => {
           let velocity_result = handle_velocity_batch_task(
             task_id,
-            &box_ids,
+            &*box_ids,
             &history,
             time_step,
             previous_thermostat_epsilon,
@@ -53,7 +53,7 @@ pub fn worker_task_handle(
           optimization,
         } => {
           let force_result =
-            handle_force_batch_task(task_id, boundary_condition, &box_ids, &integration_cache, optimization);
+            handle_force_batch_task(task_id, boundary_condition, &*box_ids, &integration_cache, optimization);
           result_tx_clone
             .send(BoxResult::ForceResult(force_result))
             .unwrap();

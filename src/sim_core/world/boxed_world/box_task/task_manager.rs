@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
 use std::thread::JoinHandle;
 use std::time::Duration;
-
+use crate::perf_log;
 use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
@@ -37,7 +37,7 @@ pub struct TaskManager {
   num_workers: usize,
   task_worker_multiplier: f64,
 
-  task_box_mapping: Option<HashMap<usize, Vec<usize>>>,
+  task_box_mapping: Option<HashMap<usize, Arc<Vec<usize>>>>,
 }
 
 impl TaskManager {
@@ -79,7 +79,7 @@ impl TaskManager {
     let z_per_task = nz / num_of_task;
     let remainder = nz % num_of_task;
 
-    let mut mapping: HashMap<usize, Vec<usize>> = HashMap::with_capacity(num_of_task);
+    let mut mapping: HashMap<usize, Arc<Vec<usize>>> = HashMap::with_capacity(num_of_task);
     let mut z_start = 0;
 
     for task_id in 0..num_of_task {
@@ -95,7 +95,7 @@ impl TaskManager {
         })
         .collect();
 
-      mapping.insert(task_id, box_ids);
+      mapping.insert(task_id, Arc::new(box_ids));
       z_start = z_end;
     }
 
@@ -109,7 +109,7 @@ impl TaskManager {
     );
   }
 
-  pub fn task_box_mapping(&self) -> Option<&HashMap<usize, Vec<usize>>> {
+  pub fn task_box_mapping(&self) -> Option<&HashMap<usize, Arc<Vec<usize>>>> {
     self.task_box_mapping.as_ref()
   }
 
@@ -125,7 +125,9 @@ impl TaskManager {
       .expect("split_into_tasks must be called before half_velocity_step");
 
     let num_tasks = mapping.len();
+    perf_log!("Before doing all_praticles_reset on box_container");
     let particles = box_container.all_particles_reset();
+    perf_log!("After doing all_praticles_reset on box_container");
     let mut builder = IntegrationCacheBuilder::new(
       self.simulation_config.clone(),
       self.container_config,
@@ -134,7 +136,7 @@ impl TaskManager {
     for (task_id, box_ids) in mapping {
       let task = BoxTask::VelocityBatchTask {
         task_id: *task_id,
-        box_ids: box_ids.clone(),
+        box_ids: Arc::clone(box_ids),
         history: Arc::clone(&box_container),
         time_step: self.simulation_config.time_step,
         previous_thermostat_epsilon: thermostat_epsilon,
@@ -144,11 +146,13 @@ impl TaskManager {
       };
       self.tx_task.send(task).unwrap();
       debug!("Sent VelocityBatchTask for task_id {}", task_id);
+      perf_log!("Sent VelocityBatchTask for task_id {}", task_id);
     }
 
-    for _ in 0..num_tasks {
+    for i in 0..num_tasks {
       match self.rx_result.recv_timeout(Duration::from_secs(20)) {
         Ok(BoxResult::VelocityResult(result)) => {
+          perf_log!("Received VelocityResult for task_id {}", result.task_id);
           debug!("Received VelocityResult for task_id {}", result.task_id);
           builder.add_velocity_results(result.particles);
         }
@@ -174,26 +178,30 @@ impl TaskManager {
       .expect("split_into_tasks must be called before force_step");
 
     let num_tasks = mapping.len();
+    perf_log!("Before creating ComputationCollector from integration cache as part of Force step");
     let mut collector = ComputationCollector::from_integration_cache(
       self.simulation_config.clone(),
       Arc::clone(&integration_cache),
     );
+    perf_log!("After creating ComputationCollector");
 
     for (task_id, box_ids) in mapping {
       let task = BoxTask::ForceBatchTask {
         task_id: *task_id,
         boundary_condition: self.simulation_config.edge_condition,
-        box_ids: box_ids.clone(),
+        box_ids: Arc::clone(box_ids),
         integration_cache: Arc::clone(&integration_cache),
         optimization: self.simulation_config.optimization,
       };
       self.tx_task.send(task).unwrap();
+      perf_log!("Sent ForceBatchTask for task_id {}", task_id);
       debug!("Sent ForceBatchTask for task_id {}", task_id);
     }
 
     for _ in 0..num_tasks {
       match self.rx_result.recv_timeout(Duration::from_secs(20)) {
         Ok(BoxResult::ForceResult(result)) => {
+          perf_log!("Received ForceResult for task_id {}", result.task_id);
           debug!("Received ForceResult for task_id {}", result.task_id);
 
           #[cfg(debug_assertions)]

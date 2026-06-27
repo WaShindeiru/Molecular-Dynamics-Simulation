@@ -15,6 +15,7 @@ use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
 
 use saver_handle::SaverHandle;
+use crate::perf_log;
 
 pub struct PersistanceReset {
   history_manager: HistoryManager,
@@ -91,6 +92,7 @@ impl PersistanceReset {
     self.saver_handle.drain_finished_results()?;
 
     if self.reset_counter == self.config.max_iteration_till_reset {
+      perf_log!("Performing container reset");
       if self.save_options.save {
         let partial = self.build_partial_dto(num_of_world_iterations);
         let fresh = self.history_manager.reset_clone();
