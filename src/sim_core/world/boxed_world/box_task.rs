@@ -29,7 +29,6 @@ pub enum BoxTask {
     boundary_condition: EdgeCondition,
     box_ids: Arc<Vec<usize>>,
     integration_cache: Arc<IntegrationCache>,
-    optimization: bool,
   },
 }
 
@@ -54,8 +53,6 @@ pub struct ForceTaskParticleData {
 pub struct ForceTaskResult {
   pub task_id: usize,
   pub potential_energy: f64,
-  pub optimization_considered: usize,
-  pub optimization_ignored: usize,
   pub particles: HashMap<usize, ForceTaskParticleData>,
 }
 

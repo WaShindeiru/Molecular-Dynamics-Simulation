@@ -84,6 +84,7 @@ impl BoxedWorld {
       config.clone(),
       box_container_config,
       task_manager_config.task_worker_multiplier,
+      num_of_atoms,
     );
 
     task_manager.split_into_tasks_multiplier(&box_container_config);

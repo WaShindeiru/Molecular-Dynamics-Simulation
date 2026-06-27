@@ -7,7 +7,7 @@ use nalgebra::Vector3;
 use std::collections::HashMap;
 
 pub use crate::sim_core::world::computation::{
-  FP, FPInfoBoxed, ForceComputationOperations, compute_forces_potential,
+  FP, ForceComputationOperations, compute_forces_potential,
 };
 
 pub struct HalfVelocityResult {

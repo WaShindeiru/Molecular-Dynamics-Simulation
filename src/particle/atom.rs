@@ -334,7 +334,6 @@ impl SafeAtomFactory {
     instance
   }
 
-  #[cfg(test)]
   pub fn reset_for_testing() {
     // SAFETY: Only called from tests that hold the FACTORY_TEST_LOCK, which serialises all
     // callers. No thread can be concurrently reading SAFE_ATOM_FACTORY_INSTANCE while this

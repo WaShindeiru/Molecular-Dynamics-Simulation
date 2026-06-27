@@ -46,8 +46,9 @@ impl TaskManager {
     simulation_config: SimulationConfig,
     container_config: BoxContainerConfig,
     task_worker_multiplier: f64,
+    num_atoms: usize,
   ) -> Self {
-    let (tx_task, rx_result, threads, num_workers) = create_threads(debug);
+    let (tx_task, rx_result, threads, num_workers) = create_threads(debug, num_atoms);
 
     TaskManager {
       debug,
@@ -191,7 +192,6 @@ impl TaskManager {
         boundary_condition: self.simulation_config.edge_condition,
         box_ids: Arc::clone(box_ids),
         integration_cache: Arc::clone(&integration_cache),
-        optimization: self.simulation_config.optimization,
       };
       self.tx_task.send(task).unwrap();
       perf_log!("Sent ForceBatchTask for task_id {}", task_id);

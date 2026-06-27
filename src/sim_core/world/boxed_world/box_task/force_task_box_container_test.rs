@@ -1010,8 +1010,11 @@ use crate::data::InteractionType::FeC;
     let particles_i: Vec<Box<dyn ForceComputationOperations>> =
       force_container.atoms_for_box(home_box_id).unwrap().collect();
 
-    let result = compute_forces_potential(&particles_i, &particles_j, false);
-    let force = result.fp.get(&home_id).expect("home atom must be in force result").force;
+    let num_atoms = particles_j.iter().map(|p| p.get_id()).max().unwrap() + 1;
+    let mut fp = vec![crate::sim_core::world::computation::FP { force: nalgebra::Vector3::zeros(), potential_energy: 0. }; num_atoms];
+    let mut gradients_cache = vec![nalgebra::Vector3::zeros(); num_atoms];
+    compute_forces_potential(&particles_i, &particles_j, &mut fp, &mut gradients_cache);
+    let force = fp[home_id].force;
     assert!(
       force.magnitude() > 0.0,
       "home atom must have nonzero force from its one-away neighbours (got {:?})",

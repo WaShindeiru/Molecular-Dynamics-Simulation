@@ -14,7 +14,7 @@ use crate::sim_core::world::boxed_world::box_task::{
   ForceTaskParticleData, ForceTaskResult, VelocityTaskParticleData, VelocityTaskResult,
 };
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::{HalfVelocityResult, verlet_noose_hoover_half_velocity_position};
-use crate::sim_core::world::computation::{ForceComputationOperations, compute_forces_potential};
+use crate::sim_core::world::computation::{FP, ForceComputationOperations, compute_forces_potential};
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
 mod partial_velocity_step;
@@ -114,7 +114,8 @@ pub fn handle_force_batch_task(
   boundary_condition: EdgeCondition,
   box_ids: &[usize],
   integration_cache: &IntegrationCache,
-  optimization: bool,
+  fp: &mut Vec<FP>,
+  gradients_cache: &mut Vec<Vector3<f64>>,
 ) -> ForceTaskResult {
   assert!(matches!(boundary_condition, EdgeCondition::Periodic { .. } | EdgeCondition::PeriodicAll), 
     "Only periodic and periodic_all boundary condition is supported for force batch task");
@@ -127,8 +128,6 @@ pub fn handle_force_batch_task(
 
   let mut particles: HashMap<usize, ForceTaskParticleData> = HashMap::new();
   let mut potential_energy_total = 0.0f64;
-  let mut optimization_considered_total = 0usize;
-  let mut optimization_ignored_total = 0usize;
 
   for &box_id in box_ids {
     let particles_i: Vec<Box<dyn ForceComputationOperations>> = force_container
@@ -186,12 +185,12 @@ pub fn handle_force_batch_task(
       );
     }
 
-    let info = compute_forces_potential(&particles_i, &particles_j, optimization);
+    let potential_energy = compute_forces_potential(&particles_i, &particles_j, fp, gradients_cache);
 
     #[cfg(debug_assertions)]
     for particle in particles_j.iter() {
       let particle_id = particle.get_id();
-      let fp = info.fp.get(&particle_id).unwrap();
+      let fp_entry = &fp[particle_id];
       let particle_box_id = force_container.view().particle_box_id(particle_id);
       let real_position = force_container
         .view()
@@ -209,29 +208,27 @@ pub fn handle_force_batch_task(
         particle_id,
         real_position,
         proxy_position,
-        fp.force,
-        fp.potential_energy
+        fp_entry.force,
+        fp_entry.potential_energy
       );
     }
 
-    potential_energy_total += info.potential_energy;
-    optimization_considered_total += info.optimization_considered;
-    optimization_ignored_total += info.optimization_ignored;
+    potential_energy_total += potential_energy;
 
     for particle in particles_j.iter() {
       let id = particle.get_id();
-      let fp = info.fp.get(&id).unwrap();
+      let fp_entry = &fp[id];
       let particle_box_id = force_container.view().particle_box_id(id);
       particles
         .entry(id)
         .and_modify(|entry| {
-          entry.force += fp.force;
-          entry.potential_energy += fp.potential_energy;
+          entry.force += fp_entry.force;
+          entry.potential_energy += fp_entry.potential_energy;
         })
         .or_insert(ForceTaskParticleData {
           box_id: particle_box_id,
-          force: fp.force,
-          potential_energy: fp.potential_energy,
+          force: fp_entry.force,
+          potential_energy: fp_entry.potential_energy,
         });
     }
   }
@@ -258,8 +255,6 @@ pub fn handle_force_batch_task(
   ForceTaskResult {
     task_id,
     potential_energy: potential_energy_total,
-    optimization_considered: optimization_considered_total,
-    optimization_ignored: optimization_ignored_total,
     particles,
   }
 }
