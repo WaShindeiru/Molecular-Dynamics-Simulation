@@ -1,5 +1,4 @@
-use crate::data::Constant;
-use crate::data::constants::get_constant;
+use crate::data::constants::get_constants;
 use crate::data::types::{AtomType, get_interaction_type};
 use crate::particle::potential::b::g;
 use crate::particle::potential::fc::{fc, fc_gradient};
@@ -89,9 +88,8 @@ where
         let interaction_type_ij =
           get_interaction_type(&particle_i.get_type(), &particle_j.get_type());
 
-        let R_ij = get_constant(&interaction_type_ij, Constant::R);
-        let D_ij = get_constant(&interaction_type_ij, Constant::D);
-        let fc_ij = fc::fc(r_ij_mag, R_ij, D_ij);
+        let c_ij = get_constants(&interaction_type_ij);
+        let fc_ij = fc::fc(r_ij_mag, c_ij.R, c_ij.D);
         if fc_ij < 1e-10 {
           optimization_ignored += 1;
           continue;
@@ -124,24 +122,19 @@ where
       let interaction_type_ij =
         get_interaction_type(&particle_i.get_type(), &particle_j.get_type());
 
-      let R_ij = get_constant(&interaction_type_ij, Constant::R);
-      let D_ij = get_constant(&interaction_type_ij, Constant::D);
-      let S_ij = get_constant(&interaction_type_ij, Constant::S);
-      let D0_ij = get_constant(&interaction_type_ij, Constant::D0);
-      let Beta_ij = get_constant(&interaction_type_ij, Constant::Beta);
-      let r0_ij = get_constant(&interaction_type_ij, Constant::r0);
+      let c_ij = get_constants(&interaction_type_ij);
 
       let r_ij_vec = particle_j.get_position() - particle_i.get_position();
       let r_ij_mag = r_ij_vec.magnitude();
 
-      let fc_ij = fc(r_ij_mag, R_ij, D_ij);
-      let va_ij = va(r_ij_mag, D0_ij, S_ij, Beta_ij, r0_ij);
-      let vr_ij = vr(r_ij_mag, D0_ij, S_ij, Beta_ij, r0_ij);
+      let fc_ij = fc(r_ij_mag, c_ij.R, c_ij.D);
+      let va_ij = va(r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
+      let vr_ij = vr(r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
 
-      let fc_ij_grad_i = fc_gradient(&r_ij_vec, r_ij_mag, R_ij, D_ij);
-      let vr_ij_grad_i = vr_gradient(&r_ij_vec, r_ij_mag, D0_ij, S_ij, Beta_ij, r0_ij);
+      let fc_ij_grad_i = fc_gradient(&r_ij_vec, r_ij_mag, c_ij.R, c_ij.D);
+      let vr_ij_grad_i = vr_gradient(&r_ij_vec, r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
       assert!(!vr_ij_grad_i.x.is_nan() && !vr_ij_grad_i.y.is_nan() && !vr_ij_grad_i.z.is_nan());
-      let va_ij_grad_i = va_gradient(&r_ij_vec, r_ij_mag, D0_ij, S_ij, Beta_ij, r0_ij);
+      let va_ij_grad_i = va_gradient(&r_ij_vec, r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
 
       let mut bij_grad_i: Vector3<f64> = Vector3::new(0., 0., 0.);
       let mut bij_grad_j: Vector3<f64> = Vector3::new(0., 0., 0.);
@@ -160,17 +153,12 @@ where
 
         let interaction_type_ik =
           get_interaction_type(&particle_i.get_type(), &particle_k.get_type());
-        let R_ik = get_constant(&interaction_type_ik, Constant::R);
-        let D_ik = get_constant(&interaction_type_ik, Constant::D);
-        let gamma_ik = get_constant(&interaction_type_ik, Constant::Gamma);
-        let c_ik = get_constant(&interaction_type_ik, Constant::c);
-        let d_ik = get_constant(&interaction_type_ik, Constant::d);
-        let h_ik = get_constant(&interaction_type_ik, Constant::h);
+        let c_ik = get_constants(&interaction_type_ik);
 
-        let fc_ik = fc(r_ik_mag, R_ik, D_ik);
+        let fc_ik = fc(r_ik_mag, c_ik.R, c_ik.D);
         let cos_theta_ijk = cos_from_vec(&r_ij_vec, &r_ik_vec);
-        let g_ik = g(cos_theta_ijk, gamma_ik, c_ik, d_ik, h_ik);
-        let fc_ik_grad_i = fc_gradient(&r_ik_vec, r_ik_mag, R_ik, D_ik);
+        let g_ik = g(cos_theta_ijk, c_ik.Gamma, c_ik.c, c_ik.d, c_ik.h);
+        let fc_ik_grad_i = fc_gradient(&r_ik_vec, r_ik_mag, c_ik.R, c_ik.D);
         let fc_ik_grad_k = -&fc_ik_grad_i;
         let g_ik_grads = b::g_ik_gradient(
           &r_ij_vec,
@@ -178,10 +166,10 @@ where
           &r_ik_vec,
           r_ik_mag,
           cos_theta_ijk,
-          gamma_ik,
-          c_ik,
-          d_ik,
-          h_ik,
+          c_ik.Gamma,
+          c_ik.c,
+          c_ik.d,
+          c_ik.h,
         );
 
         bij_grad_i += fc_ik * g_ik_grads.grad_i + g_ik * fc_ik_grad_i;

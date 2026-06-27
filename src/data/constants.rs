@@ -1,94 +1,74 @@
-use std::collections::HashMap;
-use std::sync::OnceLock;
-
-use super::types::{Constant, InteractionType};
+use super::types::{InteractionType};
 
 pub const ATOMIC_MASS_FE: f64 = 55.845;
 pub const ATOMIC_MASS_C: f64 = 12.;
 
-fn fefe_constants() -> &'static HashMap<Constant, f64> {
-  static MAP_FEFE: OnceLock<HashMap<Constant, f64>> = OnceLock::new();
-  MAP_FEFE.get_or_init(|| {
-    let mut map: HashMap<Constant, f64> = HashMap::new();
-    map.insert(Constant::D0, 1.5);
-    map.insert(Constant::r0, 2.29);
-    map.insert(Constant::Beta, 1.4);
-    map.insert(Constant::S, 2.0693109);
-    map.insert(Constant::Gamma, 0.0115751);
-    map.insert(Constant::c, 1.2898716);
-    map.insert(Constant::d, 0.3413219);
-    map.insert(Constant::h, -0.26);
-    map.insert(Constant::R, 3.15);
-    map.insert(Constant::D, 0.2);
-    map.insert(Constant::rf, 0.95);
-    map.insert(Constant::bf, 2.9);
-
-    map
-  })
+pub struct InteractionConstants {
+  pub D0: f64,
+  pub r0: f64,
+  pub Beta: f64,
+  pub S: f64,
+  pub Gamma: f64,
+  pub c: f64,
+  pub d: f64,
+  pub h: f64,
+  pub R: f64,
+  pub D: f64,
+  pub rf: f64,
+  pub bf: f64,
 }
 
-fn cc_constants() -> &'static HashMap<Constant, f64> {
-  static MAP_CC: OnceLock<HashMap<Constant, f64>> = OnceLock::new();
-  MAP_CC.get_or_init(|| {
-    let mut map: HashMap<Constant, f64> = HashMap::new();
-    map.insert(Constant::D0, 6.);
-    map.insert(Constant::r0, 1.39);
-    map.insert(Constant::Beta, 2.1);
-    map.insert(Constant::S, 1.22);
-    map.insert(Constant::Gamma, 2.0813e-4);
-    map.insert(Constant::c, 330.);
-    map.insert(Constant::d, 3.5);
-    map.insert(Constant::h, 1.);
-    map.insert(Constant::R, 1.85);
-    map.insert(Constant::D, 0.15);
-    map.insert(Constant::rf, 0.6);
-    map.insert(Constant::bf, 8.);
+static FEFE: InteractionConstants = InteractionConstants {
+  D0: 1.5,
+  r0: 2.29,
+  Beta: 1.4,
+  S: 2.0693109,
+  Gamma: 0.0115751,
+  c: 1.2898716,
+  d: 0.3413219,
+  h: -0.26,
+  R: 3.15,
+  D: 0.2,
+  rf: 0.95,
+  bf: 2.9,
+};
 
-    map
-  })
-}
+static CC: InteractionConstants = InteractionConstants {
+  D0: 6.,
+  r0: 1.39,
+  Beta: 2.1,
+  S: 1.22,
+  Gamma: 2.0813e-4,
+  c: 330.,
+  d: 3.5,
+  h: 1.,
+  R: 1.85,
+  D: 0.15,
+  rf: 0.6,
+  bf: 8.,
+};
 
-fn fec_constants() -> &'static HashMap<Constant, f64> {
-  static MAP_FEC: OnceLock<HashMap<Constant, f64>> = OnceLock::new();
-  MAP_FEC.get_or_init(|| {
-    let mut map: HashMap<Constant, f64> = HashMap::new();
-    map.insert(Constant::D0, 4.82645134);
-    map.insert(Constant::r0, 1.47736510);
-    map.insert(Constant::Beta, 1.63208170);
-    map.insert(Constant::S, 1.43134755);
-    map.insert(Constant::Gamma, 0.00205862);
-    map.insert(Constant::c, 8.95583221);
-    map.insert(Constant::d, 0.72062047);
-    map.insert(Constant::h, 0.87099874);
-    map.insert(Constant::R, 2.5);
-    map.insert(Constant::D, 0.2);
-    map.insert(Constant::rf, 1.);
-    map.insert(Constant::bf, 10.);
+static FEC: InteractionConstants = InteractionConstants {
+  D0: 4.82645134,
+  r0: 1.47736510,
+  Beta: 1.63208170,
+  S: 1.43134755,
+  Gamma: 0.00205862,
+  c: 8.95583221,
+  d: 0.72062047,
+  h: 0.87099874,
+  R: 2.5,
+  D: 0.2,
+  rf: 1.,
+  bf: 10.,
+};
 
-    map
-  })
-}
-
-fn constants() -> &'static HashMap<InteractionType, &'static HashMap<Constant, f64>> {
-  static MAP_: OnceLock<HashMap<InteractionType, &HashMap<Constant, f64>>> = OnceLock::new();
-  MAP_.get_or_init(|| {
-    let mut map: HashMap<InteractionType, &HashMap<Constant, f64>> = HashMap::new();
-    map.insert(InteractionType::FeFe, fefe_constants());
-    map.insert(InteractionType::CC, cc_constants());
-    map.insert(InteractionType::FeC, fec_constants());
-
-    map
-  })
-}
-
-pub fn get_constant(interaction: &InteractionType, constant: Constant) -> f64 {
-  let map = constants();
-  let inner_map = map
-    .get(interaction)
-    .expect("Wrong interaction type somehow!");
-  *inner_map
-    .get(&constant)
-    .expect("Wrong constant type somehow!")
+pub fn get_constants(interaction: &InteractionType) -> &'static InteractionConstants {
+  match interaction {
+    InteractionType::FeFe => &FEFE,
+    InteractionType::CC => &CC,
+    InteractionType::FeC => &FEC,
+  }
 }
 
 pub fn get_box_size(interaction: &InteractionType) -> f64 {

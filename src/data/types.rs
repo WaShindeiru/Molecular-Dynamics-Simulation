@@ -63,18 +63,3 @@ pub fn get_interaction_type(atom1: &AtomType, atom2: &AtomType) -> InteractionTy
   }
 }
 
-#[derive(Eq, Hash, PartialEq)]
-pub enum Constant {
-  D0,
-  r0,
-  Beta,
-  S,
-  Gamma,
-  c,
-  d,
-  h,
-  R,
-  D,
-  rf,
-  bf,
-}
