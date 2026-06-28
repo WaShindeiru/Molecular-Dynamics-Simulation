@@ -9,8 +9,8 @@ use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
-mod force_task_box_container;
-mod handle_task;
+pub mod force_task_box_container;
+pub(crate) mod handle_task;
 pub mod task_manager;
 
 pub enum BoxTask {

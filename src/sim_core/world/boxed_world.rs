@@ -29,7 +29,7 @@ pub mod history_manager;
 pub mod integration;
 mod integration_cache;
 pub mod persistance_reset;
-mod velocity_manager;
+pub(crate) mod velocity_manager;
 
 use velocity_manager::VelocityManager;
 use crate::perf_log;

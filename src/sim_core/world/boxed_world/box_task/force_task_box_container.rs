@@ -13,7 +13,7 @@ use crate::sim_core::world::boxed_world::box_task::force_task_box_container::par
 use crate::sim_core::world::computation::ForceComputationOperations;
 use nalgebra::Vector3;
 
-mod particle_proxy;
+pub mod particle_proxy;
 
 pub fn get_needed_box_id_periodic(box_ids: &Vec<usize>, config: &BoxContainerConfig) -> Vec<usize> {
   let mut temp: HashSet<usize> = HashSet::new();

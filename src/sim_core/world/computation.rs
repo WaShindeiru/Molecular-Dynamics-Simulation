@@ -35,6 +35,24 @@ pub trait ForceComputationOperations {
   fn prototype_clone(&self) -> Box<dyn ForceComputationOperations>;
 }
 
+impl ForceComputationOperations for Box<dyn ForceComputationOperations> {
+  fn as_any(&self) -> &dyn Any { self.as_ref().as_any() }
+  fn get_id(&self) -> usize { self.as_ref().get_id() }
+  fn get_position(&self) -> Vector3<f64> { self.as_ref().get_position() }
+  fn get_type(&self) -> AtomType { self.as_ref().get_type() }
+  fn get_mass(&self) -> f64 { self.as_ref().get_mass() }
+  fn prototype_clone(&self) -> Box<dyn ForceComputationOperations> { self.as_ref().prototype_clone() }
+}
+
+impl<T: ForceComputationOperations + ?Sized> ForceComputationOperations for &T {
+  fn as_any(&self) -> &dyn Any { (*self).as_any() }
+  fn get_id(&self) -> usize { (*self).get_id() }
+  fn get_position(&self) -> Vector3<f64> { (*self).get_position() }
+  fn get_type(&self) -> AtomType { (*self).get_type() }
+  fn get_mass(&self) -> f64 { (*self).get_mass() }
+  fn prototype_clone(&self) -> Box<dyn ForceComputationOperations> { (*self).prototype_clone() }
+}
+
 pub fn compute_forces_potential<I>(
   particles_i: I,
   particles_j: I,
@@ -43,30 +61,28 @@ pub fn compute_forces_potential<I>(
 ) -> f64
 where
   I: IntoIterator + Clone,
-  I::Item: AsRef<dyn ForceComputationOperations>,
+  I::Item: ForceComputationOperations,
 {
   let zero_fp = FP { force: Vector3::zeros(), potential_energy: 0. };
 
   for temp_j in particles_j.clone().into_iter() {
-    fp[temp_j.as_ref().get_id()] = zero_fp.clone();
+    fp[temp_j.get_id()] = zero_fp.clone();
   }
 
   let mut potential_energy_total: f64 = 0.;
 
   for temp_i in particles_i.into_iter() {
-    let particle_i = temp_i.as_ref();
-    let i_id = particle_i.get_id();
+    let i_id = temp_i.get_id();
 
     for temp_j in particles_j.clone().into_iter() {
-      let particle_j = temp_j.as_ref();
-      let j_id = particle_j.get_id();
+      let j_id = temp_j.get_id();
       if j_id == i_id {
         continue;
       }
 
-      let c_ij = get_constants(&get_interaction_type(&particle_i.get_type(), &particle_j.get_type()));
+      let c_ij = get_constants(&get_interaction_type(&temp_i.get_type(), &temp_j.get_type()));
 
-      let r_ij_vec = particle_j.get_position() - particle_i.get_position();
+      let r_ij_vec = temp_j.get_position() - temp_i.get_position();
       let r_ij_mag = r_ij_vec.magnitude();
 
       let fc_ij = fc(r_ij_mag, c_ij.R, c_ij.D);
@@ -83,15 +99,14 @@ where
       let mut chi_ij: f64 = 0.;
 
       for temp_k in particles_j.clone().into_iter() {
-        let particle_k = temp_k.as_ref();
-        let k_id = particle_k.get_id();
+        let k_id = temp_k.get_id();
         if k_id == j_id || k_id == i_id {
           continue;
         }
 
-        let c_ik = get_constants(&get_interaction_type(&particle_i.get_type(), &particle_k.get_type()));
+        let c_ik = get_constants(&get_interaction_type(&temp_i.get_type(), &temp_k.get_type()));
 
-        let r_ik_vec = particle_k.get_position() - particle_i.get_position();
+        let r_ik_vec = temp_k.get_position() - temp_i.get_position();
         let r_ik_mag = r_ik_vec.magnitude();
 
         let fc_ik = fc(r_ik_mag, c_ik.R, c_ik.D);
@@ -137,8 +152,7 @@ where
       fp[j_id].force += force_j;
 
       for temp_k in particles_j.clone().into_iter() {
-        let particle_k = temp_k.as_ref();
-        let k_id = particle_k.get_id();
+        let k_id = temp_k.get_id();
         if k_id == j_id || k_id == i_id {
           continue;
         }

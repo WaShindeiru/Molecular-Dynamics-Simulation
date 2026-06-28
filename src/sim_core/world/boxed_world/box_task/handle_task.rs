@@ -17,8 +17,8 @@ use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::comput
 use crate::sim_core::world::computation::{FP, ForceComputationOperations, compute_forces_potential};
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 
-mod partial_velocity_step;
-mod handle_partial_velocity_step;
+pub(crate) mod partial_velocity_step;
+pub(crate) mod handle_partial_velocity_step;
 
 pub fn handle_velocity_batch_task(
   task_id: usize,

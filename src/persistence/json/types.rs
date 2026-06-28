@@ -53,6 +53,9 @@ pub enum WorldTypeFile {
   BoxedWorld {
     task_manager_config: TaskManagerConfigFile,
   },
+  LinkedCellWorld {
+    task_manager_config: TaskManagerConfigFile,
+  },
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -81,9 +84,10 @@ impl WorldTypeFile {
   pub fn from_runtime(value: WorldType) -> Self {
     match value {
       WorldType::SimpleWorld => WorldTypeFile::SimpleWorld,
-      WorldType::BoxedWorld {
-        task_manager_config,
-      } => WorldTypeFile::BoxedWorld {
+      WorldType::BoxedWorld { task_manager_config } => WorldTypeFile::BoxedWorld {
+        task_manager_config: TaskManagerConfigFile::from_runtime(task_manager_config),
+      },
+      WorldType::LinkedCellWorld { task_manager_config } => WorldTypeFile::LinkedCellWorld {
         task_manager_config: TaskManagerConfigFile::from_runtime(task_manager_config),
       },
     }
@@ -92,9 +96,10 @@ impl WorldTypeFile {
   pub fn to_runtime(&self) -> WorldType {
     match self {
       WorldTypeFile::SimpleWorld => WorldType::SimpleWorld,
-      WorldTypeFile::BoxedWorld {
-        task_manager_config,
-      } => WorldType::BoxedWorld {
+      WorldTypeFile::BoxedWorld { task_manager_config } => WorldType::BoxedWorld {
+        task_manager_config: task_manager_config.to_runtime(),
+      },
+      WorldTypeFile::LinkedCellWorld { task_manager_config } => WorldType::LinkedCellWorld {
         task_manager_config: task_manager_config.to_runtime(),
       },
     }
