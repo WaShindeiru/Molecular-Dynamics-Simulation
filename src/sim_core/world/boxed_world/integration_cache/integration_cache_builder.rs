@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct IntegrationCacheBuilder {
   config: SimulationConfig,
   particles: HashMap<usize, Particle>,
-  local_boxes: BoxContainer<SimulationBox>,
+  local_boxes: BoxContainer<Arc<SimulationBox>>,
   half_velocity: HashMap<usize, Vector3<f64>>,
   particle_compliance: HashMap<usize, ParticleCompliance>,
 }
@@ -29,7 +29,7 @@ impl IntegrationCacheBuilder {
     IntegrationCacheBuilder {
       config,
       particles,
-      local_boxes: BoxContainer::<SimulationBox>::new_local(box_container_config),
+      local_boxes: BoxContainer::<Arc<SimulationBox>>::from_config(box_container_config),
       half_velocity: HashMap::with_capacity(num_particles),
       particle_compliance: HashMap::with_capacity(num_particles),
     }
@@ -60,11 +60,9 @@ impl IntegrationCacheBuilder {
       return None;
     }
 
-    let shared_boxes = self.local_boxes.into_shared();
-
     #[cfg(debug_assertions)]
-    for sim_box in shared_boxes.simulation_boxes().iter() {
-      for particle in sim_box.particles().values() {
+    for sim_box in self.local_boxes.simulation_boxes().iter() {
+      for particle in sim_box.as_ref().particles().values() {
         log::debug!(
           "Particle {} is stored in simulation box {}",
           particle.get_id(),
@@ -74,7 +72,7 @@ impl IntegrationCacheBuilder {
     }
 
     Some(IntegrationCache::new(
-      shared_boxes,
+      self.local_boxes,
       self.half_velocity,
       self.particle_compliance,
     ))

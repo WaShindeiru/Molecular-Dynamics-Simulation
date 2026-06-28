@@ -21,7 +21,7 @@ impl BoxContainer<Arc<SimulationBox>> {
     container
   }
 
-  fn from_config(box_container_config: BoxContainerConfig) -> Self {
+  pub fn from_config(box_container_config: BoxContainerConfig) -> Self {
     let mut boxes: Cube<Arc<SimulationBox>> = Cube::new(
       box_container_config.box_count_dim.x,
       box_container_config.box_count_dim.y,
@@ -92,6 +92,21 @@ impl BoxContainer<Arc<SimulationBox>> {
       simulation_boxes: boxes,
       box_id_cache: HashMap::new(),
     }
+  }
+
+  pub fn add_particle(&mut self, particle: Arc<Particle>) {
+    let particle_id = particle.get_id();
+    let box_coordinates = self.config().box_coordinates_for_position(particle.get_position());
+    Arc::make_mut(
+      self
+        .simulation_boxes
+        .get_mut(box_coordinates.x, box_coordinates.y, box_coordinates.z)
+        .unwrap(),
+    )
+    .add_particle(particle);
+
+    let box_id = get_id_simulation_box(&box_coordinates, &self.config().box_count_dim);
+    self.box_id_cache.insert(particle_id, box_id);
   }
 
   pub fn assign_particles_to_boxes(&mut self, atoms: Vec<Particle>) -> HashMap<usize, usize> {
