@@ -326,8 +326,11 @@ mod tests {
   use crate::data::constants::ATOMIC_MASS_FE;
   use crate::data::types::{AtomType, InteractionType};
   use crate::particle::atom::Atom;
+  use crate::persistence::json::particle_config::read_particle_config_from_json_str;
+  use crate::sim_core::world::boxed_world::box_container::box_container_config::new_config;
   use crate::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
   use crate::sim_core::world::boxed_world::box_task::force_task_box_container::particle_proxy::ParticlePositionProxy;
+  use std::collections::HashSet;
 
   fn make_config() -> BoxContainerConfig {
     // 10×10×10 world, 2×2×2 grid → each cell is 5×5×5
@@ -801,5 +804,73 @@ mod tests {
     }
 
     assert!(expected.is_empty());
+  }
+
+  // ── insertion-order equivalence (fixture-based) ─────────────────────────────
+
+  /// Verifies that building a LinkedCellContainer via `new()` + `sort()` (with
+  /// particles pre-sorted by id) produces the same cell contents as building it
+  /// via `new_empty()` + `add_particle()` (with particles in the shuffled order
+  /// found in the JSON fixture).  The two construction paths use different array
+  /// indexing strategies, so this test checks whether insertion order matters.
+  #[test]
+  fn insertion_order_does_not_affect_cells() {
+    let fixture_path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/particles_initial.json");
+    let fixture = std::fs::read_to_string(fixture_path).expect("fixture file not found");
+
+    let particle_config = read_particle_config_from_json_str(&fixture)
+      .expect("failed to parse fixture");
+
+    // Positions are now in unitless (Angstrom) coordinates: ~0.8..25.3.
+    // A 30×30×30 world comfortably contains all particles.
+    let particles = particle_config.atoms;
+    let world_size = Vector3::new(30.0, 30.0, 30.0);
+    let config = new_config(&particles, world_size);
+    let edge_condition = EdgeCondition::PeriodicAll;
+
+    let num_particles = particles.iter().map(|p| p.get_id()).max().unwrap() + 1;
+
+    // Container A: particles sorted by id → new() + sort()
+    let mut sorted = particles.clone();
+    sorted.sort_by_key(|p| p.get_id());
+    let arcs_sorted: Vec<Arc<Particle>> = sorted.iter().map(|p| Arc::new(p.clone())).collect();
+    let mut container_a = LinkedCellContainer::new(arcs_sorted, config, edge_condition);
+    container_a.sort();
+
+    // Container B: original JSON order (shuffled ids) → new_empty() + add_particle()
+    let mut container_b = LinkedCellContainer::new_empty(num_particles, config, edge_condition);
+    for particle in &particles {
+      container_b.add_particle(Arc::new(particle.clone()));
+    }
+
+    let pos_bits = |v: Vector3<f64>| -> [u64; 3] {
+      [v.x.to_bits(), v.y.to_bits(), v.z.to_bits()]
+    };
+
+    for cell_id in 0..config.box_count {
+      let ids_a: HashSet<usize> = container_a.particles_in_cell(cell_id)
+        .map(|p| p.get_id())
+        .collect();
+      let ids_b: HashSet<usize> = container_b.particles_in_cell(cell_id)
+        .map(|p| p.get_id())
+        .collect();
+      assert_eq!(ids_a, ids_b, "cell {cell_id}: particles_in_cell id sets differ");
+
+      let atoms_a: HashSet<(usize, [u64; 3])> = container_a.atoms_for_cell(cell_id)
+        .map(|p| (p.get_id(), pos_bits(p.get_position())))
+        .collect();
+      let atoms_b: HashSet<(usize, [u64; 3])> = container_b.atoms_for_cell(cell_id)
+        .map(|p| (p.get_id(), pos_bits(p.get_position())))
+        .collect();
+      assert_eq!(atoms_a, atoms_b, "cell {cell_id}: atoms_for_cell (id, pos) sets differ");
+
+      let nbrs_a: HashSet<(usize, [u64; 3])> = container_a.neighbour_atoms_periodic(cell_id)
+        .map(|p| (p.get_id(), pos_bits(p.get_position())))
+        .collect();
+      let nbrs_b: HashSet<(usize, [u64; 3])> = container_b.neighbour_atoms_periodic(cell_id)
+        .map(|p| (p.get_id(), pos_bits(p.get_position())))
+        .collect();
+      assert_eq!(nbrs_a, nbrs_b, "cell {cell_id}: neighbour_atoms_periodic (id, pos) sets differ");
+    }
   }
 }

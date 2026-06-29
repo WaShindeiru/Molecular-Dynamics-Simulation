@@ -5,7 +5,7 @@ use nalgebra::Vector3;
 use crate::data::SimulationConfig;
 use crate::data::units::K_B;
 use crate::particle::Particle;
-use crate::sim_core::world::boundary_constraint::ParticleCompliance;
+use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_task::ForceTaskParticleData;
 use crate::sim_core::world::computation::{compute_new_velocity};
 use crate::sim_core::world::linked_cell_world::LinkedCellContainer;
@@ -75,6 +75,13 @@ impl ComputationCollector {
 
   pub fn set_velocity(&mut self, thermostat_epsilon: f64) {
     let time_step = self.config.time_step;
+    let edge_condition = self.config.edge_condition;
+    let subtask_size = match edge_condition {
+      EdgeCondition::Periodic { trigger_small_subtask_size, .. }
+      | EdgeCondition::Simple { trigger_small_subtask_size, .. } => trigger_small_subtask_size,
+      EdgeCondition::PeriodicAll => 1,
+    };
+    let collision_split = edge_condition.collision_split_enabled();
 
     for id in 0..self.local_container.particles().len() {
       if self.local_container.particles()[id].is_none() {
@@ -84,12 +91,18 @@ impl ComputationCollector {
         continue;
       }
       let half_velocity = self.half_velocity_cache[id];
+      let compliance = &self.particle_compliance[id];
+      let effective_time_step = if !compliance.compliant && collision_split && subtask_size > 1 {
+        time_step / subtask_size as f64
+      } else {
+        time_step
+      };
       let particle = self.local_container.particle_mut(id);
       let new_velocity = compute_new_velocity(
         half_velocity,
         *particle.get_acceleration(),
         thermostat_epsilon,
-        time_step,
+        effective_time_step,
       );
       particle.set_velocity(new_velocity);
     }
@@ -134,6 +147,18 @@ impl ComputationCollector {
       .iter()
       .filter_map(|opt| opt.as_ref())
       .map(|arc| arc.as_ref())
+  }
+
+  #[cfg(debug_assertions)]
+  pub fn assert_zero_net_force(&self) {
+    let sum = self.local_container.particles().iter()
+      .filter_map(|opt| opt.as_ref())
+      .fold(nalgebra::Vector3::<f64>::zeros(), |acc, p| acc + p.get_force());
+    let magnitude = sum.magnitude();
+    debug_assert!(
+      magnitude < 1e-10,
+      "Newton's 3rd law violated: net force magnitude = {magnitude:.3e} (expected < 1e-10); sum = {sum:?}"
+    );
   }
 
   pub fn build(self) -> LinkedCellContainer {

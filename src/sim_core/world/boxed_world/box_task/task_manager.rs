@@ -231,6 +231,9 @@ impl TaskManager {
       }
     }
 
+    #[cfg(debug_assertions)]
+    collector.assert_zero_net_force();
+
     collector
   }
 }

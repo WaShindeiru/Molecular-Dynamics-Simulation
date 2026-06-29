@@ -171,6 +171,19 @@ impl ComputationCollector {
     self.particles_modified.values()
   }
 
+  #[cfg(debug_assertions)]
+  pub fn assert_zero_net_force(&self) {
+    let sum = self.particles_modified.values().fold(
+      nalgebra::Vector3::<f64>::zeros(),
+      |acc, p| acc + p.get_force(),
+    );
+    let magnitude = sum.magnitude();
+    debug_assert!(
+      magnitude < 1e-10,
+      "Newton's 3rd law violated: net force magnitude = {magnitude:.3e} (expected < 1e-10); sum = {sum:?}"
+    );
+  }
+
   pub fn into_box_container(self) -> BoxContainer<Arc<SimulationBox>> {
     let box_container_config = *self.integration_cache.box_cache().config();
     let particle_box_mapping = self.integration_cache.box_cache().box_id_cache().clone();
