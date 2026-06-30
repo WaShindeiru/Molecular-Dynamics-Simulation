@@ -6,6 +6,8 @@ pub mod linked_cell_container;
 pub mod linked_cell_task;
 pub mod persistance_reset;
 
+pub mod test_hooks;
+
 pub use history_manager::LinkedCellHistoryManager;
 pub use linked_cell_container::LinkedCellContainer;
 pub use persistance_reset::LinkedCellPersistanceReset;

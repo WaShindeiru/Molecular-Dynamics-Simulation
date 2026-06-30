@@ -18,7 +18,7 @@ use crate::utils::cube::Cube;
 pub struct LinkedCellContainer {
   header: Cube<i32>,
   link: Vec<i32>,
-  cell: Vec<Vector3<usize>>,
+  cell: Vec<Vector3<i32>>,
   particles: Vec<Option<Arc<Particle>>>,
   config: BoxContainerConfig,
   edge_condition: EdgeCondition,
@@ -34,7 +34,7 @@ impl LinkedCellContainer {
     LinkedCellContainer {
       header: Cube::new_with_value(mx, my, mz, -1i32),
       link: vec![-1i32; num_particles],
-      cell: vec![Vector3::zeros(); num_particles],
+      cell: vec![Vector3::new(-1, -1, -1); num_particles],
       particles: vec![None; num_particles],
       config,
       edge_condition,
@@ -53,11 +53,17 @@ impl LinkedCellContainer {
       config.box_count_dim.z,
     );
 
+    let mut particle_slots: Vec<Option<Arc<Particle>>> = vec![None; n];
+    for particle in particles {
+      let id = particle.get_id();
+      particle_slots[id] = Some(particle);
+    }
+
     LinkedCellContainer {
       header: Cube::new_with_value(mx, my, mz, -1i32),
       link: vec![-1i32; n],
-      cell: vec![Vector3::zeros(); n],
-      particles: particles.into_iter().map(Some).collect(),
+      cell: vec![Vector3::new(-1, -1, -1); n],
+      particles: particle_slots,
       config,
       edge_condition,
     }
@@ -74,7 +80,7 @@ impl LinkedCellContainer {
     let old_head = *self.header.get(kx, ky, kz).unwrap();
     self.link[id] = old_head;
     self.header.set(kx, ky, kz, id as i32).unwrap();
-    self.cell[id] = coords;
+    self.cell[id] = Vector3::new(coords.x as i32, coords.y as i32, coords.z as i32);
     self.particles[id] = Some(particle);
   }
 
@@ -98,7 +104,7 @@ impl LinkedCellContainer {
         let old_head = *self.header.get(kx, ky, kz).unwrap();
         self.link[i] = old_head;
         self.header.set(kx, ky, kz, i as i32).unwrap();
-        self.cell[i] = coords;
+        self.cell[i] = Vector3::new(coords.x as i32, coords.y as i32, coords.z as i32);
       }
     }
   }
@@ -291,7 +297,7 @@ impl LinkedCellContainer {
     &self.link
   }
 
-  pub fn cell(&self) -> &[Vector3<usize>] {
+  pub fn cell(&self) -> &[Vector3<i32>] {
     &self.cell
   }
 
@@ -832,7 +838,6 @@ mod tests {
 
     // Container A: particles sorted by id → new() + sort()
     let mut sorted = particles.clone();
-    sorted.sort_by_key(|p| p.get_id());
     let arcs_sorted: Vec<Arc<Particle>> = sorted.iter().map(|p| Arc::new(p.clone())).collect();
     let mut container_a = LinkedCellContainer::new(arcs_sorted, config, edge_condition);
     container_a.sort();
@@ -871,6 +876,73 @@ mod tests {
         .map(|p| (p.get_id(), pos_bits(p.get_position())))
         .collect();
       assert_eq!(nbrs_a, nbrs_b, "cell {cell_id}: neighbour_atoms_periodic (id, pos) sets differ");
+    }
+  }
+
+  // ── ID-index invariant (particles[i].get_id() == i) ─────────────────────────
+
+  /// `new()` stores particles in insertion order, not by particle ID.
+  /// With the shuffled fixture the invariant `particles[i].id == i` does NOT hold.
+  /// This test documents that bug: it will fail until `new()` is fixed to
+  /// index by ID, or callers are required to pre-sort.
+  #[test]
+  fn new_with_unsorted_particles_id_matches_index() {
+    let fixture_path =
+      concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/particles_initial.json");
+    let fixture = std::fs::read_to_string(fixture_path).expect("fixture file not found");
+    let particle_config =
+      read_particle_config_from_json_str(&fixture).expect("failed to parse fixture");
+
+    let particles = particle_config.atoms;
+    let world_size = Vector3::new(30.0, 30.0, 30.0);
+    let config = new_config(&particles, world_size);
+
+    let arcs: Vec<Arc<Particle>> = particles.iter().map(|p| Arc::new(p.clone())).collect();
+    let mut container = LinkedCellContainer::new(arcs, config, EdgeCondition::PeriodicAll);
+    container.sort();
+
+    for (i, slot) in container.particles().iter().enumerate() {
+      if let Some(particle) = slot {
+        assert_eq!(
+          particle.get_id(),
+          i,
+          "particles[{i}] holds particle with id {}",
+          particle.get_id()
+        );
+      }
+    }
+  }
+
+  /// `new_empty()` + `add_particle()` stores each particle at index equal to its ID,
+  /// so the invariant `particles[i].id == i` holds regardless of insertion order.
+  #[test]
+  fn new_empty_add_particle_id_matches_index() {
+    let fixture_path =
+      concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/particles_initial.json");
+    let fixture = std::fs::read_to_string(fixture_path).expect("fixture file not found");
+    let particle_config =
+      read_particle_config_from_json_str(&fixture).expect("failed to parse fixture");
+
+    let particles = particle_config.atoms;
+    let world_size = Vector3::new(30.0, 30.0, 30.0);
+    let config = new_config(&particles, world_size);
+
+    let num_particles = particles.iter().map(|p| p.get_id()).max().unwrap() + 1;
+    let mut container =
+      LinkedCellContainer::new_empty(num_particles, config, EdgeCondition::PeriodicAll);
+    for particle in &particles {
+      container.add_particle(Arc::new(particle.clone()));
+    }
+
+    for (i, slot) in container.particles().iter().enumerate() {
+      if let Some(particle) = slot {
+        assert_eq!(
+          particle.get_id(),
+          i,
+          "particles[{i}] holds particle with id {}",
+          particle.get_id()
+        );
+      }
     }
   }
 }
