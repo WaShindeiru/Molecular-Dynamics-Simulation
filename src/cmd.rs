@@ -3,10 +3,16 @@ use std::io;
 use clap::{Parser, Subcommand};
 
 use self::combine::{CombineCommand, combine_command};
+use self::convert::{ConvertCommand, convert_command};
+use self::move_particles::{MoveCommand, move_particles_command};
+use self::move_particles_minus::{MoveMinusCommand, move_particles_minus_command};
 use self::parse::{ParseCommand, parse_command};
 use self::run::{RunCommand, run_simulation_command};
 
 pub mod combine;
+pub mod convert;
+pub mod move_particles;
+pub mod move_particles_minus;
 pub mod parse;
 pub mod run;
 
@@ -23,6 +29,9 @@ pub enum Command {
   Run(RunCommand),
   Parse(ParseCommand),
   Combine(CombineCommand),
+  Convert(ConvertCommand),
+  Move(MoveCommand),
+  MoveMinus(MoveMinusCommand),
 }
 
 pub fn run() -> io::Result<()> {
@@ -32,5 +41,8 @@ pub fn run() -> io::Result<()> {
     Command::Run(command) => run_simulation_command(command),
     Command::Parse(command) => parse_command(command),
     Command::Combine(command) => combine_command(command),
+    Command::Convert(command) => convert_command(command),
+    Command::Move(command) => move_particles_command(command),
+    Command::MoveMinus(command) => move_particles_minus_command(command),
   }
 }

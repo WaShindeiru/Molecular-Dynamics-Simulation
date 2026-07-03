@@ -97,6 +97,26 @@ impl ParticleConfigFile {
     Ok(ParticleConfig::new_with_schedules(atoms, velocity_schedules))
   }
 
+  pub fn convert_to_custom_velocity_atoms(mut self) -> Self {
+    use crate::persistence::json::velocity_manager_file::{VelocityChangeEntry, VelocityManagerFile};
+
+    self.velocity_managers = self
+      .particles
+      .iter()
+      .map(|p| VelocityManagerFile {
+        id: p.id,
+        velocities: vec![VelocityChangeEntry::from_runtime(0, Vector3::zeros())],
+      })
+      .collect();
+    self.particles = self.particles.into_iter().map(|p| p.into_custom_velocity_atom()).collect();
+    self
+  }
+
+  pub fn translate(mut self, offset: Vector3<f64>) -> Self {
+    self.particles = self.particles.into_iter().map(|p| p.translate(offset)).collect();
+    self
+  }
+
   pub fn to_value_units(&self, target: ValueUnits) -> Self {
     let source = self.value_units;
     let position_scale = ValueUnits::scale_between(source, target, R_U);
@@ -200,6 +220,22 @@ impl ParticleInitialState {
         ))
       }
     })
+  }
+
+  pub fn into_custom_velocity_atom(self) -> Self {
+    Self {
+      particle_type: ParticleTypeFile::CustomVelocityAtom,
+      velocity: Vector3Record::from(Vector3::zeros()),
+      velocity_manager_id: Some(self.id),
+      ..self
+    }
+  }
+
+  pub fn translate(self, offset: Vector3<f64>) -> Self {
+    Self {
+      position: Vector3Record::from(self.position.to_runtime() + offset),
+      ..self
+    }
   }
 
   fn to_value_units(&self, position_scale: f64, velocity_scale: f64) -> Self {

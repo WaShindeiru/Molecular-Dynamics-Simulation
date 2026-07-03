@@ -7,3 +7,4 @@ perf.data
 /.agents
 /.codex
 profile.json.gz
+md_fec.cpp
