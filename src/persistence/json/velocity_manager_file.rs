@@ -38,7 +38,7 @@ pub struct VelocityManagerFile {
 impl VelocityManagerFile {
   pub fn from_schedule(schedule: &VelocityScheduleConfig) -> Self {
     VelocityManagerFile {
-      id: schedule.particle_id,
+      id: schedule.particle_velocity_manager_id,
       velocities: schedule
         .velocities
         .iter()
@@ -54,9 +54,9 @@ impl VelocityManagerFile {
     }
   }
 
-  pub fn to_schedule(&self, particle_id: usize) -> VelocityScheduleConfig {
+  pub fn to_schedule(&self) -> VelocityScheduleConfig {
     VelocityScheduleConfig {
-      particle_id,
+      particle_velocity_manager_id: self.id,
       velocities: self.velocities.iter().map(|e| e.to_runtime()).collect(),
     }
   }

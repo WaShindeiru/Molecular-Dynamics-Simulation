@@ -61,7 +61,7 @@ impl BoxedWorld {
     // CustomVelocityAtom before the particles are handed to HistoryManager.
     // The first update() call will use next_iteration=1, so we compute velocities
     // for iteration 1 here and store them directly in the particle's velocity field.
-    let mut velocity_manager = VelocityManager::from_schedules(&particle_config.velocity_schedules);
+    let mut velocity_manager = VelocityManager::from_config(&particle_config);
     // Seed velocity_0 on the initial particles.  Workers in the first call
     // (next_iteration=1) will read velocity_0 from history and advance position:
     // new_pos_1 = pos_0 + velocity_0 * dt.

@@ -3,7 +3,8 @@ use std::collections::{BinaryHeap, HashMap};
 
 use nalgebra::Vector3;
 
-use crate::data::config::particle_config::VelocityScheduleConfig;
+use crate::data::ParticleConfig;
+use crate::particle::Particle;
 
 pub struct ParticleVelocityManager {
   current_velocity: Vector3<f64>,
@@ -65,55 +66,90 @@ impl ParticleVelocityManager {
 }
 
 pub struct VelocityManager {
-  managers: HashMap<usize, ParticleVelocityManager>,
+  // Indexed by particle_velocity_manager_id. Particles that share a velocity schedule
+  // share a single entry here instead of duplicating one ParticleVelocityManager each.
+  managers: Vec<ParticleVelocityManager>,
+  // Indexed by particle id (dense over all particles, not just CustomVelocityAtoms),
+  // for O(1) lookup of which manager (if any) drives a given particle's velocity.
+  particle_id_to_manager_id: Vec<Option<usize>>,
 }
 
 impl VelocityManager {
-  pub fn new(managers: HashMap<usize, ParticleVelocityManager>) -> Self {
-    VelocityManager { managers }
+  pub fn new(
+    managers: Vec<ParticleVelocityManager>,
+    particle_id_to_manager_id: Vec<Option<usize>>,
+  ) -> Self {
+    VelocityManager {
+      managers,
+      particle_id_to_manager_id,
+    }
   }
 
   pub fn empty() -> Self {
     VelocityManager {
-      managers: HashMap::new(),
+      managers: Vec::new(),
+      particle_id_to_manager_id: Vec::new(),
     }
   }
 
-  pub fn from_schedules(schedules: &[VelocityScheduleConfig]) -> Self {
-    let managers = schedules
+  pub fn from_config(particle_config: &ParticleConfig) -> Self {
+    let manager_count = particle_config
+      .velocity_schedules
       .iter()
-      .map(|s| {
-        let manager = ParticleVelocityManager::new(s.velocities.clone());
-        (s.particle_id, manager)
+      .map(|s| s.particle_velocity_manager_id)
+      .max()
+      .map_or(0, |id| id + 1);
+
+    let mut manager_slots: Vec<Option<ParticleVelocityManager>> =
+      (0..manager_count).map(|_| None).collect();
+    for schedule in &particle_config.velocity_schedules {
+      manager_slots[schedule.particle_velocity_manager_id] =
+        Some(ParticleVelocityManager::new(schedule.velocities.clone()));
+    }
+    let managers: Vec<ParticleVelocityManager> = manager_slots
+      .into_iter()
+      .enumerate()
+      .map(|(id, manager)| {
+        manager.unwrap_or_else(|| {
+          panic!(
+            "VelocityManager: no velocity schedule provided for particle_velocity_manager_id {}",
+            id
+          )
+        })
       })
       .collect();
-    VelocityManager { managers }
+
+    let mut particle_id_to_manager_id: Vec<Option<usize>> =
+      vec![None; particle_config.atoms.len()];
+    for atom in &particle_config.atoms {
+      if let Particle::CustomVelocityAtom(p) = atom {
+        particle_id_to_manager_id[p.get_id()] = Some(p.get_particle_velocity_manager_id());
+      }
+    }
+
+    VelocityManager {
+      managers,
+      particle_id_to_manager_id,
+    }
   }
 
-  /// Returns the velocity for each managed particle at the given iteration,
-  /// advancing the internal state of each ParticleVelocityManager as needed.
-  pub fn compute_velocities_for_iteration(
-    &mut self,
-    iteration: usize,
-  ) -> HashMap<usize, Vector3<f64>> {
-    self
+  /// Returns the velocity for each particle at the given iteration, indexed by particle id
+  /// (particles with no velocity manager are absent from the map), advancing the internal
+  /// state of each ParticleVelocityManager as needed.
+  pub fn compute_velocities_for_iteration(&mut self, iteration: usize) -> HashMap<usize, Vector3<f64>> {
+    let manager_velocities: Vec<Vector3<f64>> = self
       .managers
       .iter_mut()
-      .map(|(id, manager)| (*id, manager.get_velocity(iteration)))
-      .collect()
-  }
+      .map(|manager| manager.get_velocity(iteration))
+      .collect();
 
-  pub fn get_velocity_for_iteration_particle(
-    &mut self,
-    iteration: usize,
-    particle_id: usize,
-  ) -> Vector3<f64> {
     self
-      .managers
-      .get_mut(&particle_id)
-      .unwrap()
-      .get_velocity(iteration);
-
-    Vector3::zeros()
+      .particle_id_to_manager_id
+      .iter()
+      .enumerate()
+      .filter_map(|(particle_id, manager_id)| {
+        manager_id.map(|id| (particle_id, manager_velocities[id]))
+      })
+      .collect()
   }
 }

@@ -4,7 +4,7 @@ use nalgebra::Vector3;
 
 #[derive(Clone)]
 pub struct VelocityScheduleConfig {
-  pub particle_id: usize,
+  pub particle_velocity_manager_id: usize,
   /// Iteration-velocity pairs; must include an entry for iteration 0.
   pub velocities: Vec<(usize, Vector3<f64>)>,
 }

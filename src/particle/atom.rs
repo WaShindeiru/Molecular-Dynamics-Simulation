@@ -292,12 +292,23 @@ impl AtomFactory {
     Particle::CustomPathAtom(result)
   }
 
-  fn get_atom_custom_velocity(&mut self, atom: AtomType, position: Vector3<f64>) -> Particle {
+  fn get_atom_custom_velocity(
+    &mut self,
+    atom: AtomType,
+    position: Vector3<f64>,
+    particle_velocity_manager_id: usize,
+  ) -> Particle {
     let result = match atom {
       AtomType::C | AtomType::C_nanotube => {
-        CustomVelocityAtom::new(self.counter, atom, ATOMIC_MASS_C, position)
+        CustomVelocityAtom::new(self.counter, atom, ATOMIC_MASS_C, position, particle_velocity_manager_id)
       }
-      AtomType::Fe => CustomVelocityAtom::new(self.counter, AtomType::Fe, ATOMIC_MASS_FE, position),
+      AtomType::Fe => CustomVelocityAtom::new(
+        self.counter,
+        AtomType::Fe,
+        ATOMIC_MASS_FE,
+        position,
+        particle_velocity_manager_id,
+      ),
     };
     self.counter = self.counter + 1;
 
@@ -359,9 +370,14 @@ impl SafeAtomFactory {
     factory.get_atom_custom_path(atom, path)
   }
 
-  pub fn get_atom_custom_velocity(&self, atom: AtomType, position: Vector3<f64>) -> Particle {
+  pub fn get_atom_custom_velocity(
+    &self,
+    atom: AtomType,
+    position: Vector3<f64>,
+    particle_velocity_manager_id: usize,
+  ) -> Particle {
     let mut factory = self.inner.lock().unwrap();
-    factory.get_atom_custom_velocity(atom, position)
+    factory.get_atom_custom_velocity(atom, position, particle_velocity_manager_id)
   }
 
   pub fn get_atom_random(&self, atom: AtomType, lower_bound: f64, upper_bound: f64) -> Particle {

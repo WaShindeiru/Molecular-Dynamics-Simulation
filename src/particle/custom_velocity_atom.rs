@@ -26,6 +26,8 @@ pub struct CustomVelocityAtom {
   potential_gravity_energy: f64,
 
   ignore_edge_conditions: bool,
+
+  particle_velocity_manager_id: usize,
 }
 
 impl CustomVelocityAtom {
@@ -34,6 +36,7 @@ impl CustomVelocityAtom {
     type_: AtomType,
     mass: f64,
     position: Vector3<f64>,
+    particle_velocity_manager_id: usize,
   ) -> Self {
     CustomVelocityAtom {
       id,
@@ -51,6 +54,7 @@ impl CustomVelocityAtom {
       potential_gravity_energy: 0.0,
       thermostat_work: 0.0,
       ignore_edge_conditions: true,
+      particle_velocity_manager_id,
     }
   }
 
@@ -108,6 +112,10 @@ impl CustomVelocityAtom {
 
   pub fn ignore_edge_conditions(&self) -> bool {
     self.ignore_edge_conditions
+  }
+
+  pub fn get_particle_velocity_manager_id(&self) -> usize {
+    self.particle_velocity_manager_id
   }
 
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
@@ -170,6 +178,7 @@ impl CustomVelocityAtom {
       potential_gravity_energy: 0.0,
 
       ignore_edge_conditions: self.ignore_edge_conditions,
+      particle_velocity_manager_id: self.particle_velocity_manager_id,
     }
   }
 

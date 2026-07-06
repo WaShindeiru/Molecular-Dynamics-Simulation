@@ -1,6 +1,5 @@
 pub mod particle_type_file;
 
-use std::collections::HashMap;
 use std::{fs, io};
 
 use nalgebra::Vector3;
@@ -27,19 +26,13 @@ pub struct ParticleConfigFile {
 
 impl ParticleConfigFile {
   pub fn from_runtime(config: &ParticleConfig, target_units: ValueUnits) -> Self {
-    let velocity_manager_ids: HashMap<usize, usize> = config
-      .velocity_schedules
-      .iter()
-      .map(|schedule| (schedule.particle_id, schedule.particle_id))
-      .collect();
-
     let particles = config
       .atoms
       .iter()
       .map(|particle| {
         let mut particle_file = ParticleInitialState::from_runtime(particle);
-        if particle.is_custom_velocity_atom() {
-          particle_file.velocity_manager_id = velocity_manager_ids.get(&particle.get_id()).copied();
+        if let Particle::CustomVelocityAtom(p) = particle {
+          particle_file.velocity_manager_id = Some(p.get_particle_velocity_manager_id());
         }
         particle_file
       })
@@ -67,26 +60,11 @@ impl ParticleConfigFile {
     let unitless = self.to_value_units(ValueUnits::Unitless);
     debug_assert_eq!(unitless.value_units, ValueUnits::Unitless);
 
-    // Build a map from velocity_manager_id -> particle_id for lookup during schedule construction.
-    let manager_id_to_particle: HashMap<usize, usize> = unitless
-      .particles
-      .iter()
-      .filter_map(|p| p.velocity_manager_id.map(|mid| (mid, p.id)))
-      .collect();
-
     let velocity_schedules = unitless
       .velocity_managers
       .iter()
-      .map(|vm| {
-        let particle_id = *manager_id_to_particle.get(&vm.id).ok_or_else(|| {
-          io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("velocity_manager id={} is not referenced by any particle", vm.id),
-          )
-        })?;
-        Ok(vm.to_schedule(particle_id))
-      })
-      .collect::<io::Result<Vec<_>>>()?;
+      .map(VelocityManagerFile::to_schedule)
+      .collect();
 
     let atoms = unitless
       .particles
@@ -212,11 +190,18 @@ impl ParticleInitialState {
         ));
       }
       ParticleTypeFile::CustomVelocityAtom => {
+        let particle_velocity_manager_id = self.velocity_manager_id.ok_or_else(|| {
+          io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("CustomVelocityAtom id={} is missing velocity_manager_id", self.id),
+          )
+        })?;
         Particle::CustomVelocityAtom(CustomVelocityAtom::new(
           self.id,
           self.atom_type,
           mass,
           self.position.to_runtime(),
+          particle_velocity_manager_id,
         ))
       }
     })

@@ -34,22 +34,23 @@ impl Generator for VelocityNanotubeGenerator {
       ));
     }
 
+    // All particles from this generator share the same velocity schedule, so they
+    // share a single velocity manager instead of one duplicate manager each.
+    let particle_velocity_manager_id = 0;
     let mut atoms: Vec<Particle> = Vec::with_capacity(self.particles.len());
-    let mut velocity_schedules: Vec<VelocityScheduleConfig> =
-      Vec::with_capacity(self.particles.len());
     let atom_factory = SafeAtomFactory::new(0.0, 1.0);
 
     for p in self.particles.iter() {
       let position = p.position + self.offset;
-      let particle = atom_factory.get_atom_custom_velocity(p.particle_type, position);
-      let particle_id = particle.get_id();
-
-      velocity_schedules.push(VelocityScheduleConfig {
-        particle_id,
-        velocities: self.velocities.clone(),
-      });
+      let particle =
+        atom_factory.get_atom_custom_velocity(p.particle_type, position, particle_velocity_manager_id);
       atoms.push(particle);
     }
+
+    let velocity_schedules = vec![VelocityScheduleConfig {
+      particle_velocity_manager_id,
+      velocities: self.velocities.clone(),
+    }];
 
     Ok(ParticleConfig::new_with_schedules(atoms, velocity_schedules))
   }

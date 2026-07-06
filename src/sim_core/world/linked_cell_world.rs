@@ -41,7 +41,7 @@ impl LinkedCellWorld {
       _ => unreachable!(),
     };
 
-    let mut velocity_manager = VelocityManager::from_schedules(&particle_config.velocity_schedules);
+    let mut velocity_manager = VelocityManager::from_config(&particle_config);
     let initial_velocities = velocity_manager.compute_velocities_for_iteration(0);
     for atom in particle_config.atoms.iter_mut() {
       if let Particle::CustomVelocityAtom(p) = atom {
