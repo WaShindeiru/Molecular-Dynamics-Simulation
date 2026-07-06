@@ -1,3 +1,6 @@
+use log::info;
+
+use crate::data::units::TEMPERATURE_U;
 use crate::sim_core::world::linked_cell_world::LinkedCellWorld;
 use crate::sim_core::world::linked_cell_world::integration::verlet_nose_hoover::thermostat::compute_new_thermostat_epsilon;
 use crate::sim_core::world::thermostat::{IntegrationAlgorithm, IntegrationAlgorithmState, IntegrationStateUpdateResponse};
@@ -73,7 +76,35 @@ impl LinkedCellWorld {
     );
 
     match result {
-      IntegrationStateUpdateResponse::NoseHooverVerlet { .. } => {}
+      IntegrationStateUpdateResponse::NoseHooverVerlet {
+        updated,
+        temperature,
+      } => {
+        if updated {
+          let entry = self
+            .integration_algorithm_state
+            .get_previous_history_entry()
+            .unwrap();
+
+          let temperature_started = entry.temperature_started.unwrap().temperature;
+          let temperature_achieved = entry.temperature_achieved.unwrap().temperature;
+          let temperature_switched = entry.temperature_switched.unwrap().temperature;
+
+          info!(
+            "Iteration: {iteration}, current simulation temperature: {simulation_temperature} K, \
+             temperature {achieved_temperature} K achieved, switching to {next_temperature} K.\
+             temperature_started: {temperature_started} K, temperature_achieved: {temperature_achieved} K, \
+             temperature_switched: {temperature_switched} K",
+            iteration = self.iteration,
+            simulation_temperature = simulation_temperature * TEMPERATURE_U,
+            achieved_temperature = current_desired_temperature * TEMPERATURE_U,
+            next_temperature = temperature * TEMPERATURE_U,
+            temperature_started = temperature_started * TEMPERATURE_U,
+            temperature_achieved = temperature_achieved * TEMPERATURE_U,
+            temperature_switched = temperature_switched * TEMPERATURE_U,
+          );
+        }
+      }
       _ => panic!("Wrong result type"),
     }
 
