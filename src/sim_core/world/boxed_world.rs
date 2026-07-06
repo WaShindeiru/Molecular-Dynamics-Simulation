@@ -212,4 +212,8 @@ impl BoxedWorld {
       .history_manager()
       .get_particle_counts()
   }
+
+  pub fn integration_algorithm_state(&self) -> &IntegrationAlgorithmState {
+    &self.integration_algorithm_state
+  }
 }

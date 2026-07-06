@@ -1,0 +1,74 @@
+{
+  "value_units": "si",
+  "world_size": [
+    2.54e-9,
+    2.61e-9,
+    7e-9
+  ],
+  "gravity_changes": [
+    {
+      "distance": {
+        "type": "Iteration",
+        "value": 0
+      },
+      "value": 0.001
+    }
+  ],
+  "time_step": 5e-16,
+  "num_of_iterations": {
+    "type": "Iteration",
+    "value": 200
+  },
+  "max_iteration_till_reset": 2000,
+  "save_options": {
+    "save": true,
+    "save_path": "/mnt/7E442D59442D1585/md/test/thermostat_test/boxed_world_small_v1",
+    "keep_path": false,
+    "save_laamps": true,
+    "save_verbose": false,
+    "save_all_iterations_laamps": false,
+    "save_all_iterations_energy": false,
+    "laamps_sampling": {
+      "one_frame_duration": 1e-14
+    },
+    "energy_sampling": {
+      "one_frame_duration": 1e-14
+    },
+    "velocity_particles_num": 0,
+    "save_final_particles": true
+  },
+  "integration_algorithm": {
+    "type": "NoseHooverVerlet",
+    "desired_temperature": [
+      {
+        "type": "SimpleTemperatureInfoGenerator",
+        "start_temperature": 2000.0,
+        "end_temperature": 0.0,
+        "acceptance_distance": {
+          "type": "Iteration",
+          "value": 0
+        },
+        "achieved_distance": {
+          "type": "Iteration",
+          "value": 3
+        },
+        "temperature_step": -25.0,
+        "threshold": 60,
+        "save_step": 1
+      }
+    ],
+    "q_effective_mass": 700.0
+  },
+  "world_type": {
+    "type": "BoxedWorld",
+    "task_manager_config": {
+      "debug": false,
+      "task_worker_multiplier": 3
+    }
+  },
+  "edge_condition": {
+    "type": "Periodic",
+    "split": true,
+    "trigger_small_subtask_size": 100
+  }
+}

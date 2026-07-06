@@ -80,6 +80,16 @@ impl IntegrationAlgorithmState {
     }
   }
 
+  /// An `acceptance_distance` of zero means "don't wait on the actual temperature at all" -
+  /// the stage should move straight to `TemperatureAchieved` and let `achieved_distance`
+  /// govern the timing instead of the simulated temperature.
+  fn skips_acceptance_check(distance: TimeIterationDistance) -> bool {
+    match distance {
+      TimeIterationDistance::Time { value } => value == 0.0,
+      TimeIterationDistance::Iteration { value } => value == 0,
+    }
+  }
+
   fn response_nose_hoover(updated: bool, temperature: f64) -> IntegrationStateUpdateResponse {
     IntegrationStateUpdateResponse::NoseHooverVerlet {
       updated,
@@ -174,9 +184,12 @@ impl IntegrationAlgorithmState {
             IntegrationAlgorithmState::response_nose_hoover(false, temp_info.desired_temperature)
           }
           NoseHooverStage::StabilizeTemperature => {
-            if (simulation_temperature_unitless - temp_info.desired_temperature).abs()
-              < temp_info.threshold
-            {
+            let within_threshold =
+              IntegrationAlgorithmState::skips_acceptance_check(temp_info.acceptance_distance)
+                || (simulation_temperature_unitless - temp_info.desired_temperature).abs()
+                  < temp_info.threshold;
+
+            if within_threshold {
               *acceptance_consecutive += 1;
 
               if IntegrationAlgorithmState::distance_reached(
