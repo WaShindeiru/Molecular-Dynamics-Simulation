@@ -104,7 +104,6 @@ impl PartialWorldSaver {
 
     let mut kinetic_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut potential_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
-    let mut phantom_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut potential_gravity_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut total_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut thermostat_work: Vec<f64> = Vec::with_capacity(num_of_iterations);
@@ -113,14 +112,12 @@ impl PartialWorldSaver {
       let mut kinetic_energy_i = 0.;
       let mut thermostat_work_i = 0.;
       let mut potential_energy_i = 0.;
-      let mut phantom_energy_i = 0.;
       let mut potential_gravity_energy_i = 0.;
 
       for atom_dto in box_container_dto.atoms.iter() {
         kinetic_energy_i += atom_dto.kinetic_energy;
         thermostat_work_i += atom_dto.thermostat_work;
         potential_energy_i += atom_dto.potential_energy;
-        phantom_energy_i += atom_dto.phantom_energy;
         potential_gravity_energy_i += atom_dto.potential_gravity_energy;
       }
 
@@ -128,13 +125,9 @@ impl PartialWorldSaver {
 
       kinetic_energy.push(kinetic_energy_i);
       potential_energy.push(potential_energy_i);
-      phantom_energy.push(phantom_energy_i);
       let potential_energy_i = *potential_energy.get(i).unwrap();
       potential_gravity_energy.push(potential_gravity_energy_i);
-      total_energy.push(
-        // kinetic_energy_i + potential_energy_i + phantom_energy_i + potential_gravity_energy_i,
-        kinetic_energy_i + potential_energy_i + potential_gravity_energy_i,
-      );
+      total_energy.push(kinetic_energy_i + potential_energy_i + potential_gravity_energy_i);
       thermostat_work.push(self.thermostat_work_total);
     }
 
@@ -144,7 +137,6 @@ impl PartialWorldSaver {
         "iteration",
         "kinetic_energy",
         "potential_energy",
-        "phantom_energy",
         "potential_gravity_energy",
         "total_energy",
         "thermostat_work_total",
@@ -154,7 +146,6 @@ impl PartialWorldSaver {
         "iteration",
         "kinetic_energy",
         "potential_energy",
-        "phantom_energy",
         "potential_gravity_energy",
         "total_energy",
       ][..],
@@ -183,7 +174,6 @@ impl PartialWorldSaver {
             format!("{}", iteration),
             format!("{}", kinetic_energy.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
-            format!("{}", phantom_energy.get(i).unwrap()),
             format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
             format!("{}", thermostat_work.get(i).unwrap()),
@@ -195,7 +185,6 @@ impl PartialWorldSaver {
             format!("{}", iteration),
             format!("{}", kinetic_energy.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
-            format!("{}", phantom_energy.get(i).unwrap()),
             format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
           ])?;

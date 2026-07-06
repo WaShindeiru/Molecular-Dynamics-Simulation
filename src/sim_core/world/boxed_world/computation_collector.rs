@@ -139,15 +139,6 @@ impl ComputationCollector {
     }
   }
 
-  pub fn compute_phantom_energy(&mut self) {
-    for (_, particle) in self.particles_modified.iter_mut() {
-      if let Particle::CustomVelocityAtom(p) = particle {
-        let phantom_energy_delta = p.get_previous_potential_energy() - p.get_potential_energy();
-        p.add_phantom_energy(phantom_energy_delta);
-      }
-    }
-  }
-
   pub fn get_mean_temperature(&self) -> f64 {
     let relevant: Vec<_> = self
       .particles_modified

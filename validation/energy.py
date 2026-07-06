@@ -39,7 +39,6 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
 
   kinetic_energy = energy_data["kinetic_energy"]
   potential_energy = energy_data["potential_energy"]
-  # phantom_energy = energy_data["phantom_energy"]
   potential_gravity_energy = energy_data["potential_gravity_energy"]
   total_energy = energy_data["total_energy"]
   if thermostat:
@@ -53,7 +52,6 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
 
   plt.plot(time_elapsed, kinetic_energy, label="kinetic energy")
   plt.plot(time_elapsed, potential_energy, label="potential energy")
-  # plt.plot(time_elapsed, phantom_energy, label="phantom energy")
   plt.plot(time_elapsed, total_energy_show, label="total energy")
   # plt.plot(time_elapsed, total_energy, label="all_energy")
   if thermostat:
@@ -166,6 +164,7 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
     plt.ylabel("thermostat epsilon")
     plt.title("Thermostat epsilon")
     # plt.xlim([0, 3e-10])
+    plt.ylim([-1, 1])
     plt.savefig(path + "/thermostat_epsilon.png")
     plt.show()
 

@@ -96,11 +96,6 @@ impl BoxedWorld {
     computation_collector.apply_custom_velocities(&current_custom_velocities);
     perf_log!("Computed custom velocities");
 
-    if self.iteration != 0 {
-      computation_collector.compute_phantom_energy();
-    }
-    perf_log!("Computed phantom energy");
-
     let simulation_temperature = computation_collector.get_mean_temperature();
     perf_log!("Computed simulation themperature");
 

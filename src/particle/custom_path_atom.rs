@@ -148,7 +148,6 @@ impl CustomPathAtom {
       velocity: self.velocity,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
-      phantom_energy: 0.0,
       potential_gravity_energy: self.potential_gravity_energy,
       thermostat_work: self.thermostat_work,
       force: self.force,
