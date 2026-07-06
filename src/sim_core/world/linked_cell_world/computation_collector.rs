@@ -90,8 +90,10 @@ impl ComputationCollector {
       if self.local_container.particles()[id].as_ref().unwrap().is_custom_velocity_atom() {
         continue;
       }
+
       let half_velocity = self.half_velocity_cache[id];
       let compliance = &self.particle_compliance[id];
+
       let effective_time_step = if !compliance.compliant && collision_split && subtask_size > 1 {
         time_step / subtask_size as f64
       } else {

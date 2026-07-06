@@ -6,7 +6,6 @@ use nalgebra::Vector3;
 use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::{Compliance, EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_task::handle_task::handle_partial_velocity_step::apply_velocity_constraint;
-use crate::sim_core::world::boxed_world::box_task::handle_task::partial_velocity_step::PartialVelocityStep;
 use crate::sim_core::world::boxed_world::box_task::{
   ForceTaskParticleData, ForceTaskResult, VelocityTaskParticleData, VelocityTaskResult,
 };
@@ -16,6 +15,9 @@ use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::comput
 use crate::sim_core::world::boxed_world::box_task::force_task_box_container::particle_proxy::ParticlePositionProxy;
 use crate::sim_core::world::computation::{FP, compute_forces_potential, ForceComputationOperations};
 use crate::sim_core::world::linked_cell_world::LinkedCellContainer;
+use crate::sim_core::world::linked_cell_world::linked_cell_task::handle_task::handle_partial_velocity_step::handle_partial_velocity_step;
+
+pub(crate) mod handle_partial_velocity_step;
 
 pub fn handle_velocity_batch_task(
   task_id: usize,
@@ -70,38 +72,14 @@ pub fn handle_velocity_batch_task(
 
   if !non_compliant.is_empty() {
     if edge_condition.collision_split_enabled() {
-      let trigger_small_subtask_size = match edge_condition {
-        EdgeCondition::Simple { trigger_small_subtask_size, .. }
-        | EdgeCondition::Periodic { trigger_small_subtask_size, .. } => trigger_small_subtask_size,
-        EdgeCondition::PeriodicAll => unreachable!(),
-      };
-
-      let initial_particles = non_compliant.keys()
-        .map(|id| (*id, (**history.particles()[*id].as_ref().unwrap()).clone()))
-        .collect();
-      let initial_compliance = non_compliant.iter()
-        .map(|(id, d)| (*id, d.compliance))
-        .collect();
-
-      let HalfVelocityResult { half_velocity, new_position, thermostat_work, compliance } =
-        PartialVelocityStep::new(
-          container_size,
-          edge_condition,
-          initial_particles,
-          initial_compliance,
-          previous_thermostat_epsilon,
-          trigger_small_subtask_size,
-          time_step,
-        ).run();
-
-      let corrected = compliance.into_iter().map(|(id, compliance)| {
-        (id, VelocityTaskParticleData {
-          half_velocity: half_velocity[&id],
-          new_position: new_position[&id],
-          thermostat_work: thermostat_work[&id],
-          compliance,
-        })
-      });
+      let corrected = handle_partial_velocity_step(
+        history,
+        non_compliant,
+        container_size,
+        edge_condition,
+        previous_thermostat_epsilon,
+        time_step,
+      );
       result_particles.extend(corrected);
     } else {
       result_particles.extend(apply_velocity_constraint(non_compliant, edge_condition));
