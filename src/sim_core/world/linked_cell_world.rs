@@ -110,7 +110,7 @@ impl LinkedCellWorld {
         unimplemented!("semi implicit euler for linked cell world")
       }
       IntegrationAlgorithm::VelocityVerlet => {
-        unimplemented!("velocity verlet for linked cell world")
+        self.update_velocity_verlet(next_iteration);
       }
       IntegrationAlgorithm::NoseHooverVerlet { .. } => {
         self.update_verlet_nose_hoover(next_iteration);
