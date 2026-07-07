@@ -18,6 +18,15 @@ def load_time_step(path: str) -> float:
   return float(parameters["time_step"])
 
 
+def count_atoms(path: str) -> int:
+  particles_initial_path = Path(path) / "particles_initial.json"
+  with open(particles_initial_path, encoding="utf-8") as f:
+    particles_initial = json.load(f)
+  return sum(
+    1 for particle in particles_initial["particles"] if particle["particle_type"] == "Atom"
+  )
+
+
 def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: int | None = None, end: int | None = None, temp_ylim: float | None = None) -> None:
   energy_data = pd.read_csv(path + '/energy.csv', header=0)
   energy_data = energy_data[energy_data["iteration"] >= 1].reset_index(drop=True)
@@ -131,14 +140,9 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.savefig(path + '/total_energy.png')
   plt.show()
 
-  num_atoms = None
-  with open(path + '/laamps/output_0.dump', 'r') as f:
-    for line in f:
-      if line.strip() == 'ITEM: NUMBER OF ATOMS':
-        num_atoms = int(f.readline().strip())
-        break
+  num_atoms = count_atoms(path)
 
-  if num_atoms is not None:
+  if num_atoms > 0:
     mean_kinetic_energy = kinetic_energy / num_atoms
   else:
     mean_kinetic_energy = kinetic_energy  # Fallback if num_atoms not found

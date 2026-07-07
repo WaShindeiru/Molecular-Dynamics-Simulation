@@ -65,7 +65,10 @@ impl BoxedWorld {
       new_thermostat_epsilon = compute_new_thermostat_epsilon(
         current_thermostat_epsilon,
         integration_cache.half_velocity_cache(),
-        integration_cache.box_cache().all_particles(),
+        integration_cache
+          .box_cache()
+          .all_particles()
+          .filter(|p| !p.is_custom_velocity_atom()),
         self.config.time_step,
         q_effective_mass,
         current_desired_temperature,

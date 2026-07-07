@@ -11,6 +11,7 @@ use chrono::prelude::*;
 use log::info;
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
+use std::fs;
 use std::fs::File;
 use std::io;
 use std::io::Write;
@@ -109,6 +110,10 @@ impl Engine {
       self.particle_config.num_of_carbon_atoms as f64 / self.particle_config.num_of_atoms as f64
     );
 
+    if self.save_options.save {
+      self.save_initial_config().unwrap();
+    }
+
     let start = Instant::now();
     let signal_rx = setup_signal_handler().expect("Failed to set up signal handler.");
     let spinner = ['|', '/', '-', '\\'];
@@ -174,6 +179,28 @@ impl Engine {
     }
   }
 
+  /// Writes `parameters.json` and `particles_initial.json` for this run. Called at the
+  /// start of `run()` so the on-disk config reflects what was actually launched, even if
+  /// the simulation is later interrupted before completion.
+  pub fn save_initial_config(&self) -> io::Result<()> {
+    let save_dir = Path::new(&self.save_options.save_path);
+    fs::create_dir_all(save_dir)?;
+
+    let parameters_path =
+      json_save_path_avoiding_overwrite(save_dir, "parameters.json");
+    SimulationConfigFile::from_runtime(&self.config, ValueUnits::Si)
+      .to_json_file(parameters_path.to_string_lossy().as_ref())?;
+
+    let particles_initial_path =
+      json_save_path_avoiding_overwrite(save_dir, "particles_initial.json");
+    particle_config_to_initial_json_file(
+      &self.particle_config,
+      particles_initial_path.to_string_lossy().as_ref(),
+    )?;
+
+    Ok(())
+  }
+
   pub fn save(&mut self) -> io::Result<()> {
     self.world.save()?;
     let save_dir = Path::new(&self.save_options.save_path);
@@ -189,18 +216,6 @@ impl Engine {
       self.current_iteration + 1,
     )?;
     writeln!(file, "Simulation Time: {:?} seconds", self.simulation_time)?;
-
-    let parameters_path =
-      json_save_path_avoiding_overwrite(save_dir, "parameters.json");
-    SimulationConfigFile::from_runtime(&self.config, ValueUnits::Si)
-      .to_json_file(parameters_path.to_string_lossy().as_ref())?;
-
-    let particles_initial_path =
-      json_save_path_avoiding_overwrite(save_dir, "particles_initial.json");
-    particle_config_to_initial_json_file(
-      &self.particle_config,
-      particles_initial_path.to_string_lossy().as_ref(),
-    )?;
 
     Ok(())
   }

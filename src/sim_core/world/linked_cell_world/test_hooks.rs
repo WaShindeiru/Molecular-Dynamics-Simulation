@@ -70,7 +70,8 @@ impl LinkedCellWorld {
                 .local_container
                 .particles()
                 .iter()
-                .filter_map(|p| p.as_ref()),
+                .filter_map(|p| p.as_ref())
+                .filter(|p| !p.is_custom_velocity_atom()),
             self.config.time_step,
             q_effective_mass,
             current_desired_temperature,

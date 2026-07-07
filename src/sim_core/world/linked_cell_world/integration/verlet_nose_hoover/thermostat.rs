@@ -15,12 +15,13 @@ where
   I: IntoIterator,
   I::Item: AsRef<Particle>,
 {
-  let num_of_particles = half_velocity_cache.len();
+  let mut num_of_particles = 0;
   let kinetic_energy: f64 = new_position_atoms
     .into_iter()
     .map(|p| {
       let p = p.as_ref();
       let vel = half_velocity_cache[p.get_id()];
+      num_of_particles += 1;
       p.get_mass() * vel.magnitude().powi(2) / 2.0
     })
     .sum();

@@ -6,12 +6,13 @@ use std::collections::HashMap;
 fn compute_half_velocity_kinetic_energy<I>(
   half_velocity_cache: &HashMap<usize, Vector3<f64>>,
   new_position_atoms: I,
-) -> f64
+) -> (f64, usize)
 where
   I: IntoIterator,
   I::Item: AsRef<Particle>,
 {
   let mut kinetic_energy = 0.;
+  let mut num_of_particles = 0;
 
   for temp_i in new_position_atoms.into_iter() {
     let particle_i = temp_i.as_ref();
@@ -20,9 +21,10 @@ where
     let mass = particle_i.get_mass();
 
     kinetic_energy += mass * velocity.magnitude().powi(2) / 2.0;
+    num_of_particles += 1;
   }
 
-  kinetic_energy
+  (kinetic_energy, num_of_particles)
 }
 
 pub fn compute_new_thermostat_epsilon<I>(
@@ -39,9 +41,8 @@ where
 {
   let mut new_thermostat_epsilon = thermostat_epsilon;
 
-  let half_velocity_kinetic_energy =
+  let (half_velocity_kinetic_energy, num_of_particles) =
     compute_half_velocity_kinetic_energy(half_velocity_cache, new_position_atoms);
-  let num_of_particles = half_velocity_cache.len();
 
   new_thermostat_epsilon += time_step / q_effective_mass
     * (half_velocity_kinetic_energy
