@@ -4,16 +4,20 @@ use clap::{Parser, Subcommand};
 
 use self::combine::{CombineCommand, combine_command};
 use self::convert::{ConvertCommand, convert_command};
+use self::inspect::{InspectCommand, inspect_command};
 use self::move_particles::{MoveCommand, move_particles_command};
 use self::move_particles_minus::{MoveMinusCommand, move_particles_minus_command};
 use self::parse::{ParseCommand, parse_command};
+use self::reindex::{ReindexCommand, reindex_command};
 use self::run::{RunCommand, run_simulation_command};
 
 pub mod combine;
 pub mod convert;
+pub mod inspect;
 pub mod move_particles;
 pub mod move_particles_minus;
 pub mod parse;
+pub mod reindex;
 pub mod run;
 
 /// Run molecular dynamics simulation from JSON config files.
@@ -32,6 +36,8 @@ pub enum Command {
   Convert(ConvertCommand),
   Move(MoveCommand),
   MoveMinus(MoveMinusCommand),
+  Inspect(InspectCommand),
+  Reindex(ReindexCommand),
 }
 
 pub fn run() -> io::Result<()> {
@@ -44,5 +50,7 @@ pub fn run() -> io::Result<()> {
     Command::Convert(command) => convert_command(command),
     Command::Move(command) => move_particles_command(command),
     Command::MoveMinus(command) => move_particles_minus_command(command),
+    Command::Inspect(command) => inspect_command(command),
+    Command::Reindex(command) => reindex_command(command),
   }
 }

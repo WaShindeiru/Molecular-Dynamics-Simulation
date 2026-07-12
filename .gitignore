@@ -8,3 +8,4 @@ perf.data
 /.codex
 profile.json.gz
 md_fec.cpp
+**/__pycache__/

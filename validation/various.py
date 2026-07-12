@@ -76,6 +76,20 @@ def read_atoms_from_output_dumps(directory: str, atom_id_1: int, atom_id_2: int)
   result = pd.DataFrame(records, columns=["iteration", "atom_id", "x", "y", "z"])
   return result.sort_values(["iteration", "atom_id"]).reset_index(drop=True)
 
+def get_distance(data, atom_id_1, atom_id_2):
+  atom_0 = data[data['atom_id'] == atom_id_1][['iteration', 'x', 'y', 'z']]
+  atom_1 = data[data['atom_id'] == atom_id_2][['iteration', 'x', 'y', 'z']]
+
+  merged = atom_0.merge(atom_1, on='iteration', suffixes=('_0', '_1'))
+
+  merged['distance'] = np.sqrt(
+    (merged['x_1'] - merged['x_0']) ** 2 +
+    (merged['y_1'] - merged['y_0']) ** 2 +
+    (merged['z_1'] - merged['z_0']) ** 2
+  )
+
+  return merged[['iteration', 'distance']]
+
 def get_distribution(data, idx_01, idx_02, name):
   df_pivot = data.pivot_table(index='iteration', columns='atom_id')
   df_merged = pd.DataFrame({
@@ -152,4 +166,28 @@ def show_energy_plot_from_text(path: str) -> None:
   plt.xlabel("iteration")
   plt.ylabel("Energy [eV]")
   plt.title("Total energy difference")
+  plt.show()
+
+
+if __name__ == "__main__":
+  path = Path("/mnt/7E442D59442D1585/md/paper/pot_energy/c-c")
+
+  temp = read_atoms_from_output_dumps(path / "laamps", 0, 1)
+  print(temp)
+
+  distance = get_distance(temp, 0, 1)
+
+  energy_data = pd.read_csv(path / "energy.csv", header=0)
+
+  plt.figure()
+  plt.plot(distance['iteration'], distance['distance'])
+  plt.show()
+
+  plt.figure()
+  plt.plot(distance['distance'], energy_data["potential_energy"])
+  plt.xlim([0, 3])
+  plt.ylim([-9, 20])
+  plt.xlabel("Odległość [A]")
+  plt.ylabel("Energia potencjalna [eV]")
+  plt.title("Zależność energii potencjalnej od odległości pomiędzy atomami C-C")
   plt.show()
