@@ -2,6 +2,7 @@ mod common;
 
 use carbon_nanotube::particle::SafeAtomFactory;
 use carbon_nanotube::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
+use carbon_nanotube::sim_core::world::cell::TaskSplitVariant;
 use carbon_nanotube::sim_core::world::{WorldType, boundary_constraint::EdgeCondition};
 
 use common::box_helpers::{
@@ -20,6 +21,7 @@ fn test_reset_world_no_missing_iterations_boxed_simple() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Simple {
@@ -38,6 +40,7 @@ fn test_reset_world_no_missing_iterations_boxed_periodic() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Periodic {
@@ -55,6 +58,7 @@ fn test_reset_world_with_thermostat_boxed_simple() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Simple {
@@ -73,6 +77,7 @@ fn test_reset_world_with_thermostat_boxed_periodic() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Periodic {
@@ -90,6 +95,7 @@ fn test_save_files_completeness_boxed_simple() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Simple {
@@ -108,6 +114,7 @@ fn test_save_files_completeness_boxed_periodic() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Periodic {
@@ -125,6 +132,7 @@ fn test_single_reset_boxed_simple() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Simple {
@@ -143,6 +151,7 @@ fn test_single_reset_boxed_periodic() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Periodic {
@@ -160,6 +169,7 @@ fn test_no_reset_boxed_simple() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Simple {
@@ -178,6 +188,7 @@ fn test_no_reset_boxed_periodic() {
       task_manager_config: TaskManagerConfig {
         debug: false,
         task_worker_multiplier: 2.0,
+        split: TaskSplitVariant::Floor,
       },
     },
     EdgeCondition::Periodic {

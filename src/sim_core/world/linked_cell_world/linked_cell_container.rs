@@ -5,7 +5,7 @@ use nalgebra::Vector3;
 use crate::particle::Particle;
 use crate::persistence::dto::world::boxed::box_container::BoxContainerDTO;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::cell::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::{
   SimBoxEdge, get_coordinates_from_simulation_box_id, get_id_simulation_box,
 };
@@ -333,7 +333,7 @@ mod tests {
   use crate::data::types::{AtomType, InteractionType};
   use crate::particle::atom::Atom;
   use crate::persistence::json::particle_config::read_particle_config_from_json_str;
-  use crate::sim_core::world::boxed_world::box_container::box_container_config::new_config;
+  use crate::sim_core::world::cell::box_container_config::new_config;
   use crate::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
   use crate::sim_core::world::boxed_world::box_task::force_task_box_container::particle_proxy::ParticlePositionProxy;
   use std::collections::HashSet;

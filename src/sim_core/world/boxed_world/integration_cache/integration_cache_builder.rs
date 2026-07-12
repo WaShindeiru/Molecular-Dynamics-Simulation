@@ -3,7 +3,7 @@ use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::cell::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::box_task::VelocityTaskParticleData;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;

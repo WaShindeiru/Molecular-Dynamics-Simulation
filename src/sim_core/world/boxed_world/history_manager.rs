@@ -5,7 +5,7 @@ use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::persistence::dto::world::boxed::BoxedWorldDTOWithoutHistory;
 use crate::persistence::dto::world::history::HistoryDTO;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::cell::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use std::sync::Arc;
 

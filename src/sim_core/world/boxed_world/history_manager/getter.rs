@@ -1,5 +1,5 @@
 use crate::data::SimulationConfig;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::cell::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 
 impl HistoryManager {

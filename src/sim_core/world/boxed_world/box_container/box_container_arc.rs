@@ -1,13 +1,13 @@
 use crate::particle::Particle;
 use crate::persistence::dto::world::boxed::box_container::BoxContainerDTO;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::cell::box_container_config::{self, BoxContainerConfig};
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimBoxEdge::{
   LeftEdge, Normal, RightEdge,
 };
 use crate::sim_core::world::boxed_world::box_container::sim_box::{
   SimBoxPlacement, SimulationBox, get_coordinates_from_simulation_box_id, get_id_simulation_box,
 };
-use crate::sim_core::world::boxed_world::box_container::{BoxContainer, box_container_config};
+use crate::sim_core::world::boxed_world::box_container::BoxContainer;
 use crate::utils::cube::Cube;
 use nalgebra::Vector3;
 use std::collections::{HashMap, HashSet};

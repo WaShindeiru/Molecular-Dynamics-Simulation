@@ -6,7 +6,7 @@ use crate::particle::Particle;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::persistence::dto::world::boxed::BoxedWorldDTOWithoutHistory;
 use crate::persistence::dto::world::history::HistoryDTO;
-use crate::sim_core::world::boxed_world::box_container::box_container_config;
+use crate::sim_core::world::cell::box_container_config;
 use crate::sim_core::world::linked_cell_world::LinkedCellContainer;
 
 mod getter;

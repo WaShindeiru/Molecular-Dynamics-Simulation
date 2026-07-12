@@ -7,7 +7,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crate::data::SimulationConfig;
-use crate::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
+use crate::sim_core::world::cell::{TaskSplitVariant, TaskSplitter};
 use crate::sim_core::world::linked_cell_world::LinkedCellContainer;
 use crate::sim_core::world::linked_cell_world::computation_collector::ComputationCollector;
 use crate::sim_core::world::linked_cell_world::integration_cache::IntegrationCache;
@@ -22,6 +22,7 @@ pub struct TaskManager {
   rx_result: Receiver<LinkedCellResult>,
   num_workers: usize,
   task_worker_multiplier: f64,
+  task_splitter: TaskSplitter,
   task_cell_mapping: Option<HashMap<usize, Arc<Vec<usize>>>>,
 }
 
@@ -30,6 +31,7 @@ impl TaskManager {
     debug: bool,
     simulation_config: SimulationConfig,
     task_worker_multiplier: f64,
+    split_variant: TaskSplitVariant,
     num_atoms: usize,
   ) -> Self {
     let (tx_task, rx_result, threads, num_workers) = create_threads(debug, num_atoms);
@@ -40,6 +42,7 @@ impl TaskManager {
       rx_result,
       num_workers,
       task_worker_multiplier,
+      task_splitter: TaskSplitter::new(split_variant),
       task_cell_mapping: None,
     }
   }
@@ -52,43 +55,10 @@ impl TaskManager {
     self.task_cell_mapping = None;
   }
 
-  pub fn split_into_tasks(&mut self, num_of_tasks: usize, container: &LinkedCellContainer) {
-    assert!(self.task_cell_mapping.is_none());
-    let config = container.config();
-    let nx = config.box_count_dim.x;
-    let ny = config.box_count_dim.y;
-    let nz = config.box_count_dim.z;
-
-    let z_per_task = nz / num_of_tasks;
-    let remainder = nz % num_of_tasks;
-
-    let mut mapping = HashMap::with_capacity(num_of_tasks);
-    let mut z_start = 0;
-
-    for task_id in 0..num_of_tasks {
-      let z_count = z_per_task + if task_id < remainder { 1 } else { 0 };
-      let z_end = z_start + z_count;
-
-      let cell_ids = (z_start..z_end)
-        .flat_map(|z| {
-          (0..ny).flat_map(move |y| {
-            (0..nx).map(move |x| {
-              get_id_simulation_box(&nalgebra::Vector3::new(x, y, z), &config.box_count_dim)
-            })
-          })
-        })
-        .collect();
-
-      mapping.insert(task_id, Arc::new(cell_ids));
-      z_start = z_end;
-    }
-
-    self.task_cell_mapping = Some(mapping);
-  }
-
   pub fn split_into_tasks_multiplier(&mut self, container: &LinkedCellContainer) {
+    assert!(self.task_cell_mapping.is_none());
     let num_of_tasks = (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize;
-    self.split_into_tasks(num_of_tasks, container);
+    self.task_cell_mapping = Some(self.task_splitter.split(num_of_tasks, container.config()));
   }
 
   pub fn task_cell_mapping(&self) -> Option<&HashMap<usize, Arc<Vec<usize>>>> {

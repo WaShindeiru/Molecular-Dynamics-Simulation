@@ -1,5 +1,4 @@
 use log::debug;
-use nalgebra::Vector3;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
@@ -8,15 +7,14 @@ use std::time::Duration;
 use crate::perf_log;
 use crate::data::SimulationConfig;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
-use crate::sim_core::world::boxed_world::box_container::sim_box::{
-  SimulationBox, get_id_simulation_box,
-};
+use crate::sim_core::world::cell::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
 use crate::sim_core::world::boxed_world::box_task::task_manager::threads::create_threads;
 use crate::sim_core::world::boxed_world::box_task::{BoxResult, BoxTask};
 use crate::sim_core::world::boxed_world::computation_collector::ComputationCollector;
 use crate::sim_core::world::boxed_world::integration_cache::IntegrationCache;
 use crate::sim_core::world::boxed_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
+use crate::sim_core::world::cell::{TaskSplitVariant, TaskSplitter};
 
 mod threads;
 
@@ -24,6 +22,7 @@ mod threads;
 pub struct TaskManagerConfig {
   pub debug: bool,
   pub task_worker_multiplier: f64,
+  pub split: TaskSplitVariant,
 }
 
 pub struct TaskManager {
@@ -36,6 +35,7 @@ pub struct TaskManager {
   rx_result: Receiver<BoxResult>,
   num_workers: usize,
   task_worker_multiplier: f64,
+  task_splitter: TaskSplitter,
 
   task_box_mapping: Option<HashMap<usize, Arc<Vec<usize>>>>,
 }
@@ -46,6 +46,7 @@ impl TaskManager {
     simulation_config: SimulationConfig,
     container_config: BoxContainerConfig,
     task_worker_multiplier: f64,
+    split_variant: TaskSplitVariant,
     num_atoms: usize,
   ) -> Self {
     let (tx_task, rx_result, threads, num_workers) = create_threads(debug, num_atoms);
@@ -59,6 +60,7 @@ impl TaskManager {
       rx_result,
       num_workers,
       task_worker_multiplier,
+      task_splitter: TaskSplitter::new(split_variant),
       task_box_mapping: Option::None,
     }
   }
@@ -71,43 +73,10 @@ impl TaskManager {
     self.task_box_mapping = None
   }
 
-  pub fn split_into_tasks(&mut self, num_of_task: usize, config: &BoxContainerConfig) {
-    assert!(self.task_box_mapping.is_none());
-    let nx = config.box_count_dim.x;
-    let ny = config.box_count_dim.y;
-    let nz = config.box_count_dim.z;
-
-    let z_per_task = nz / num_of_task;
-    let remainder = nz % num_of_task;
-
-    let mut mapping: HashMap<usize, Arc<Vec<usize>>> = HashMap::with_capacity(num_of_task);
-    let mut z_start = 0;
-
-    for task_id in 0..num_of_task {
-      let z_count = z_per_task + if task_id < remainder { 1 } else { 0 };
-      let z_end = z_start + z_count;
-
-      let box_ids = (z_start..z_end)
-        .flat_map(|z| {
-          (0..ny).flat_map(move |y| {
-            (0..nx)
-              .map(move |x| get_id_simulation_box(&Vector3::new(x, y, z), &config.box_count_dim))
-          })
-        })
-        .collect();
-
-      mapping.insert(task_id, Arc::new(box_ids));
-      z_start = z_end;
-    }
-
-    self.task_box_mapping = Some(mapping);
-  }
-
   pub fn split_into_tasks_multiplier(&mut self, config: &BoxContainerConfig) {
-    self.split_into_tasks(
-      (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize,
-      config,
-    );
+    assert!(self.task_box_mapping.is_none());
+    let num_of_tasks = (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize;
+    self.task_box_mapping = Some(self.task_splitter.split(num_of_tasks, config));
   }
 
   pub fn task_box_mapping(&self) -> Option<&HashMap<usize, Arc<Vec<usize>>>> {

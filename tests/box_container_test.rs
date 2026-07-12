@@ -3,7 +3,7 @@ use carbon_nanotube::data::config::builder::SimulationConfigBuilder;
 use carbon_nanotube::data::types::{AtomType, InteractionType};
 use carbon_nanotube::particle::{Atom, Particle, SafeAtomFactory};
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
-use carbon_nanotube::sim_core::world::boxed_world::box_container::box_container_config::SimulationBoxType;
+use carbon_nanotube::sim_core::world::cell::box_container_config::SimulationBoxType;
 use carbon_nanotube::sim_core::world::boxed_world::box_container::sim_box::get_id_simulation_box;
 use carbon_nanotube::sim_core::world::boxed_world::history_manager::HistoryManager;
 use nalgebra::Vector3;

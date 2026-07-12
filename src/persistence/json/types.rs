@@ -1,6 +1,7 @@
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
+use crate::sim_core::world::cell::TaskSplitVariant;
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
@@ -59,9 +60,38 @@ pub enum WorldTypeFile {
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
+pub enum TaskSplitVariantFile {
+  Floor,
+  FloorBox { x: usize, y: usize },
+}
+
+impl TaskSplitVariantFile {
+  pub fn from_runtime(value: TaskSplitVariant) -> Self {
+    match value {
+      TaskSplitVariant::Floor => TaskSplitVariantFile::Floor,
+      TaskSplitVariant::FloorBox { x, y } => TaskSplitVariantFile::FloorBox { x, y },
+    }
+  }
+
+  pub fn to_runtime(&self) -> TaskSplitVariant {
+    match self {
+      TaskSplitVariantFile::Floor => TaskSplitVariant::Floor,
+      TaskSplitVariantFile::FloorBox { x, y } => TaskSplitVariant::FloorBox { x: *x, y: *y },
+    }
+  }
+}
+
+fn default_task_split_variant_file() -> TaskSplitVariantFile {
+  TaskSplitVariantFile::Floor
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct TaskManagerConfigFile {
   pub debug: bool,
   pub task_worker_multiplier: f64,
+  #[serde(default = "default_task_split_variant_file")]
+  pub split: TaskSplitVariantFile,
 }
 
 impl TaskManagerConfigFile {
@@ -69,6 +99,7 @@ impl TaskManagerConfigFile {
     Self {
       debug: value.debug,
       task_worker_multiplier: value.task_worker_multiplier,
+      split: TaskSplitVariantFile::from_runtime(value.split),
     }
   }
 
@@ -76,6 +107,7 @@ impl TaskManagerConfigFile {
     TaskManagerConfig {
       debug: self.debug,
       task_worker_multiplier: self.task_worker_multiplier,
+      split: self.split.to_runtime(),
     }
   }
 }

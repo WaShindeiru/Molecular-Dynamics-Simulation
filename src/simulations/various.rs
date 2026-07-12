@@ -1,5 +1,6 @@
 use nalgebra::Vector3;
-
+use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
+use crate::sim_core::world::WorldType;
 use crate::data::ValueUnits::{Si, Unitless};
 use crate::data::config::builder::SimulationConfigBuilder;
 use crate::data::types::AtomType;
@@ -15,6 +16,7 @@ use crate::particle::SafeAtomFactory;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::thermostat::{TemperatureInfo, TimeIterationDistance};
 use crate::persistence::json::particle_config::Vector3Record;
+use crate::sim_core::world::cell::TaskSplitVariant::FloorBox;
 use crate::simulations::generators::core::generator_config::GeneratorConfig;
 use crate::simulations::generators::core::generator_config::dense::DenseGeneratorConfig;
 use crate::simulations::generators::core::generator_config::nanotube::{NanotubeGeneratorConfig, NanotubeGeneratorParticleFile};
@@ -51,6 +53,18 @@ pub fn see_config_json() {
         desired_temperature: (desired_temperatures),
         q_effective_mass: (1.0),
       },
+    )
+    .world_type(
+      WorldType::LinkedCellWorld {
+        task_manager_config: TaskManagerConfig{
+          debug: false,
+          split: FloorBox {
+            x: 2,
+            y: 2,
+          },
+          task_worker_multiplier: 3.0
+        }
+      }
     )
     .build()
     .unwrap();

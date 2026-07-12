@@ -2,6 +2,7 @@ use crate::data::units::{TEMPERATURE_U, TIME_U};
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
+use crate::sim_core::world::cell::TaskSplitVariant;
 use crate::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
@@ -47,6 +48,7 @@ pub fn dense_runner() {
     task_manager_config: TaskManagerConfig {
       debug: false,
       task_worker_multiplier: 6.0,
+      split: TaskSplitVariant::Floor,
     },
   };
   let edge_condition = EdgeCondition::Periodic {
@@ -98,6 +100,7 @@ pub fn one_particle_edge_runner() {
     task_manager_config: TaskManagerConfig {
       debug: false,
       task_worker_multiplier: 2.0,
+      split: TaskSplitVariant::Floor,
     },
   };
   let edge_condition = EdgeCondition::Periodic {
@@ -143,6 +146,7 @@ pub fn two_particles_edge_runner() {
     task_manager_config: TaskManagerConfig {
       debug: false,
       task_worker_multiplier: 2.0,
+      split: TaskSplitVariant::Floor,
     },
   };
   let edge_condition = EdgeCondition::Periodic {
@@ -183,6 +187,7 @@ pub fn sphere_runner() {
     task_manager_config: TaskManagerConfig {
       debug: false,
       task_worker_multiplier: 2.0,
+      split: TaskSplitVariant::Floor,
     },
   };
 
@@ -219,6 +224,7 @@ pub fn triangle_runner() {
     task_manager_config: TaskManagerConfig {
       debug: false,
       task_worker_multiplier: 2.0,
+      split: TaskSplitVariant::Floor,
     },
   };
 
@@ -257,6 +263,7 @@ pub fn symmetric_triangle_test_runner() {
     task_manager_config: TaskManagerConfig {
       debug: false,
       task_worker_multiplier: 4.0,
+      split: TaskSplitVariant::Floor,
     },
   };
 

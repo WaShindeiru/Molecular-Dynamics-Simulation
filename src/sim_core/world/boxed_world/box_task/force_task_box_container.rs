@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_container::BoxContainer;
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
+use crate::sim_core::world::cell::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::{
   SimBoxEdge, SimulationBox, get_coordinates_from_simulation_box_id, get_id_simulation_box,
 };

@@ -60,6 +60,7 @@ impl LinkedCellWorld {
       task_manager_config.debug,
       config.clone(),
       task_manager_config.task_worker_multiplier,
+      task_manager_config.split,
       num_of_atoms,
     );
 

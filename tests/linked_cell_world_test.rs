@@ -5,6 +5,7 @@ use carbon_nanotube::persistence::json::particle_config::read_particle_config_fr
 use carbon_nanotube::sim_core::world::WorldType;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
+use carbon_nanotube::sim_core::world::cell::TaskSplitVariant;
 use carbon_nanotube::sim_core::world::linked_cell_world::{LinkedCellContainer, LinkedCellWorld};
 use carbon_nanotube::sim_core::world::thermostat::{
     IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
@@ -48,6 +49,7 @@ fn load_world() -> (LinkedCellWorld, IntegrationAlgorithm, Vec<(usize, AtomType,
             task_manager_config: TaskManagerConfig {
                 debug: false,
                 task_worker_multiplier: 2.0,
+                split: TaskSplitVariant::Floor,
             },
         })
         .edge_condition(EdgeCondition::PeriodicAll)

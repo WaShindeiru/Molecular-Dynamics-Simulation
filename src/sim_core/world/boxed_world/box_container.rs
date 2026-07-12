@@ -1,11 +1,10 @@
-use crate::sim_core::world::boxed_world::box_container::box_container_config::BoxContainerConfig;
 use crate::sim_core::world::boxed_world::box_container::sim_box::SimulationBox;
+use crate::sim_core::world::cell::BoxContainerConfig;
 use crate::utils::cube::Cube;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 pub mod box_container_arc;
-pub mod box_container_config;
 pub mod box_container_mutual;
 pub mod box_container_option;
 pub mod box_container_value;

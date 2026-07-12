@@ -11,6 +11,7 @@ use std::io;
 
 pub mod boundary_constraint;
 pub mod boxed_world;
+pub mod cell;
 pub mod computation;
 pub mod linked_cell_world;
 pub mod thermostat;

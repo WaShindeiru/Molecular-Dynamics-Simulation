@@ -3,6 +3,7 @@ use crate::particle::Particle;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
+use crate::sim_core::world::cell::TaskSplitVariant;
 use crate::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
@@ -265,6 +266,7 @@ impl SimulationConfigBuilder {
         task_manager_config: TaskManagerConfig {
           debug: false,
           task_worker_multiplier: 4.0,
+          split: TaskSplitVariant::Floor,
         },
       }),
       self.edge_condition.unwrap_or(EdgeCondition::Periodic {
