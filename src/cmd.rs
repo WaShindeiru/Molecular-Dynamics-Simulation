@@ -10,6 +10,7 @@ use self::move_particles_minus::{MoveMinusCommand, move_particles_minus_command}
 use self::parse::{ParseCommand, parse_command};
 use self::reindex::{ReindexCommand, reindex_command};
 use self::run::{RunCommand, run_simulation_command};
+use self::vel_man_reindex::{VelManReindexCommand, vel_man_reindex_command};
 
 pub mod combine;
 pub mod convert;
@@ -19,6 +20,7 @@ pub mod move_particles_minus;
 pub mod parse;
 pub mod reindex;
 pub mod run;
+pub mod vel_man_reindex;
 
 /// Run molecular dynamics simulation from JSON config files.
 #[derive(Debug, Parser)]
@@ -38,6 +40,7 @@ pub enum Command {
   MoveMinus(MoveMinusCommand),
   Inspect(InspectCommand),
   Reindex(ReindexCommand),
+  VelManReindex(VelManReindexCommand),
 }
 
 pub fn run() -> io::Result<()> {
@@ -52,5 +55,6 @@ pub fn run() -> io::Result<()> {
     Command::MoveMinus(command) => move_particles_minus_command(command),
     Command::Inspect(command) => inspect_command(command),
     Command::Reindex(command) => reindex_command(command),
+    Command::VelManReindex(command) => vel_man_reindex_command(command),
   }
 }

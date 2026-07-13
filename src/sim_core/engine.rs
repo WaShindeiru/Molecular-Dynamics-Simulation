@@ -138,8 +138,20 @@ impl Engine {
         break;
       }
 
-      if i % 20000 == 0 {
-        info!("Current interation: {}/{}", i, self.config.num_of_iterations);
+      if (i + 9600) % 10000 == 0 {
+        let avg_iter_secs = start.elapsed().as_secs_f64() / i as f64;
+        let iters_per_sec = 1.0 / avg_iter_secs;
+        let remaining_iters = self.config.num_of_iterations.saturating_sub(i) as f64;
+        let eta = Duration::from_secs_f64(avg_iter_secs * remaining_iters);
+
+        info!(
+          "Current iteration: {}/{} | {:.2} iter/s | {:.4?}/iter (avg) | ETA: {:.2?}",
+          i,
+          self.config.num_of_iterations,
+          iters_per_sec,
+          Duration::from_secs_f64(avg_iter_secs),
+          eta
+        );
       }
 
       if i % 100 == 0 {

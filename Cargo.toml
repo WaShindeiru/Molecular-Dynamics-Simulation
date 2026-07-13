@@ -3,9 +3,14 @@ name = "carbon_nanotube"
 version = "0.1.0"
 edition = "2024"
 
-# Cargo.toml
+
+#[profile.release]
+#debug = 1
+
 [profile.release]
-debug = 1
+lto = true           # Link-time optimization across crates
+codegen-units = 1    # Better optimization at cost of compile time
+panic = "abort"      # Smaller binary, slightly faster
 
 [dependencies]
 rand = "0.10.0"

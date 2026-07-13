@@ -78,15 +78,17 @@ impl ParticleConfigFile {
   pub fn convert_to_custom_velocity_atoms(mut self) -> Self {
     use crate::persistence::json::velocity_manager_file::{VelocityChangeEntry, VelocityManagerFile};
 
-    self.velocity_managers = self
+    const SHARED_VELOCITY_MANAGER_ID: usize = 0;
+
+    self.velocity_managers = vec![VelocityManagerFile {
+      id: SHARED_VELOCITY_MANAGER_ID,
+      velocities: vec![VelocityChangeEntry::from_runtime(0, Vector3::zeros())],
+    }];
+    self.particles = self
       .particles
-      .iter()
-      .map(|p| VelocityManagerFile {
-        id: p.id,
-        velocities: vec![VelocityChangeEntry::from_runtime(0, Vector3::zeros())],
-      })
+      .into_iter()
+      .map(|p| p.into_custom_velocity_atom(SHARED_VELOCITY_MANAGER_ID))
       .collect();
-    self.particles = self.particles.into_iter().map(|p| p.into_custom_velocity_atom()).collect();
     self
   }
 
@@ -207,11 +209,11 @@ impl ParticleInitialState {
     })
   }
 
-  pub fn into_custom_velocity_atom(self) -> Self {
+  pub fn into_custom_velocity_atom(self, velocity_manager_id: usize) -> Self {
     Self {
       particle_type: ParticleTypeFile::CustomVelocityAtom,
       velocity: Vector3Record::from(Vector3::zeros()),
-      velocity_manager_id: Some(self.id),
+      velocity_manager_id: Some(velocity_manager_id),
       ..self
     }
   }

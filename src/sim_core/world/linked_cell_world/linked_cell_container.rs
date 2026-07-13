@@ -115,7 +115,7 @@ impl LinkedCellContainer {
       get_coordinates_from_simulation_box_id(cell_id, &self.config.box_count_dim);
     let mut idx = *self.header.get(coords.x, coords.y, coords.z).unwrap_or(&-1);
 
-    let mut result = Vec::new();
+    let mut result = Vec::with_capacity(4);
     while idx >= 0 {
       let particle = self.particles[idx as usize].as_ref().unwrap();
       result.push(Arc::clone(particle));

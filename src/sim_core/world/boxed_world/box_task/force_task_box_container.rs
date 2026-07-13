@@ -134,7 +134,7 @@ impl ForceTaskBoxContainer {
     let y = coordinates.y as isize;
     let z = coordinates.z as isize;
 
-    let mut proxies: Vec<Box<dyn ForceComputationOperations>> = Vec::new();
+    let mut proxies: Vec<Box<dyn ForceComputationOperations>> = Vec::with_capacity(128);
 
     for x_offset in -1..=1isize {
       for y_offset in -1..=1isize {

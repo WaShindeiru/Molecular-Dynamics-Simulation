@@ -168,7 +168,7 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
     plt.ylabel("thermostat epsilon")
     plt.title("Thermostat epsilon")
     # plt.xlim([0, 3e-10])
-    plt.ylim([-1, 1])
+    # plt.ylim([-1, 1])
     plt.savefig(path + "/thermostat_epsilon.png")
     plt.show()
 
