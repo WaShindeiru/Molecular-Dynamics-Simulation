@@ -1,28 +1,26 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use nalgebra::Vector3;
 
-use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::{Compliance, EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_task::handle_task::handle_partial_velocity_step::apply_velocity_constraint;
 use crate::sim_core::world::boxed_world::box_task::{
   ForceTaskParticleData, ForceTaskResult, VelocityTaskParticleData, VelocityTaskResult,
 };
-use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::{
-  HalfVelocityResult, verlet_noose_hoover_half_velocity_position,
+use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::HalfVelocityResult;
+use crate::sim_core::world::cell::{FixedPositionParticle, LinkedCellContainer};
+use crate::sim_core::world::computation::FP;
+use crate::sim_core::world::optimized_world::computation::{
+  compute_forces_potential, verlet_noose_hoover_half_velocity_position,
 };
-use crate::sim_core::world::boxed_world::box_task::force_task_box_container::particle_proxy::ParticlePositionProxy;
-use crate::sim_core::world::computation::{FP, compute_forces_potential, ForceComputationOperations};
-use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
-use crate::sim_core::world::linked_cell_world::linked_cell_task::handle_task::handle_partial_velocity_step::handle_partial_velocity_step;
+use crate::sim_core::world::optimized_world::handle_task::handle_partial_velocity_step::handle_partial_velocity_step;
 
 pub(crate) mod handle_partial_velocity_step;
 
 pub fn handle_velocity_batch_task(
   task_id: usize,
   cell_ids: &[usize],
-  history: &LinkedCellContainerOld,
+  history: &LinkedCellContainer,
   time_step: f64,
   previous_thermostat_epsilon: f64,
   current_iteration: usize,
@@ -30,22 +28,18 @@ pub fn handle_velocity_batch_task(
   let edge_condition = history.edge_condition();
   let container_size = history.config().world_size;
 
-  let particles: Vec<Arc<Particle>> = cell_ids
-    .iter()
-    .flat_map(|&cell_id| history.particles_in_cell(cell_id))
-    .collect();
+  let ids: Vec<usize> = cell_ids.iter().flat_map(|&cell_id| history.ids_in_cell(cell_id)).collect();
 
-  let (normal_particles, custom_vel_particles): (Vec<_>, Vec<_>) =
-    particles.iter().partition(|p| !p.is_custom_velocity_atom());
-
-  let atom_count = normal_particles.len();
+  let (normal_ids, custom_vel_ids): (Vec<usize>, Vec<usize>) = ids
+    .into_iter()
+    .partition(|&id| !history.particles().get(id).unwrap().is_custom_velocity_atom());
 
   let HalfVelocityResult { half_velocity, new_position, thermostat_work, compliance } =
     verlet_noose_hoover_half_velocity_position(
-      normal_particles,
+      history,
+      &normal_ids,
       time_step,
       previous_thermostat_epsilon,
-      atom_count,
       current_iteration,
       &container_size,
       edge_condition,
@@ -86,10 +80,10 @@ pub fn handle_velocity_batch_task(
     }
   }
 
-  for particle_arc in custom_vel_particles {
-    let id = particle_arc.get_id();
-    let vel = *particle_arc.get_velocity();
-    let new_position = particle_arc.get_position() + vel * time_step;
+  for id in custom_vel_ids {
+    let particle = history.particles().get(id).unwrap();
+    let vel = *particle.get_velocity();
+    let new_position = particle.get_position() + vel * time_step;
     result_particles.insert(id, VelocityTaskParticleData {
       half_velocity: vel,
       new_position,
@@ -109,7 +103,7 @@ pub fn handle_velocity_batch_task(
 pub fn handle_force_batch_task(
   task_id: usize,
   cell_ids: &[usize],
-  integration_cache: &LinkedCellContainerOld,
+  integration_cache: &LinkedCellContainer,
   fp: &mut Vec<FP>,
   gradients_cache: &mut Vec<Vector3<f64>>,
 ) -> ForceTaskResult {
@@ -117,19 +111,18 @@ pub fn handle_force_batch_task(
   let mut potential_energy_total = 0.0f64;
 
   for &cell_id in cell_ids {
-    let particles_i: Vec<ParticlePositionProxy> =
-      integration_cache.atoms_for_cell(cell_id).collect();
+    let particles_i: Vec<FixedPositionParticle> = integration_cache.atoms_for_cell_fixed(cell_id);
 
-    let mut particles_j: Vec<ParticlePositionProxy> =
-      integration_cache.neighbour_atoms_periodic(cell_id).collect();
-    particles_j.extend(integration_cache.atoms_for_cell(cell_id));
+    let mut particles_j: Vec<FixedPositionParticle> =
+      integration_cache.neighbour_atoms_periodic_fixed_positions(cell_id);
+    particles_j.extend(integration_cache.atoms_for_cell_fixed(cell_id));
 
     let potential_energy =
-      compute_forces_potential(&particles_i, &particles_j, fp, gradients_cache);
+      compute_forces_potential(&particles_i, &particles_j, integration_cache, fp, gradients_cache);
     potential_energy_total += potential_energy;
 
     for particle in particles_j.iter() {
-      let id = particle.get_id();
+      let id = particle.id;
       let fp_entry = &fp[id];
       particles
         .entry(id)

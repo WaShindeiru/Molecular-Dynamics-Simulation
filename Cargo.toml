@@ -10,7 +10,11 @@ edition = "2024"
 [profile.release]
 lto = true           # Link-time optimization across crates
 codegen-units = 1    # Better optimization at cost of compile time
-panic = "abort"      # Smaller binary, slightly faster
+
+#[profile.release]
+#lto = true           # Link-time optimization across crates
+#codegen-units = 1    # Better optimization at cost of compile time
+#panic = "abort"      # Smaller binary, slightly faster
 
 [dependencies]
 rand = "0.10.0"

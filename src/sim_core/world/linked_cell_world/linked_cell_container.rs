@@ -15,7 +15,7 @@ use crate::sim_core::world::boxed_world::box_task::force_task_box_container::par
 use crate::sim_core::world::computation::ForceComputationOperations;
 use crate::utils::cube::Cube;
 
-pub struct LinkedCellContainer {
+pub struct LinkedCellContainerOld {
   header: Cube<i32>,
   link: Vec<i32>,
   cell: Vec<Vector3<i32>>,
@@ -24,14 +24,14 @@ pub struct LinkedCellContainer {
   edge_condition: EdgeCondition,
 }
 
-impl LinkedCellContainer {
+impl LinkedCellContainerOld {
   pub fn new_empty(num_particles: usize, config: BoxContainerConfig, edge_condition: EdgeCondition) -> Self {
     let (mx, my, mz) = (
       config.box_count_dim.x,
       config.box_count_dim.y,
       config.box_count_dim.z,
     );
-    LinkedCellContainer {
+    LinkedCellContainerOld {
       header: Cube::new_with_value(mx, my, mz, -1i32),
       link: vec![-1i32; num_particles],
       cell: vec![Vector3::new(-1, -1, -1); num_particles],
@@ -59,7 +59,7 @@ impl LinkedCellContainer {
       particle_slots[id] = Some(particle);
     }
 
-    LinkedCellContainer {
+    LinkedCellContainerOld {
       header: Cube::new_with_value(mx, my, mz, -1i32),
       link: vec![-1i32; n],
       cell: vec![Vector3::new(-1, -1, -1); n],
@@ -364,7 +364,7 @@ mod tests {
   fn make_container_one_per_cell(
     config: BoxContainerConfig,
     edge_condition: EdgeCondition,
-  ) -> LinkedCellContainer {
+  ) -> LinkedCellContainerOld {
     let cell_count = config.box_count_dim;
     let cell_size = config.box_length;
     let mut particles = Vec::new();
@@ -382,7 +382,7 @@ mod tests {
         }
       }
     }
-    let mut container = LinkedCellContainer::new(particles, config, edge_condition);
+    let mut container = LinkedCellContainerOld::new(particles, config, edge_condition);
     container.sort();
     container
   }
@@ -405,7 +405,7 @@ mod tests {
     // Particle at (1, 1, 1) → cell (0, 0, 0)
     let p0 = make_particle(0, Vector3::new(1.0, 1.0, 1.0));
     let mut container =
-      LinkedCellContainer::new(vec![p0], make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(vec![p0], make_config(), EdgeCondition::PeriodicAll);
 
     container.sort();
 
@@ -423,7 +423,7 @@ mod tests {
     let p0 = make_particle(0, Vector3::new(1.0, 1.0, 1.0));
     let p1 = make_particle(1, Vector3::new(6.0, 6.0, 6.0));
     let mut container =
-      LinkedCellContainer::new(vec![p0, p1], make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(vec![p0, p1], make_config(), EdgeCondition::PeriodicAll);
 
     container.sort();
 
@@ -450,7 +450,7 @@ mod tests {
       make_particle(4, Vector3::new(3.0, 2.0, 2.0)),
     ];
     let mut container =
-      LinkedCellContainer::new(particles, make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(particles, make_config(), EdgeCondition::PeriodicAll);
 
     container.sort();
 
@@ -487,7 +487,7 @@ mod tests {
     let p0 = make_particle(0, Vector3::new(1.0, 1.0, 1.0));
     let p1 = make_particle(1, Vector3::new(2.0, 2.0, 2.0));
     let mut container =
-      LinkedCellContainer::new(vec![p0, p1], make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(vec![p0, p1], make_config(), EdgeCondition::PeriodicAll);
 
     container.sort();
 
@@ -506,7 +506,7 @@ mod tests {
       make_particle(1, Vector3::new(2.0, 2.0, 2.0)),
     ];
     let mut container =
-      LinkedCellContainer::new(particles, make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(particles, make_config(), EdgeCondition::PeriodicAll);
     container.sort();
 
     let cell_id = get_id_simulation_box(&Vector3::new(1, 0, 0), &make_config().box_count_dim);
@@ -521,7 +521,7 @@ mod tests {
     let p0 = make_particle(0, Vector3::new(1.0, 1.0, 1.0));
     let p1 = make_particle(1, Vector3::new(6.0, 1.0, 1.0));
     let mut container =
-      LinkedCellContainer::new(vec![p0, p1], make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(vec![p0, p1], make_config(), EdgeCondition::PeriodicAll);
     container.sort();
 
     let cell_id = get_id_simulation_box(&Vector3::new(1, 0, 0), &make_config().box_count_dim);
@@ -542,7 +542,7 @@ mod tests {
       make_particle(3, Vector3::new(7.0, 7.0, 7.0)),
     ];
     let mut container =
-      LinkedCellContainer::new(particles, make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(particles, make_config(), EdgeCondition::PeriodicAll);
     container.sort();
 
     let cell_id = get_id_simulation_box(&Vector3::new(0, 0, 0), &make_config().box_count_dim);
@@ -565,7 +565,7 @@ mod tests {
       make_particle(3, Vector3::new(4.0, 4.0, 4.0)),
     ];
     let mut container =
-      LinkedCellContainer::new(particles, make_config(), EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new(particles, make_config(), EdgeCondition::PeriodicAll);
 
     container.sort();
 
@@ -814,7 +814,7 @@ mod tests {
 
   // ── insertion-order equivalence (fixture-based) ─────────────────────────────
 
-  /// Verifies that building a LinkedCellContainer via `new()` + `sort()` (with
+  /// Verifies that building a LinkedCellContainerOld via `new()` + `sort()` (with
   /// particles pre-sorted by id) produces the same cell contents as building it
   /// via `new_empty()` + `add_particle()` (with particles in the shuffled order
   /// found in the JSON fixture).  The two construction paths use different array
@@ -839,11 +839,11 @@ mod tests {
     // Container A: particles sorted by id → new() + sort()
     let mut sorted = particles.clone();
     let arcs_sorted: Vec<Arc<Particle>> = sorted.iter().map(|p| Arc::new(p.clone())).collect();
-    let mut container_a = LinkedCellContainer::new(arcs_sorted, config, edge_condition);
+    let mut container_a = LinkedCellContainerOld::new(arcs_sorted, config, edge_condition);
     container_a.sort();
 
     // Container B: original JSON order (shuffled ids) → new_empty() + add_particle()
-    let mut container_b = LinkedCellContainer::new_empty(num_particles, config, edge_condition);
+    let mut container_b = LinkedCellContainerOld::new_empty(num_particles, config, edge_condition);
     for particle in &particles {
       container_b.add_particle(Arc::new(particle.clone()));
     }
@@ -898,7 +898,7 @@ mod tests {
     let config = new_config(&particles, world_size);
 
     let arcs: Vec<Arc<Particle>> = particles.iter().map(|p| Arc::new(p.clone())).collect();
-    let mut container = LinkedCellContainer::new(arcs, config, EdgeCondition::PeriodicAll);
+    let mut container = LinkedCellContainerOld::new(arcs, config, EdgeCondition::PeriodicAll);
     container.sort();
 
     for (i, slot) in container.particles().iter().enumerate() {
@@ -929,7 +929,7 @@ mod tests {
 
     let num_particles = particles.iter().map(|p| p.get_id()).max().unwrap() + 1;
     let mut container =
-      LinkedCellContainer::new_empty(num_particles, config, EdgeCondition::PeriodicAll);
+      LinkedCellContainerOld::new_empty(num_particles, config, EdgeCondition::PeriodicAll);
     for particle in &particles {
       container.add_particle(Arc::new(particle.clone()));
     }

@@ -7,19 +7,18 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use crate::data::SimulationConfig;
-use crate::sim_core::world::cell::{TaskSplitVariant, TaskSplitter};
-use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
-use crate::sim_core::world::linked_cell_world::computation_collector::ComputationCollector;
-use crate::sim_core::world::linked_cell_world::integration_cache::IntegrationCache;
-use crate::sim_core::world::linked_cell_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
-use crate::sim_core::world::linked_cell_world::linked_cell_task::{LinkedCellResult, LinkedCellTask};
+use crate::sim_core::world::cell::{LinkedCellContainer, TaskSplitVariant, TaskSplitter};
+use crate::sim_core::world::optimized_world::computation_collector::ComputationCollector;
+use crate::sim_core::world::optimized_world::integration_cache::IntegrationCache;
+use crate::sim_core::world::optimized_world::integration_cache::integration_cache_builder::IntegrationCacheBuilder;
+use crate::sim_core::world::optimized_world::optimized_task::{OptimizedResult, OptimizedTask};
 use threads::create_threads;
 
 pub struct TaskManager {
   simulation_config: SimulationConfig,
   threads: Vec<JoinHandle<()>>,
-  tx_task: Sender<LinkedCellTask>,
-  rx_result: Receiver<LinkedCellResult>,
+  tx_task: Sender<OptimizedTask>,
+  rx_result: Receiver<OptimizedResult>,
   num_workers: usize,
   task_worker_multiplier: f64,
   task_splitter: TaskSplitter,
@@ -55,7 +54,7 @@ impl TaskManager {
     self.task_cell_mapping = None;
   }
 
-  pub fn split_into_tasks_multiplier(&mut self, container: &LinkedCellContainerOld) {
+  pub fn split_into_tasks_multiplier(&mut self, container: &LinkedCellContainer) {
     assert!(self.task_cell_mapping.is_none());
     let num_of_tasks = (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize;
     self.task_cell_mapping = Some(self.task_splitter.split(num_of_tasks, container.config()));
@@ -67,7 +66,7 @@ impl TaskManager {
 
   pub fn half_velocity_step(
     &self,
-    container: Arc<LinkedCellContainerOld>,
+    container: Arc<LinkedCellContainer>,
     thermostat_epsilon: f64,
     current_iteration: usize,
     time_step: f64,
@@ -81,7 +80,7 @@ impl TaskManager {
     let mut builder = IntegrationCacheBuilder::new(Arc::clone(&container));
 
     for (task_id, cell_ids) in mapping {
-      let task = LinkedCellTask::VelocityBatchTask {
+      let task = OptimizedTask::VelocityBatchTask {
         task_id: *task_id,
         cell_ids: Arc::clone(cell_ids),
         history: Arc::clone(&container),
@@ -94,7 +93,7 @@ impl TaskManager {
 
     for _ in 0..num_tasks {
       match self.rx_result.recv_timeout(Duration::from_secs(20)) {
-        Ok(LinkedCellResult::VelocityResult(result)) => {
+        Ok(OptimizedResult::VelocityResult(result)) => {
           builder.add_velocity_results(result.particles);
         }
         Ok(_) => panic!("Expected VelocityResult, got wrong result type"),
@@ -126,7 +125,7 @@ impl TaskManager {
     );
 
     for (task_id, cell_ids) in mapping {
-      let task = LinkedCellTask::ForceBatchTask {
+      let task = OptimizedTask::ForceBatchTask {
         task_id: *task_id,
         cell_ids: Arc::clone(cell_ids),
         integration_cache: Arc::clone(&read_container),
@@ -136,7 +135,7 @@ impl TaskManager {
 
     for _ in 0..num_tasks {
       match self.rx_result.recv_timeout(Duration::from_secs(60)) {
-        Ok(LinkedCellResult::ForceResult(result)) => {
+        Ok(OptimizedResult::ForceResult(result)) => {
           collector.apply_force_results(&result.particles);
         }
         Ok(_) => panic!("Expected ForceResult, got wrong result type"),

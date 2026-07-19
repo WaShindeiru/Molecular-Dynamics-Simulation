@@ -4,6 +4,7 @@ use crate::persistence::dto::world::WorldDTO;
 use crate::sim_core::world::boxed_world::BoxedWorld;
 use crate::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 use crate::sim_core::world::linked_cell_world::LinkedCellWorld;
+use crate::sim_core::world::optimized_world::OptimizedWorld;
 use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::simple_world::SimpleWorld;
 use nalgebra::Vector3;
@@ -14,6 +15,7 @@ pub mod boxed_world;
 pub mod cell;
 pub mod computation;
 pub mod linked_cell_world;
+pub mod optimized_world;
 pub mod thermostat;
 pub mod saver;
 pub mod simple_world;
@@ -42,12 +44,16 @@ pub enum WorldType {
   LinkedCellWorld {
     task_manager_config: TaskManagerConfig,
   },
+  OptimizedWorld {
+    task_manager_config: TaskManagerConfig,
+  },
 }
 
 pub enum World {
   SimpleWorld(SimpleWorld),
   BoxedWorld(BoxedWorld),
   LinkedCellWorld(LinkedCellWorld),
+  OptimizedWorld(OptimizedWorld),
 }
 
 impl World {
@@ -62,6 +68,9 @@ impl World {
       WorldType::LinkedCellWorld { .. } => {
         World::LinkedCellWorld(LinkedCellWorld::with_config(config, particle_config))
       }
+      WorldType::OptimizedWorld { .. } => {
+        World::OptimizedWorld(OptimizedWorld::with_config(config, particle_config))
+      }
     }
   }
 
@@ -70,6 +79,7 @@ impl World {
       World::SimpleWorld(world) => world.save(),
       World::BoxedWorld(world) => world.save(),
       World::LinkedCellWorld(world) => world.save(),
+      World::OptimizedWorld(world) => world.save(),
     }
   }
 
@@ -86,6 +96,7 @@ impl World {
       }
       World::BoxedWorld(world) => world.update(algorithm, time_step, next_iteration),
       World::LinkedCellWorld(world) => world.update(algorithm, time_step, next_iteration),
+      World::OptimizedWorld(world) => world.update(algorithm, time_step, next_iteration),
     }
   }
 
@@ -94,6 +105,7 @@ impl World {
       World::SimpleWorld(world) => world.reset_world(),
       World::BoxedWorld(world) => world.reset_world(),
       World::LinkedCellWorld(world) => world.reset_world(),
+      World::OptimizedWorld(world) => world.reset_world(),
     }
   }
 
@@ -102,6 +114,7 @@ impl World {
       World::SimpleWorld(world) => world.get_size(),
       World::BoxedWorld(world) => world.get_size(),
       World::LinkedCellWorld(world) => world.get_size(),
+      World::OptimizedWorld(world) => world.get_size(),
     }
   }
 
@@ -206,6 +219,7 @@ impl World {
       World::SimpleWorld(world) => world.to_transfer_struct(),
       World::BoxedWorld(world) => world.to_transfer_struct(),
       World::LinkedCellWorld(world) => world.to_transfer_struct(),
+      World::OptimizedWorld(world) => world.to_transfer_struct(),
     }
   }
 
@@ -214,6 +228,7 @@ impl World {
       World::SimpleWorld(world) => world.get_particle_counts(),
       World::BoxedWorld(world) => world.get_particle_counts(),
       World::LinkedCellWorld(world) => world.get_particle_counts(),
+      World::OptimizedWorld(world) => world.get_particle_counts(),
     }
   }
 
@@ -222,6 +237,7 @@ impl World {
       World::SimpleWorld(_) => "Simple World".to_string(),
       World::BoxedWorld(_) => "Boxed World".to_string(),
       World::LinkedCellWorld(_) => "Linked Cell World".to_string(),
+      World::OptimizedWorld(_) => "Optimized World".to_string(),
     }
   }
 }

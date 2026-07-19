@@ -7,14 +7,14 @@ use crate::data::units::K_B;
 use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_task::ForceTaskParticleData;
-use crate::sim_core::world::computation::{compute_new_velocity};
-use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
+use crate::sim_core::world::cell::LinkedCellContainer;
+use crate::sim_core::world::computation::compute_new_velocity;
 
 pub struct ComputationCollector {
   config: SimulationConfig,
   half_velocity_cache: Vec<Vector3<f64>>,
   particle_compliance: Vec<ParticleCompliance>,
-  local_container: LinkedCellContainerOld,
+  local_container: LinkedCellContainer,
   force_visited: Vec<usize>,
 }
 
@@ -24,7 +24,7 @@ impl ComputationCollector {
     num_of_particles: usize,
     half_velocity_cache: Vec<Vector3<f64>>,
     particle_compliance: Vec<ParticleCompliance>,
-    local_container: LinkedCellContainerOld,
+    local_container: LinkedCellContainer,
   ) -> Self {
     ComputationCollector {
       config,
@@ -59,9 +59,6 @@ impl ComputationCollector {
     let z_max = self.local_container.config().world_size.z;
 
     for id in 0..self.local_container.particles().len() {
-      if self.local_container.particles()[id].is_none() {
-        continue;
-      }
       let particle = self.local_container.particle_mut(id);
       let new_force = particle.get_force()
         - Vector3::new(0., 0., 1.) * potential_gravity_max * particle.get_mass() / z_max;
@@ -84,10 +81,7 @@ impl ComputationCollector {
     let collision_split = edge_condition.collision_split_enabled();
 
     for id in 0..self.local_container.particles().len() {
-      if self.local_container.particles()[id].is_none() {
-        continue;
-      }
-      if self.local_container.particles()[id].as_ref().unwrap().is_custom_velocity_atom() {
+      if self.local_container.particles()[id].is_custom_velocity_atom() {
         continue;
       }
 
@@ -112,9 +106,6 @@ impl ComputationCollector {
 
   pub fn apply_custom_velocities(&mut self, custom_velocities: &HashMap<usize, Vector3<f64>>) {
     for id in 0..self.local_container.particles().len() {
-      if self.local_container.particles()[id].is_none() {
-        continue;
-      }
       if let Some(&vel) = custom_velocities.get(&id) {
         if let Particle::CustomVelocityAtom(p) = self.local_container.particle_mut(id) {
           p.set_velocity(vel);
@@ -128,7 +119,6 @@ impl ComputationCollector {
       .local_container
       .particles()
       .iter()
-      .filter_map(|opt| opt.as_ref())
       .filter(|p| !p.is_custom_velocity_atom())
       .collect();
 
@@ -145,16 +135,15 @@ impl ComputationCollector {
   }
 
   pub fn particles(&self) -> impl Iterator<Item = &Particle> {
-    self.local_container.particles()
-      .iter()
-      .filter_map(|opt| opt.as_ref())
-      .map(|arc| arc.as_ref())
+    self.local_container.particles().iter()
   }
 
   #[cfg(debug_assertions)]
   pub fn assert_zero_net_force(&self) {
-    let sum = self.local_container.particles().iter()
-      .filter_map(|opt| opt.as_ref())
+    let sum = self
+      .local_container
+      .particles()
+      .iter()
       .fold(nalgebra::Vector3::<f64>::zeros(), |acc, p| acc + p.get_force());
     let magnitude = sum.magnitude();
     debug_assert!(
@@ -163,7 +152,7 @@ impl ComputationCollector {
     );
   }
 
-  pub fn build(self) -> LinkedCellContainerOld {
+  pub fn build(self) -> LinkedCellContainer {
     self.local_container
   }
 }

@@ -6,25 +6,25 @@ use nalgebra::Vector3;
 use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::ParticleCompliance;
 use crate::sim_core::world::boxed_world::box_task::VelocityTaskParticleData;
-use crate::sim_core::world::linked_cell_world::LinkedCellContainer;
+use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
 use crate::sim_core::world::linked_cell_world::integration_cache::IntegrationCache;
 
 pub struct IntegrationCacheBuilder {
-  old: Arc<LinkedCellContainer>,
-  local_container: LinkedCellContainer,
-  read_container: LinkedCellContainer,
+  old: Arc<LinkedCellContainerOld>,
+  local_container: LinkedCellContainerOld,
+  read_container: LinkedCellContainerOld,
   half_velocity: Vec<Option<Vector3<f64>>>,
   particle_compliance: Vec<Option<ParticleCompliance>>,
 }
 
 impl IntegrationCacheBuilder {
-  pub fn new(old: Arc<LinkedCellContainer>) -> Self {
+  pub fn new(old: Arc<LinkedCellContainerOld>) -> Self {
     let num_particles = old.particles().len();
     let config = old.config().clone();
     let edge_condition = old.edge_condition();
     IntegrationCacheBuilder {
-      local_container: LinkedCellContainer::new_empty(num_particles, config.clone(), edge_condition),
-      read_container: LinkedCellContainer::new_empty(num_particles, config, edge_condition),
+      local_container: LinkedCellContainerOld::new_empty(num_particles, config.clone(), edge_condition),
+      read_container: LinkedCellContainerOld::new_empty(num_particles, config, edge_condition),
       half_velocity: vec![None; num_particles],
       particle_compliance: vec![None; num_particles],
       old,

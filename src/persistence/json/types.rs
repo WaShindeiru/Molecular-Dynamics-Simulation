@@ -57,6 +57,9 @@ pub enum WorldTypeFile {
   LinkedCellWorld {
     task_manager_config: TaskManagerConfigFile,
   },
+  OptimizedWorld {
+    task_manager_config: TaskManagerConfigFile,
+  },
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -122,6 +125,9 @@ impl WorldTypeFile {
       WorldType::LinkedCellWorld { task_manager_config } => WorldTypeFile::LinkedCellWorld {
         task_manager_config: TaskManagerConfigFile::from_runtime(task_manager_config),
       },
+      WorldType::OptimizedWorld { task_manager_config } => WorldTypeFile::OptimizedWorld {
+        task_manager_config: TaskManagerConfigFile::from_runtime(task_manager_config),
+      },
     }
   }
 
@@ -132,6 +138,9 @@ impl WorldTypeFile {
         task_manager_config: task_manager_config.to_runtime(),
       },
       WorldTypeFile::LinkedCellWorld { task_manager_config } => WorldType::LinkedCellWorld {
+        task_manager_config: task_manager_config.to_runtime(),
+      },
+      WorldTypeFile::OptimizedWorld { task_manager_config } => WorldType::OptimizedWorld {
         task_manager_config: task_manager_config.to_runtime(),
       },
     }

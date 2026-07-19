@@ -1,16 +1,15 @@
+pub mod computation;
 pub mod computation_collector;
+pub(crate) mod handle_task;
 pub mod history_manager;
 pub mod integration;
 pub mod integration_cache;
-pub mod linked_cell_container;
-pub mod linked_cell_task;
+pub(crate) mod optimized_task;
 pub mod persistance_reset;
+pub(crate) mod task_manager;
 
-pub mod test_hooks;
-
-pub use history_manager::LinkedCellHistoryManager;
-pub use linked_cell_container::LinkedCellContainerOld;
-pub use persistance_reset::LinkedCellPersistanceReset;
+pub use history_manager::OptimizedHistoryManager;
+pub use persistance_reset::OptimizedPersistanceReset;
 
 use std::io;
 use std::path::Path;
@@ -21,23 +20,25 @@ use crate::persistence::dto::world::WorldDTO;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boxed_world::velocity_manager::VelocityManager;
-use crate::sim_core::world::linked_cell_world::linked_cell_task::task_manager::TaskManager;
+use crate::sim_core::world::optimized_world::task_manager::TaskManager;
 use crate::sim_core::world::saver::PartialWorldSaver;
-use crate::sim_core::world::thermostat::{IntegrationAlgorithm, IntegrationAlgorithmState, new_integration_algorithm_state};
+use crate::sim_core::world::thermostat::{
+  IntegrationAlgorithm, IntegrationAlgorithmState, new_integration_algorithm_state,
+};
 
-pub struct LinkedCellWorld {
+pub struct OptimizedWorld {
   pub config: SimulationConfig,
-  pub persistance_reset: LinkedCellPersistanceReset,
+  pub persistance_reset: OptimizedPersistanceReset,
   pub task_manager: TaskManager,
   pub velocity_manager: VelocityManager,
   pub iteration: usize,
   pub integration_algorithm_state: IntegrationAlgorithmState,
 }
 
-impl LinkedCellWorld {
+impl OptimizedWorld {
   pub fn with_config(config: SimulationConfig, mut particle_config: ParticleConfig) -> Self {
     let task_manager_config = match config.world_type {
-      WorldType::LinkedCellWorld { task_manager_config } => task_manager_config,
+      WorldType::OptimizedWorld { task_manager_config } => task_manager_config,
       _ => unreachable!(),
     };
 
@@ -52,7 +53,7 @@ impl LinkedCellWorld {
     }
 
     let num_of_atoms = particle_config.num_of_atoms;
-    let history_manager = LinkedCellHistoryManager::with_config(config.clone(), particle_config);
+    let history_manager = OptimizedHistoryManager::with_config(config.clone(), particle_config);
 
     let current_container = history_manager.current_container();
 
@@ -66,7 +67,7 @@ impl LinkedCellWorld {
 
     task_manager.split_into_tasks_multiplier(&current_container);
 
-    let persistance_reset = LinkedCellPersistanceReset::new(
+    let persistance_reset = OptimizedPersistanceReset::new(
       history_manager,
       config.clone(),
       num_of_atoms,
@@ -75,7 +76,7 @@ impl LinkedCellWorld {
       PartialWorldSaver::new(config.save_options.clone()),
     );
 
-    LinkedCellWorld {
+    OptimizedWorld {
       integration_algorithm_state: new_integration_algorithm_state(&config.integration_algorithm),
       config,
       persistance_reset,
@@ -108,7 +109,7 @@ impl LinkedCellWorld {
 
     match algorithm {
       IntegrationAlgorithm::SemiImplicitEuler => {
-        unimplemented!("semi implicit euler for linked cell world")
+        unimplemented!("semi implicit euler for optimized world")
       }
       IntegrationAlgorithm::VelocityVerlet => {
         self.update_velocity_verlet(next_iteration);

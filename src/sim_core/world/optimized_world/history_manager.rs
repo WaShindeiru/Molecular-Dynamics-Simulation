@@ -1,3 +1,5 @@
+mod getter;
+
 use std::sync::Arc;
 
 use crate::data::types::AtomType;
@@ -6,25 +8,21 @@ use crate::particle::Particle;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::persistence::dto::world::boxed::BoxedWorldDTOWithoutHistory;
 use crate::persistence::dto::world::history::HistoryDTO;
-use crate::sim_core::world::cell::box_container_config;
-use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
+use crate::sim_core::world::cell::{LinkedCellContainer, box_container_config};
 
-mod getter;
-
-pub struct LinkedCellHistoryManager {
+pub struct OptimizedHistoryManager {
   config: SimulationConfig,
   thermostat_epsilon: Vec<f64>,
-  history: Vec<Arc<LinkedCellContainerOld>>,
+  history: Vec<Arc<LinkedCellContainer>>,
   current_index: usize,
 }
 
-impl LinkedCellHistoryManager {
+impl OptimizedHistoryManager {
   pub fn with_config(config: SimulationConfig, particle_config: ParticleConfig) -> Self {
     let atoms: Vec<Particle> = particle_config.atoms;
     let container_config = box_container_config::new_config(&atoms, config.world_size);
-    let particles: Vec<Arc<Particle>> = atoms.into_iter().map(Arc::new).collect();
 
-    let mut container = LinkedCellContainerOld::new(particles, container_config, config.edge_condition);
+    let mut container = LinkedCellContainer::new(atoms, container_config, config.edge_condition);
     container.sort();
 
     let mut thermostat_epsilon = Vec::with_capacity(config.max_iteration_till_reset);
@@ -33,7 +31,7 @@ impl LinkedCellHistoryManager {
     let mut history = Vec::with_capacity(config.max_iteration_till_reset);
     history.push(Arc::new(container));
 
-    LinkedCellHistoryManager {
+    OptimizedHistoryManager {
       config,
       thermostat_epsilon,
       history,
@@ -41,7 +39,7 @@ impl LinkedCellHistoryManager {
     }
   }
 
-  pub fn current_container(&self) -> Arc<LinkedCellContainerOld> {
+  pub fn current_container(&self) -> Arc<LinkedCellContainer> {
     self.history.last().unwrap().clone()
   }
 
@@ -49,14 +47,14 @@ impl LinkedCellHistoryManager {
     self.current_index
   }
 
-  pub fn reset_clone(&self) -> LinkedCellHistoryManager {
+  pub fn reset_clone(&self) -> OptimizedHistoryManager {
     let mut thermostat_epsilon = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     thermostat_epsilon.push(*self.thermostat_epsilon.last().unwrap());
 
     let mut history = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     history.push(self.history.last().unwrap().clone());
 
-    LinkedCellHistoryManager {
+    OptimizedHistoryManager {
       config: self.config.clone(),
       thermostat_epsilon,
       history,
@@ -76,7 +74,7 @@ impl LinkedCellHistoryManager {
     self.thermostat_epsilon.push(thermostat_epsilon);
   }
 
-  pub fn push_container(&mut self, container: LinkedCellContainerOld) {
+  pub fn push_container(&mut self, container: LinkedCellContainer) {
     self.history.push(Arc::new(container));
     self.current_index += 1;
   }
@@ -127,7 +125,7 @@ impl LinkedCellHistoryManager {
     let mut fe_count = 0;
 
     if let Some(container) = self.history.last() {
-      for particle in container.particles().iter().filter_map(|p| p.as_ref()) {
+      for particle in container.particles().iter() {
         match particle.get_type() {
           AtomType::C | AtomType::C_nanotube => c_count += 1,
           AtomType::Fe => fe_count += 1,

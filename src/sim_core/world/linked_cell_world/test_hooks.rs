@@ -1,4 +1,4 @@
-use crate::sim_core::world::linked_cell_world::LinkedCellContainer;
+use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
 use crate::sim_core::world::linked_cell_world::LinkedCellWorld;
 use crate::sim_core::world::linked_cell_world::integration::verlet_nose_hoover::thermostat::compute_new_thermostat_epsilon;
 use crate::sim_core::world::thermostat::{
@@ -18,9 +18,9 @@ impl LinkedCellWorld {
         on_after_half_velocity: F2,
         on_after_update: F3,
     ) where
-        F1: FnOnce(&LinkedCellContainer),
-        F2: FnOnce(&LinkedCellContainer),
-        F3: FnOnce(&LinkedCellContainer),
+        F1: FnOnce(&LinkedCellContainerOld),
+        F2: FnOnce(&LinkedCellContainerOld),
+        F3: FnOnce(&LinkedCellContainerOld),
     {
         let current_thermostat_epsilon = self
             .persistance_reset

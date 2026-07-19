@@ -6,10 +6,10 @@ use crate::sim_core::world::boundary_constraint::EdgeCondition;
 use crate::sim_core::world::boxed_world::box_task::VelocityTaskParticleData;
 use crate::sim_core::world::boxed_world::box_task::handle_task::partial_velocity_step::PartialVelocityStep;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::HalfVelocityResult;
-use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
+use crate::sim_core::world::cell::{LinkedCellContainer};
 
 pub fn handle_partial_velocity_step(
-  history: &LinkedCellContainerOld,
+  history: &LinkedCellContainer,
   non_compliant: HashMap<usize, VelocityTaskParticleData>,
   world_size: Vector3<f64>,
   edge_condition: EdgeCondition,
@@ -24,7 +24,7 @@ pub fn handle_partial_velocity_step(
 
   let initial_particles = non_compliant
     .keys()
-    .map(|id| (*id, (**history.particles()[*id].as_ref().unwrap()).clone()))
+    .map(|id| (*id, history.particles().get(*id).unwrap().clone()))
     .collect();
   let initial_compliance = non_compliant
     .iter()
