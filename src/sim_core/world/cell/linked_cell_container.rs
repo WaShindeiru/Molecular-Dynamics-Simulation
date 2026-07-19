@@ -67,6 +67,7 @@ fn wrap_flags(edge_condition: EdgeCondition) -> (bool, bool, bool) {
 /// (`new_empty` + `add_particle`), unfilled slots hold a throwaway placeholder and `present`
 /// tracks which ids have real data; `is_complete` is the single completeness check callers
 /// use before trusting the container for reads (force computation, sorting into cells, etc.).
+#[derive(Clone)]
 pub struct LinkedCellContainer {
   header: Cube<i32>,
   link: Vec<i32>,
@@ -145,6 +146,49 @@ impl LinkedCellContainer {
   /// below can be trusted directly, no per-access presence checks needed.
   pub fn is_complete(&self) -> bool {
     self.present.iter().all(|&p| p)
+  }
+
+  /// Produces a blank container that keeps only the per-particle metadata that never changes
+  /// across iterations (id, type, mass, ...) via `Particle::reset_clone`, with `header`/`link`/
+  /// `cell`/`present` at their empty defaults and `config`/`edge_condition` preserved. Meant to
+  /// be computed once per simulation run and then reused (via `Clone`) as the starting point for
+  /// each iteration's scratch containers, since it doesn't depend on anything that changes
+  /// iteration to iteration (position, velocity, force, ... are stripped by `reset_clone`).
+  pub fn reset_clone(&self) -> LinkedCellContainer {
+    let (mx, my, mz) = (
+      self.config.box_count_dim.x,
+      self.config.box_count_dim.y,
+      self.config.box_count_dim.z,
+    );
+    let n = self.particles.len();
+    LinkedCellContainer {
+      header: Cube::new_with_value(mx, my, mz, -1i32),
+      link: vec![-1i32; n],
+      cell: vec![Vector3::new(-1, -1, -1); n],
+      particles: self.particles.iter().map(|p| p.reset_clone()).collect(),
+      present: vec![false; n],
+      config: self.config,
+      edge_condition: self.edge_condition,
+    }
+  }
+
+  /// Moves the particle at `id` to `new_position` and links it into its new cell. Unlike
+  /// `add_particle`, the slot at `id` is expected to already hold a particle (e.g. from
+  /// `reset_clone`) rather than a placeholder — only position/cell bookkeeping changes.
+  pub fn change_position(&mut self, id: usize, new_position: Vector3<f64>) {
+    debug_assert!(self.link[id] == -1, "particle {} already sorted", id);
+    debug_assert!(!self.present[id], "particle {} already present", id);
+
+    self.particles[id].update_position(new_position);
+
+    let coords = self.config.box_coordinates_for_position(&new_position);
+    let (kx, ky, kz) = (coords.x, coords.y, coords.z);
+
+    let old_head = *self.header.get(kx, ky, kz).unwrap();
+    self.link[id] = old_head;
+    self.header.set(kx, ky, kz, id as i32).unwrap();
+    self.cell[id] = Vector3::new(coords.x as i32, coords.y as i32, coords.z as i32);
+    self.present[id] = true;
   }
 
   /// Assigns each present particle to a cell using the linked-cell method.

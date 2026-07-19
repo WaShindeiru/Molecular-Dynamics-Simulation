@@ -23,6 +23,7 @@ pub struct TaskManager {
   task_worker_multiplier: f64,
   task_splitter: TaskSplitter,
   task_cell_mapping: Option<HashMap<usize, Arc<Vec<usize>>>>,
+  cache_builder: IntegrationCacheBuilder,
 }
 
 impl TaskManager {
@@ -32,6 +33,7 @@ impl TaskManager {
     task_worker_multiplier: f64,
     split_variant: TaskSplitVariant,
     num_atoms: usize,
+    initial_container: &LinkedCellContainer,
   ) -> Self {
     let (tx_task, rx_result, threads, num_workers) = create_threads(debug, num_atoms);
     TaskManager {
@@ -43,6 +45,7 @@ impl TaskManager {
       task_worker_multiplier,
       task_splitter: TaskSplitter::new(split_variant),
       task_cell_mapping: None,
+      cache_builder: IntegrationCacheBuilder::new(initial_container),
     }
   }
 
@@ -65,7 +68,7 @@ impl TaskManager {
   }
 
   pub fn half_velocity_step(
-    &self,
+    &mut self,
     container: Arc<LinkedCellContainer>,
     thermostat_epsilon: f64,
     current_iteration: usize,
@@ -77,7 +80,6 @@ impl TaskManager {
       .expect("split_into_tasks must be called before half_velocity_step");
 
     let num_tasks = mapping.len();
-    let mut builder = IntegrationCacheBuilder::new(Arc::clone(&container));
 
     for (task_id, cell_ids) in mapping {
       let task = OptimizedTask::VelocityBatchTask {
@@ -91,10 +93,12 @@ impl TaskManager {
       self.tx_task.send(task).unwrap();
     }
 
+    self.cache_builder.ensure_state_ready();
+
     for _ in 0..num_tasks {
       match self.rx_result.recv_timeout(Duration::from_secs(20)) {
         Ok(OptimizedResult::VelocityResult(result)) => {
-          builder.add_velocity_results(result.particles);
+          self.cache_builder.add_velocity_results(result.particles);
         }
         Ok(_) => panic!("Expected VelocityResult, got wrong result type"),
         Err(RecvTimeoutError::Timeout) => panic!("Velocity step timed out after 20 seconds"),
@@ -102,7 +106,7 @@ impl TaskManager {
       }
     }
 
-    builder.build().expect("Not all particles received velocity results")
+    self.cache_builder.build().expect("Not all particles received velocity results")
   }
 
   pub fn force_step(&self, integration_cache: IntegrationCache) -> ComputationCollector {

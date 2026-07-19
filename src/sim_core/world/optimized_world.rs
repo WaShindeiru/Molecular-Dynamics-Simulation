@@ -63,6 +63,7 @@ impl OptimizedWorld {
       task_manager_config.task_worker_multiplier,
       task_manager_config.split,
       num_of_atoms,
+      &current_container,
     );
 
     task_manager.split_into_tasks_multiplier(&current_container);
