@@ -6,7 +6,7 @@ use carbon_nanotube::sim_core::world::WorldType;
 use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::boxed_world::box_task::task_manager::TaskManagerConfig;
 use carbon_nanotube::sim_core::world::cell::TaskSplitVariant;
-use carbon_nanotube::sim_core::world::linked_cell_world::{LinkedCellContainer, LinkedCellWorld};
+use carbon_nanotube::sim_core::world::linked_cell_world::{LinkedCellContainerOld, LinkedCellWorld};
 use carbon_nanotube::sim_core::world::thermostat::{
     IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
@@ -61,7 +61,7 @@ fn load_world() -> (LinkedCellWorld, IntegrationAlgorithm, Vec<(usize, AtomType,
     (world, integration_algorithm, initial_data)
 }
 
-fn check_vec_index_matches_id(container: &LinkedCellContainer, label: &str) {
+fn check_vec_index_matches_id(container: &LinkedCellContainerOld, label: &str) {
     for (i, slot) in container.particles().iter().enumerate() {
         if let Some(particle) = slot {
             assert_eq!(
@@ -77,7 +77,7 @@ fn check_vec_index_matches_id(container: &LinkedCellContainer, label: &str) {
 }
 
 fn check_type_and_mass(
-    container: &LinkedCellContainer,
+    container: &LinkedCellContainerOld,
     initial_data: &[(usize, AtomType, f64)],
     label: &str,
 ) {

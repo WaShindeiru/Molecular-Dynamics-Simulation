@@ -43,11 +43,9 @@ impl LinkedCellWorld {
 
     let mut velocity_manager = VelocityManager::from_config(&particle_config);
     let initial_velocities = velocity_manager.compute_velocities_for_iteration(0);
-    for atom in particle_config.atoms.iter_mut() {
-      if let Particle::CustomVelocityAtom(p) = atom {
-        if let Some(&vel) = initial_velocities.get(&p.get_id()) {
-          p.set_velocity(vel);
-        }
+    for &(particle_id, vel) in initial_velocities {
+      if let Particle::CustomVelocityAtom(p) = &mut particle_config.atoms[particle_id] {
+        p.set_velocity(vel);
       }
     }
 

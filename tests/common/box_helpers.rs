@@ -178,6 +178,7 @@ pub fn test_reset_world_with_thermostat_runner(
     WorldType::SimpleWorld => "simple",
     WorldType::BoxedWorld { .. } => "boxed",
     WorldType::LinkedCellWorld { .. } => "linked_cell",
+    WorldType::OptimizedWorld { .. } => "optimized",
   };
   let edge_condition_str = match edge_condition {
     EdgeCondition::Simple { .. } => "simple",
@@ -273,6 +274,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     WorldType::SimpleWorld => "simple",
     WorldType::BoxedWorld { .. } => "boxed",
     WorldType::LinkedCellWorld { .. } => "linked_cell",
+    WorldType::OptimizedWorld { .. } => "optimized",
   };
   let edge_condition_str = match edge_condition {
     EdgeCondition::Simple { .. } => "simple",

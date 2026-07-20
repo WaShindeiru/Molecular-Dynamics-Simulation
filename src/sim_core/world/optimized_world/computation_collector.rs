@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use nalgebra::Vector3;
 
 use crate::data::SimulationConfig;
@@ -104,12 +102,10 @@ impl ComputationCollector {
     }
   }
 
-  pub fn apply_custom_velocities(&mut self, custom_velocities: &HashMap<usize, Vector3<f64>>) {
-    for id in 0..self.local_container.particles().len() {
-      if let Some(&vel) = custom_velocities.get(&id) {
-        if let Particle::CustomVelocityAtom(p) = self.local_container.particle_mut(id) {
-          p.set_velocity(vel);
-        }
+  pub fn apply_custom_velocities(&mut self, custom_velocities: &[(usize, Vector3<f64>)]) {
+    for &(id, vel) in custom_velocities {
+      if let Particle::CustomVelocityAtom(p) = self.local_container.particle_mut(id) {
+        p.set_velocity(vel);
       }
     }
   }

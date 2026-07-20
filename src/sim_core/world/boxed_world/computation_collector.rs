@@ -129,12 +129,10 @@ impl ComputationCollector {
   /// Sets the velocity on all `CustomVelocityAtom` particles to the prescribed value for
   /// the *next* iteration.  Workers will read this velocity directly from history to
   /// advance the particle's position in the next step.
-  pub fn apply_custom_velocities(&mut self, custom_velocities: &HashMap<usize, Vector3<f64>>) {
-    for (id, particle) in self.particles_modified.iter_mut() {
-      if let Particle::CustomVelocityAtom(p) = particle {
-        if let Some(&vel) = custom_velocities.get(id) {
-          p.set_velocity(vel);
-        }
+  pub fn apply_custom_velocities(&mut self, custom_velocities: &[(usize, Vector3<f64>)]) {
+    for &(id, vel) in custom_velocities {
+      if let Some(Particle::CustomVelocityAtom(p)) = self.particles_modified.get_mut(&id) {
+        p.set_velocity(vel);
       }
     }
   }

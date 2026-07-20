@@ -69,19 +69,26 @@ pub struct VelocityManager {
   // Indexed by particle_velocity_manager_id. Particles that share a velocity schedule
   // share a single entry here instead of duplicating one ParticleVelocityManager each.
   managers: Vec<ParticleVelocityManager>,
-  // Indexed by particle id (dense over all particles, not just CustomVelocityAtoms),
-  // for O(1) lookup of which manager (if any) drives a given particle's velocity.
-  particle_id_to_manager_id: Vec<Option<usize>>,
+  // Sparse (particle_id, manager_id) pairs, one per CustomVelocityAtom only —
+  // most particles have no manager and would just waste a slot in a dense mapping.
+  particle_id_to_manager_id: Vec<(usize, usize)>,
+  // Manager outputs from the last compute_velocities_for_iteration call, used to detect
+  // whether the per-particle result actually needs to be rebuilt (velocity schedules
+  // change rarely, so most iterations hit this cache).
+  cached_manager_velocities: Vec<Vector3<f64>>,
+  cached_particle_velocities: Vec<(usize, Vector3<f64>)>,
 }
 
 impl VelocityManager {
   pub fn new(
     managers: Vec<ParticleVelocityManager>,
-    particle_id_to_manager_id: Vec<Option<usize>>,
+    particle_id_to_manager_id: Vec<(usize, usize)>,
   ) -> Self {
     VelocityManager {
       managers,
       particle_id_to_manager_id,
+      cached_manager_velocities: Vec::new(),
+      cached_particle_velocities: Vec::new(),
     }
   }
 
@@ -89,6 +96,8 @@ impl VelocityManager {
     VelocityManager {
       managers: Vec::new(),
       particle_id_to_manager_id: Vec::new(),
+      cached_manager_velocities: Vec::new(),
+      cached_particle_velocities: Vec::new(),
     }
   }
 
@@ -119,37 +128,48 @@ impl VelocityManager {
       })
       .collect();
 
-    let mut particle_id_to_manager_id: Vec<Option<usize>> =
-      vec![None; particle_config.atoms.len()];
+    let mut particle_id_to_manager_id: Vec<(usize, usize)> = Vec::new();
     for atom in &particle_config.atoms {
       if let Particle::CustomVelocityAtom(p) = atom {
-        particle_id_to_manager_id[p.get_id()] = Some(p.get_particle_velocity_manager_id());
+        particle_id_to_manager_id.push((p.get_id(), p.get_particle_velocity_manager_id()));
       }
     }
 
     VelocityManager {
       managers,
       particle_id_to_manager_id,
+      cached_manager_velocities: Vec::new(),
+      cached_particle_velocities: Vec::new(),
     }
   }
 
-  /// Returns the velocity for each particle at the given iteration, indexed by particle id
-  /// (particles with no velocity manager are absent from the map), advancing the internal
-  /// state of each ParticleVelocityManager as needed.
-  pub fn compute_velocities_for_iteration(&mut self, iteration: usize) -> HashMap<usize, Vector3<f64>> {
+  /// Returns (particle_id, velocity) pairs for every particle driven by a velocity manager,
+  /// advancing the internal state of each ParticleVelocityManager as needed. Callers should
+  /// iterate the slice directly rather than looking entries up by id.
+  ///
+  /// Velocity schedules change sparsely, so most calls leave every manager's velocity
+  /// unchanged; in that case the previously built list is reused instead of rescanning
+  /// particle_id_to_manager_id.
+  pub fn compute_velocities_for_iteration(
+    &mut self,
+    iteration: usize,
+  ) -> &[(usize, Vector3<f64>)] {
     let manager_velocities: Vec<Vector3<f64>> = self
       .managers
       .iter_mut()
       .map(|manager| manager.get_velocity(iteration))
       .collect();
 
-    self
-      .particle_id_to_manager_id
-      .iter()
-      .enumerate()
-      .filter_map(|(particle_id, manager_id)| {
-        manager_id.map(|id| (particle_id, manager_velocities[id]))
-      })
-      .collect()
+    if manager_velocities != self.cached_manager_velocities {
+      self.cached_particle_velocities.clear();
+      self
+        .cached_particle_velocities
+        .extend(self.particle_id_to_manager_id.iter().map(
+          |&(particle_id, manager_id)| (particle_id, manager_velocities[manager_id]),
+        ));
+      self.cached_manager_velocities = manager_velocities;
+    }
+
+    &self.cached_particle_velocities
   }
 }
