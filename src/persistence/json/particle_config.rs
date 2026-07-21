@@ -8,7 +8,8 @@ use crate::data::constants::{ATOMIC_MASS_C, ATOMIC_MASS_FE};
 use crate::data::types::AtomType;
 use crate::data::units::{R_U, VELOCITY_U};
 use crate::data::{ParticleConfig, ValueUnits};
-use crate::particle::{Atom, Particle, CustomVelocityAtom};
+use crate::particle::{Atom, Particle, CustomVelocityAtom, VelocityControlledParticle};
+use crate::persistence::json::control_velocity_manager_file::ControlVelocityManagerFile;
 use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
 use crate::persistence::json::velocity_manager_file::VelocityManagerFile;
 
@@ -22,6 +23,8 @@ pub struct ParticleConfigFile {
   pub num_of_iron_atoms: usize,
   #[serde(default)]
   pub velocity_managers: Vec<VelocityManagerFile>,
+  #[serde(default)]
+  pub control_velocity_managers: Vec<ControlVelocityManagerFile>,
 }
 
 impl ParticleConfigFile {
@@ -34,6 +37,9 @@ impl ParticleConfigFile {
         if let Particle::CustomVelocityAtom(p) = particle {
           particle_file.velocity_manager_id = Some(p.get_particle_velocity_manager_id());
         }
+        if let Particle::VelocityControlledParticle(p) = particle {
+          particle_file.control_velocity_manager_id = Some(p.get_control_velocity_manager_id());
+        }
         particle_file
       })
       .collect();
@@ -44,6 +50,12 @@ impl ParticleConfigFile {
       .map(VelocityManagerFile::from_schedule)
       .collect();
 
+    let control_velocity_managers = config
+      .control_velocity_schedules
+      .iter()
+      .map(ControlVelocityManagerFile::from_schedule)
+      .collect();
+
     let unitless = Self {
       value_units: ValueUnits::Unitless,
       particles,
@@ -51,6 +63,7 @@ impl ParticleConfigFile {
       num_of_carbon_atoms: config.num_of_carbon_atoms,
       num_of_iron_atoms: config.num_of_iron_atoms,
       velocity_managers,
+      control_velocity_managers,
     };
 
     unitless.to_value_units(target_units)
@@ -66,13 +79,19 @@ impl ParticleConfigFile {
       .map(VelocityManagerFile::to_schedule)
       .collect();
 
+    let control_velocity_schedules = unitless
+      .control_velocity_managers
+      .iter()
+      .map(ControlVelocityManagerFile::to_schedule)
+      .collect();
+
     let atoms = unitless
       .particles
       .iter()
       .map(ParticleInitialState::try_to_runtime)
       .collect::<io::Result<Vec<_>>>()?;
 
-    Ok(ParticleConfig::new_with_schedules(atoms, velocity_schedules))
+    Ok(ParticleConfig::new_with_all_schedules(atoms, velocity_schedules, control_velocity_schedules))
   }
 
   pub fn convert_to_custom_velocity_atoms(mut self) -> Self {
@@ -115,6 +134,12 @@ impl ParticleConfigFile {
       .map(|vm| vm.scale_velocities(velocity_scale))
       .collect();
 
+    let control_velocity_managers = self
+      .control_velocity_managers
+      .iter()
+      .map(|vm| vm.scale_velocities(velocity_scale))
+      .collect();
+
     Self {
       value_units: target,
       particles,
@@ -122,6 +147,7 @@ impl ParticleConfigFile {
       num_of_carbon_atoms: self.num_of_carbon_atoms,
       num_of_iron_atoms: self.num_of_iron_atoms,
       velocity_managers,
+      control_velocity_managers,
     }
   }
 }
@@ -136,6 +162,9 @@ pub struct ParticleInitialState {
   #[serde(skip_serializing_if = "Option::is_none")]
   #[serde(default)]
   pub velocity_manager_id: Option<usize>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(default)]
+  pub control_velocity_manager_id: Option<usize>,
 }
 
 impl ParticleInitialState {
@@ -146,6 +175,7 @@ impl ParticleInitialState {
     position: Vector3<f64>,
     velocity: Vector3<f64>,
     velocity_manager_id: Option<usize>,
+    control_velocity_manager_id: Option<usize>,
   ) -> Self {
     Self {
       id,
@@ -154,6 +184,7 @@ impl ParticleInitialState {
       position: Vector3Record::from(position),
       velocity: Vector3Record::from(velocity),
       velocity_manager_id,
+      control_velocity_manager_id,
     }
   }
 
@@ -164,6 +195,7 @@ impl ParticleInitialState {
       ParticleTypeFile::from_runtime(particle),
       *particle.get_position(),
       *particle.get_velocity(),
+      None,
       None,
     )
   }
@@ -206,6 +238,22 @@ impl ParticleInitialState {
           particle_velocity_manager_id,
         ))
       }
+      ParticleTypeFile::VelocityControlledParticle => {
+        let control_velocity_manager_id = self.control_velocity_manager_id.ok_or_else(|| {
+          io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("VelocityControlledParticle id={} is missing control_velocity_manager_id", self.id),
+          )
+        })?;
+        Particle::VelocityControlledParticle(VelocityControlledParticle::new(
+          self.id,
+          self.atom_type,
+          mass,
+          self.position.to_runtime(),
+          self.velocity.to_runtime(),
+          control_velocity_manager_id,
+        ))
+      }
     })
   }
 
@@ -233,6 +281,7 @@ impl ParticleInitialState {
       position: self.position.scale(position_scale),
       velocity: self.velocity.scale(velocity_scale),
       velocity_manager_id: self.velocity_manager_id,
+      control_velocity_manager_id: self.control_velocity_manager_id,
     }
   }
 }

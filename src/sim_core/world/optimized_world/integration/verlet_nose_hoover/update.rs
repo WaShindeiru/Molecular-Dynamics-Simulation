@@ -51,7 +51,7 @@ impl OptimizedWorld {
         .local_container
         .particles()
         .iter()
-        .filter(|p| !p.is_custom_velocity_atom()),
+        .filter(|p| p.is_atom()),
       self.config.time_step,
       q_effective_mass,
       current_desired_temperature,
@@ -70,6 +70,11 @@ impl OptimizedWorld {
     let current_custom_velocities =
       self.velocity_manager.compute_velocities_for_iteration(next_iteration);
     computation_collector.apply_custom_velocities(&current_custom_velocities);
+
+    let current_control_velocities = self
+      .control_velocity_manager
+      .compute_controlled_velocities_for_iteration(next_iteration);
+    computation_collector.compute_controlled_velocity_particles(&current_control_velocities, self.config.alpha);
 
     let simulation_temperature = computation_collector.get_mean_temperature();
 

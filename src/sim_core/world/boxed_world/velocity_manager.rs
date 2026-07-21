@@ -6,54 +6,54 @@ use nalgebra::Vector3;
 use crate::data::ParticleConfig;
 use crate::particle::Particle;
 
-pub struct ParticleVelocityManager {
-  current_velocity: Vector3<f64>,
-  velocity_list: HashMap<usize, Vector3<f64>>,
-  velocity_heap: BinaryHeap<Reverse<usize>>,
+pub struct GenericParticleManager<T> {
+  current_value: T,
+  value_list: HashMap<usize, T>,
+  value_heap: BinaryHeap<Reverse<usize>>,
 }
 
-impl ParticleVelocityManager {
-  pub fn new(velocities: Vec<(usize, Vector3<f64>)>) -> Self {
+impl<T: Copy> GenericParticleManager<T> {
+  pub fn new(values: Vec<(usize, T)>) -> Self {
     assert!(
-      !velocities.is_empty(),
+      !values.is_empty(),
       "ParticleVelocityManager requires at least one velocity entry"
     );
     assert!(
-      velocities.iter().any(|(i, _)| *i == 0),
+      values.iter().any(|(i, _)| *i == 0),
       "ParticleVelocityManager requires an entry for iteration 0 (initial velocity)"
     );
 
-    let velocity_list: HashMap<usize, Vector3<f64>> = velocities.into_iter().collect();
-    let initial_velocity = *velocity_list.get(&0).unwrap();
+    let value_list: HashMap<usize, T> = values.into_iter().collect();
+    let initial_value = *value_list.get(&0).unwrap();
 
     // Iteration 0 is consumed immediately as the initial state — it must not sit in
-    // the heap, otherwise the first real call (e.g. get_velocity(1)) would see
+    // the heap, otherwise the first real call (e.g. get_value(1)) would see
     // heap-top 0 < 1 and panic with "iteration skipped".
-    let velocity_heap: BinaryHeap<Reverse<usize>> = velocity_list
+    let value_heap: BinaryHeap<Reverse<usize>> = value_list
       .keys()
       .filter(|&&k| k != 0)
       .map(|k| Reverse(*k))
       .collect();
 
-    ParticleVelocityManager {
-      current_velocity: initial_velocity,
-      velocity_list,
-      velocity_heap,
+    GenericParticleManager {
+      current_value: initial_value,
+      value_list,
+      value_heap,
     }
   }
 
-  /// Returns the velocity for the given iteration, advancing the internal state if needed.
+  /// Returns the value for the given iteration, advancing the internal state if needed.
   /// Panics if `iteration` skips over a scheduled change (heap top < iteration).
-  pub fn get_velocity(&mut self, iteration: usize) -> Vector3<f64> {
+  pub fn get_value(&mut self, iteration: usize) -> T {
     loop {
-      match self.velocity_heap.peek() {
-        None => return self.current_velocity,
-        Some(Reverse(top)) if *top > iteration => return self.current_velocity,
+      match self.value_heap.peek() {
+        None => return self.current_value,
+        Some(Reverse(top)) if *top > iteration => return self.current_value,
         Some(Reverse(top)) if *top == iteration => {
           let top = *top;
-          self.velocity_heap.pop();
-          self.current_velocity = *self.velocity_list.get(&top).unwrap();
-          return self.current_velocity;
+          self.value_heap.pop();
+          self.current_value = *self.value_list.get(&top).unwrap();
+          return self.current_value;
         }
         Some(Reverse(top)) => panic!(
           "VelocityManager: iteration {} was skipped (heap top: {}). \
@@ -65,42 +65,69 @@ impl ParticleVelocityManager {
   }
 }
 
-pub struct VelocityManager {
+pub struct GenericVelocityManager<T> {
   // Indexed by particle_velocity_manager_id. Particles that share a velocity schedule
-  // share a single entry here instead of duplicating one ParticleVelocityManager each.
-  managers: Vec<ParticleVelocityManager>,
-  // Sparse (particle_id, manager_id) pairs, one per CustomVelocityAtom only —
+  // share a single entry here instead of duplicating one GenericParticleManager each.
+  managers: Vec<GenericParticleManager<T>>,
+  // Sparse (particle_id, manager_id) pairs, one per driven particle only —
   // most particles have no manager and would just waste a slot in a dense mapping.
   particle_id_to_manager_id: Vec<(usize, usize)>,
-  // Manager outputs from the last compute_velocities_for_iteration call, used to detect
-  // whether the per-particle result actually needs to be rebuilt (velocity schedules
+  // Manager outputs from the last compute_for_iteration call, used to detect
+  // whether the per-particle result actually needs to be rebuilt (schedules
   // change rarely, so most iterations hit this cache).
-  cached_manager_velocities: Vec<Vector3<f64>>,
-  cached_particle_velocities: Vec<(usize, Vector3<f64>)>,
+  cached_manager_values: Vec<T>,
+  cached_particle_values: Vec<(usize, T)>,
 }
 
-impl VelocityManager {
+impl<T: Copy + PartialEq> GenericVelocityManager<T> {
   pub fn new(
-    managers: Vec<ParticleVelocityManager>,
+    managers: Vec<GenericParticleManager<T>>,
     particle_id_to_manager_id: Vec<(usize, usize)>,
   ) -> Self {
-    VelocityManager {
+    GenericVelocityManager {
       managers,
       particle_id_to_manager_id,
-      cached_manager_velocities: Vec::new(),
-      cached_particle_velocities: Vec::new(),
+      cached_manager_values: Vec::new(),
+      cached_particle_values: Vec::new(),
     }
   }
 
   pub fn empty() -> Self {
-    VelocityManager {
+    GenericVelocityManager {
       managers: Vec::new(),
       particle_id_to_manager_id: Vec::new(),
-      cached_manager_velocities: Vec::new(),
-      cached_particle_velocities: Vec::new(),
+      cached_manager_values: Vec::new(),
+      cached_particle_values: Vec::new(),
     }
   }
 
+  /// Returns (particle_id, value) pairs for every particle driven by a manager, advancing
+  /// the internal state of each GenericParticleManager as needed. Callers should iterate the
+  /// slice directly rather than looking entries up by id.
+  ///
+  /// Schedules change sparsely, so most calls leave every manager's value unchanged; in that
+  /// case the previously built list is reused instead of rescanning particle_id_to_manager_id.
+  pub(crate) fn compute_for_iteration(&mut self, iteration: usize) -> &[(usize, T)] {
+    let manager_values: Vec<T> = self.managers.iter_mut().map(|manager| manager.get_value(iteration)).collect();
+
+    if manager_values != self.cached_manager_values {
+      self.cached_particle_values.clear();
+      self
+        .cached_particle_values
+        .extend(self.particle_id_to_manager_id.iter().map(
+          |&(particle_id, manager_id)| (particle_id, manager_values[manager_id]),
+        ));
+      self.cached_manager_values = manager_values;
+    }
+
+    &self.cached_particle_values
+  }
+}
+
+pub type ParticleVelocityManager = GenericParticleManager<Vector3<f64>>;
+pub type VelocityManager = GenericVelocityManager<Vector3<f64>>;
+
+impl VelocityManager {
   pub fn from_config(particle_config: &ParticleConfig) -> Self {
     let manager_count = particle_config
       .velocity_schedules
@@ -138,38 +165,15 @@ impl VelocityManager {
     VelocityManager {
       managers,
       particle_id_to_manager_id,
-      cached_manager_velocities: Vec::new(),
-      cached_particle_velocities: Vec::new(),
+      cached_manager_values: Vec::new(),
+      cached_particle_values: Vec::new(),
     }
   }
 
   /// Returns (particle_id, velocity) pairs for every particle driven by a velocity manager,
   /// advancing the internal state of each ParticleVelocityManager as needed. Callers should
   /// iterate the slice directly rather than looking entries up by id.
-  ///
-  /// Velocity schedules change sparsely, so most calls leave every manager's velocity
-  /// unchanged; in that case the previously built list is reused instead of rescanning
-  /// particle_id_to_manager_id.
-  pub fn compute_velocities_for_iteration(
-    &mut self,
-    iteration: usize,
-  ) -> &[(usize, Vector3<f64>)] {
-    let manager_velocities: Vec<Vector3<f64>> = self
-      .managers
-      .iter_mut()
-      .map(|manager| manager.get_velocity(iteration))
-      .collect();
-
-    if manager_velocities != self.cached_manager_velocities {
-      self.cached_particle_velocities.clear();
-      self
-        .cached_particle_velocities
-        .extend(self.particle_id_to_manager_id.iter().map(
-          |&(particle_id, manager_id)| (particle_id, manager_velocities[manager_id]),
-        ));
-      self.cached_manager_velocities = manager_velocities;
-    }
-
-    &self.cached_particle_velocities
+  pub fn compute_velocities_for_iteration(&mut self, iteration: usize) -> &[(usize, Vector3<f64>)] {
+    self.compute_for_iteration(iteration)
   }
 }

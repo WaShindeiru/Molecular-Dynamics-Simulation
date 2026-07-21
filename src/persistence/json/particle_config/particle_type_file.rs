@@ -7,6 +7,7 @@ pub enum ParticleTypeFile {
   Atom,
   CustomPathAtom,
   CustomVelocityAtom,
+  VelocityControlledParticle,
 }
 
 impl ParticleTypeFile {
@@ -15,6 +16,7 @@ impl ParticleTypeFile {
       Particle::Atom(_) => ParticleTypeFile::Atom,
       Particle::CustomPathAtom(_) => ParticleTypeFile::CustomPathAtom,
       Particle::CustomVelocityAtom(_) => ParticleTypeFile::CustomVelocityAtom,
+      Particle::VelocityControlledParticle(_) => ParticleTypeFile::VelocityControlledParticle,
     }
   }
 }
@@ -25,6 +27,7 @@ impl From<ParticleKind> for ParticleTypeFile {
       ParticleKind::Atom => ParticleTypeFile::Atom,
       ParticleKind::CustomPathAtom => ParticleTypeFile::CustomPathAtom,
       ParticleKind::CustomVelocityAtom => ParticleTypeFile::CustomVelocityAtom,
+      ParticleKind::VelocityControlledParticle => ParticleTypeFile::VelocityControlledParticle,
     }
   }
 }

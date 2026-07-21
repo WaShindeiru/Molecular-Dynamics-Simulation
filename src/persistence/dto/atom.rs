@@ -16,6 +16,7 @@ pub struct AtomDTO {
   pub potential_energy: f64,
   pub thermostat_work: f64,
   pub potential_gravity_energy: f64,
+  pub p_control_energy: f64,
 
   pub force: Vector3<f64>,
 }

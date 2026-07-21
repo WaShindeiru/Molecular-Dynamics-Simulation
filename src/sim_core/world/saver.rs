@@ -100,6 +100,7 @@ pub struct PartialWorldSaver {
   save_options: SaveOptions,
 
   thermostat_work_total: f64,
+  p_control_energy_total: f64,
   laamps_frame_iteration_count_current_iteration: usize,
   energy_frame_iteration_count_current_iteration: usize,
   periodic_save_iteration_count: usize,
@@ -112,6 +113,7 @@ impl PartialWorldSaver {
     let velocity_heap = VelocityHeap::new(save_options.velocity_particles_num);
     PartialWorldSaver {
       thermostat_work_total: 0.,
+      p_control_energy_total: 0.,
       laamps_frame_iteration_count_current_iteration: 0,
       energy_frame_iteration_count_current_iteration: 0,
       periodic_save_iteration_count: 0,

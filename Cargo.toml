@@ -3,12 +3,12 @@ name = "carbon_nanotube"
 version = "0.1.0"
 edition = "2024"
 
-#[profile.release]
-#debug = 1
-
 [profile.release]
-lto = true           # Link-time optimization across crates
-codegen-units = 1    # Better optimization at cost of compile time
+debug = 1
+
+#[profile.release]
+#lto = true           # Link-time optimization across crates
+#codegen-units = 1    # Better optimization at cost of compile time
 
 #[profile.release]
 #lto = true           # Link-time optimization across crates

@@ -1,5 +1,5 @@
 use crate::data::types::AtomType;
-use crate::particle::{Atom, CustomPathAtom, CustomVelocityAtom};
+use crate::particle::{Atom, CustomPathAtom, CustomVelocityAtom, VelocityControlledParticle};
 use crate::persistence::dto::atom::AtomDTO;
 use crate::sim_core::world::computation::ForceComputationOperations;
 use nalgebra::Vector3;
@@ -10,6 +10,7 @@ pub enum ParticleKind {
   Atom,
   CustomPathAtom,
   CustomVelocityAtom,
+  VelocityControlledParticle,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -17,6 +18,7 @@ pub enum Particle {
   Atom(Atom),
   CustomPathAtom(CustomPathAtom),
   CustomVelocityAtom(CustomVelocityAtom),
+  VelocityControlledParticle(VelocityControlledParticle),
 }
 
 impl Particle {
@@ -25,6 +27,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_id(),
       Particle::CustomPathAtom(p) => p.get_id(),
       Particle::CustomVelocityAtom(p) => p.get_id(),
+      Particle::VelocityControlledParticle(p) => p.get_id(),
     }
   }
 
@@ -33,6 +36,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_type(),
       Particle::CustomPathAtom(p) => p.get_type(),
       Particle::CustomVelocityAtom(p) => p.get_type(),
+      Particle::VelocityControlledParticle(p) => p.get_type(),
     }
   }
 
@@ -41,6 +45,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_position(),
       Particle::CustomPathAtom(p) => p.get_position(),
       Particle::CustomVelocityAtom(p) => p.get_position(),
+      Particle::VelocityControlledParticle(p) => p.get_position(),
     }
   }
 
@@ -49,6 +54,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_velocity(),
       Particle::CustomPathAtom(p) => p.get_velocity(),
       Particle::CustomVelocityAtom(p) => p.get_velocity(),
+      Particle::VelocityControlledParticle(p) => p.get_velocity(),
     }
   }
 
@@ -57,6 +63,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_acceleration(),
       Particle::CustomPathAtom(p) => p.get_acceleration(),
       Particle::CustomVelocityAtom(p) => p.get_acceleration(),
+      Particle::VelocityControlledParticle(p) => p.get_acceleration(),
     }
   }
 
@@ -65,6 +72,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_mass(),
       Particle::CustomPathAtom(p) => p.get_mass(),
       Particle::CustomVelocityAtom(p) => p.get_mass(),
+      Particle::VelocityControlledParticle(p) => p.get_mass(),
     }
   }
 
@@ -73,6 +81,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_force(),
       Particle::CustomPathAtom(p) => p.get_force(),
       Particle::CustomVelocityAtom(p) => p.get_force(),
+      Particle::VelocityControlledParticle(p) => p.get_force(),
     }
   }
 
@@ -81,6 +90,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_potential_energy(),
       Particle::CustomPathAtom(p) => p.get_potential_energy(),
       Particle::CustomVelocityAtom(p) => p.get_potential_energy(),
+      Particle::VelocityControlledParticle(p) => p.get_potential_energy(),
     }
   }
 
@@ -89,6 +99,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_kinetic_energy(),
       Particle::CustomPathAtom(p) => p.get_kinetic_energy(),
       Particle::CustomVelocityAtom(p) => p.get_kinetic_energy(),
+      Particle::VelocityControlledParticle(p) => p.get_kinetic_energy(),
     }
   }
 
@@ -97,6 +108,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_potential_gravity_energy(),
       Particle::CustomPathAtom(p) => p.get_potential_gravity_energy(),
       Particle::CustomVelocityAtom(p) => p.get_potential_gravity_energy(),
+      Particle::VelocityControlledParticle(p) => p.get_potential_gravity_energy(),
     }
   }
 
@@ -105,6 +117,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_thermostat_work(),
       Particle::CustomPathAtom(p) => p.get_thermostat_work(),
       Particle::CustomVelocityAtom(p) => p.get_thermostat_work(),
+      Particle::VelocityControlledParticle(p) => p.get_thermostat_work(),
     }
   }
 
@@ -113,6 +126,7 @@ impl Particle {
       Particle::Atom(atom) => atom.set_velocity(velocity_),
       Particle::CustomPathAtom(p) => p.set_velocity(velocity_),
       Particle::CustomVelocityAtom(p) => p.set_velocity(velocity_),
+      Particle::VelocityControlledParticle(p) => p.set_velocity(velocity_),
     }
   }
 
@@ -121,6 +135,7 @@ impl Particle {
       Particle::Atom(atom) => atom.set_potential_energy(potential_energy_),
       Particle::CustomPathAtom(p) => p.set_potential_energy(potential_energy_),
       Particle::CustomVelocityAtom(p) => p.set_potential_energy(potential_energy_),
+      Particle::VelocityControlledParticle(p) => p.set_potential_energy(potential_energy_),
     }
   }
 
@@ -129,6 +144,7 @@ impl Particle {
       Particle::Atom(atom) => atom.set_potential_gravity_energy(potential_gravity_energy),
       Particle::CustomPathAtom(p) => p.set_potential_gravity_energy(potential_gravity_energy),
       Particle::CustomVelocityAtom(p) => p.set_potential_gravity_energy(potential_gravity_energy),
+      Particle::VelocityControlledParticle(p) => p.set_potential_gravity_energy(potential_gravity_energy),
     }
   }
 
@@ -137,6 +153,7 @@ impl Particle {
       Particle::Atom(atom) => atom.set_force(force_),
       Particle::CustomPathAtom(p) => p.set_force(force_),
       Particle::CustomVelocityAtom(p) => p.set_force(force_),
+      Particle::VelocityControlledParticle(p) => p.set_force(force_),
     }
   }
 
@@ -145,6 +162,7 @@ impl Particle {
       Particle::Atom(atom) => atom.set_acceleration(acceleration_),
       Particle::CustomPathAtom(p) => p.set_acceleration(acceleration_),
       Particle::CustomVelocityAtom(p) => p.set_acceleration(acceleration_),
+      Particle::VelocityControlledParticle(p) => p.set_acceleration(acceleration_),
     }
   }
 
@@ -153,6 +171,7 @@ impl Particle {
       Particle::Atom(atom) => atom.set_thermostat_work(thermostat_work),
       Particle::CustomPathAtom(p) => p.set_thermostat_work(thermostat_work),
       Particle::CustomVelocityAtom(p) => p.set_thermostat_work(thermostat_work),
+      Particle::VelocityControlledParticle(p) => p.set_thermostat_work(thermostat_work),
     }
   }
 
@@ -161,6 +180,7 @@ impl Particle {
       Particle::Atom(atom) => atom.get_iteration(),
       Particle::CustomPathAtom(p) => p.get_iteration(),
       Particle::CustomVelocityAtom(p) => p.get_iteration(),
+      Particle::VelocityControlledParticle(p) => p.get_iteration(),
     }
   }
 
@@ -169,6 +189,7 @@ impl Particle {
       Particle::Atom(atom) => atom.set_iteration(iteration_),
       Particle::CustomPathAtom(p) => p.set_iteration(iteration_),
       Particle::CustomVelocityAtom(p) => p.set_iteration(iteration_),
+      Particle::VelocityControlledParticle(p) => p.set_iteration(iteration_),
     }
   }
 
@@ -177,6 +198,7 @@ impl Particle {
       Particle::Atom(atom) => atom.update_position(position_),
       Particle::CustomPathAtom(p) => p.update_position(position_),
       Particle::CustomVelocityAtom(p) => p.update_position(position_),
+      Particle::VelocityControlledParticle(p) => p.update_position(position_),
     }
   }
 
@@ -185,6 +207,7 @@ impl Particle {
       Particle::Atom(atom) => atom.to_transfer_struct(),
       Particle::CustomPathAtom(p) => p.to_transfer_struct(),
       Particle::CustomVelocityAtom(p) => p.to_transfer_struct(),
+      Particle::VelocityControlledParticle(p) => p.to_transfer_struct(),
     }
   }
 
@@ -193,6 +216,7 @@ impl Particle {
       Particle::Atom(atom) => Particle::Atom(atom.clone()),
       Particle::CustomPathAtom(p) => Particle::CustomPathAtom(p.clone()),
       Particle::CustomVelocityAtom(p) => Particle::CustomVelocityAtom(p.clone()),
+      Particle::VelocityControlledParticle(p) => Particle::VelocityControlledParticle(p.clone()),
     }
   }
 
@@ -201,6 +225,7 @@ impl Particle {
       Particle::Atom(atom) => Particle::Atom(atom.reset_clone()),
       Particle::CustomPathAtom(p) => Particle::CustomPathAtom(p.reset_clone()),
       Particle::CustomVelocityAtom(p) => Particle::CustomVelocityAtom(p.reset_clone()),
+      Particle::VelocityControlledParticle(p) => Particle::VelocityControlledParticle(p.reset_clone()),
     }
   }
 }
@@ -240,6 +265,10 @@ impl ForceComputationOperations for Particle {
 impl Particle {
   pub fn is_custom_velocity_atom(&self) -> bool {
     matches!(self, Particle::CustomVelocityAtom(_))
+  }
+
+  pub fn is_atom(&self) -> bool {
+    matches!(self, Particle::Atom(_))
   }
 }
 

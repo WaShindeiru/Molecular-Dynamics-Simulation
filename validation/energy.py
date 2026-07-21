@@ -46,22 +46,26 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
     time_elapsed = iteration
     x_label = "iteration"
 
-  kinetic_energy = energy_data["kinetic_energy"]
+  kinetic_energy_atom = energy_data["kinetic_energy_atom"]
+  kinetic_energy_other = energy_data["kinetic_energy_other"]
+  kinetic_energy = kinetic_energy_atom + kinetic_energy_other
   potential_energy = energy_data["potential_energy"]
   potential_gravity_energy = energy_data["potential_gravity_energy"]
   total_energy = energy_data["total_energy"]
+  control_energy = energy_data["p_control_energy_total"]
   if thermostat:
     thermostat_work = energy_data["thermostat_work_total"]
     thermostat_epsilon = energy_data["thermostat_epsilon"]
 
   if thermostat:
-    total_energy_show = thermostat_work + kinetic_energy + potential_energy  + potential_gravity_energy
+    total_energy_show = thermostat_work + control_energy + kinetic_energy + potential_energy + potential_gravity_energy
   else:
-    total_energy_show = kinetic_energy + potential_energy + potential_gravity_energy
+    total_energy_show = control_energy + kinetic_energy + potential_energy + potential_gravity_energy
 
   plt.plot(time_elapsed, kinetic_energy, label="kinetic energy")
   plt.plot(time_elapsed, potential_energy, label="potential energy")
   plt.plot(time_elapsed, total_energy_show, label="total energy")
+  plt.plot(time_elapsed, control_energy, label="control energy")
   # plt.plot(time_elapsed, total_energy, label="all_energy")
   if thermostat:
     plt.plot(time_elapsed, thermostat_work, label="thermostat work")
@@ -98,9 +102,9 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.show()
 
   if thermostat:
-    total_energy_difference = total_energy + thermostat_work - total_energy.iloc[0]
+    total_energy_difference = total_energy + thermostat_work + control_energy - total_energy.iloc[0]
   else:
-    total_energy_difference = total_energy - total_energy.iloc[0]
+    total_energy_difference = total_energy + control_energy - total_energy.iloc[0]
 
   plt.figure()
   plt.plot(time_elapsed, total_energy_difference, label="Total energy error")
@@ -143,9 +147,9 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   num_atoms = count_atoms(path)
 
   if num_atoms > 0:
-    mean_kinetic_energy = kinetic_energy / num_atoms
+    mean_kinetic_energy = kinetic_energy_atom / num_atoms
   else:
-    mean_kinetic_energy = kinetic_energy  # Fallback if num_atoms not found
+    mean_kinetic_energy = kinetic_energy_atom  # Fallback if num_atoms not found
 
   T = 2 / 3 * mean_kinetic_energy / k_b
 

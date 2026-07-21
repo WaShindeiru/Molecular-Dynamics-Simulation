@@ -4,7 +4,7 @@ use crate::persistence::dto::atom::AtomDTO;
 use nalgebra::Vector3;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct CustomVelocityAtom {
+pub struct VelocityControlledParticle {
   id: usize,
   iteration: usize,
   type_: AtomType,
@@ -25,32 +25,42 @@ pub struct CustomVelocityAtom {
 
   ignore_edge_conditions: bool,
 
-  particle_velocity_manager_id: usize,
+  // Velocity component that was folded into `velocity` by the last P-controller
+  // application, kept so the next application can subtract exactly what it added.
+  component_velocity: Vector3<f64>,
+  // Kinetic energy delta introduced by the last P-controller application (this
+  // iteration's value, not cumulative — mirrors thermostat_work).
+  p_control_energy: f64,
+
+  control_velocity_manager_id: usize,
 }
 
-impl CustomVelocityAtom {
+impl VelocityControlledParticle {
   pub fn new(
     id: usize,
     type_: AtomType,
     mass: f64,
     position: Vector3<f64>,
-    particle_velocity_manager_id: usize,
+    velocity: Vector3<f64>,
+    control_velocity_manager_id: usize,
   ) -> Self {
-    CustomVelocityAtom {
+    VelocityControlledParticle {
       id,
       iteration: 0,
       type_,
       mass,
       position,
-      velocity: Vector3::zeros(),
+      velocity,
       force: Vector3::zeros(),
       acceleration: Vector3::zeros(),
-      kinetic_energy: 0.0,
+      kinetic_energy: mass * velocity.magnitude_squared() / 2.0,
       potential_energy: 0.0,
       potential_gravity_energy: 0.0,
       thermostat_work: 0.0,
-      ignore_edge_conditions: true,
-      particle_velocity_manager_id,
+      ignore_edge_conditions: false,
+      component_velocity: Vector3::zeros(),
+      p_control_energy: 0.0,
+      control_velocity_manager_id,
     }
   }
 
@@ -106,13 +116,29 @@ impl CustomVelocityAtom {
     self.ignore_edge_conditions
   }
 
-  pub fn get_particle_velocity_manager_id(&self) -> usize {
-    self.particle_velocity_manager_id
+  pub fn get_control_velocity_manager_id(&self) -> usize {
+    self.control_velocity_manager_id
+  }
+
+  pub fn get_component_velocity(&self) -> Vector3<f64> {
+    self.component_velocity
+  }
+
+  pub fn set_component_velocity(&mut self, component_velocity: Vector3<f64>) {
+    self.component_velocity = component_velocity;
+  }
+
+  pub fn get_p_control_energy(&self) -> f64 {
+    self.p_control_energy
+  }
+
+  pub fn set_p_control_energy(&mut self, p_control_energy: f64) {
+    self.p_control_energy = p_control_energy;
   }
 
   pub fn set_velocity(&mut self, velocity_: Vector3<f64>) {
     self.velocity = velocity_;
-    self.kinetic_energy = 0.0;
+    self.kinetic_energy = self.mass * velocity_.magnitude_squared() / 2.0;
   }
 
   pub fn set_potential_energy(&mut self, potential_energy_: f64) {
@@ -120,6 +146,7 @@ impl CustomVelocityAtom {
   }
 
   pub fn set_potential_gravity_energy(&mut self, potential_gravity_energy: f64) {
+    let _ = potential_gravity_energy;
     self.potential_gravity_energy = 0.0;
   }
 
@@ -132,6 +159,7 @@ impl CustomVelocityAtom {
   }
 
   pub fn set_thermostat_work(&mut self, thermostat_work: f64) {
+    let _ = thermostat_work;
     self.thermostat_work = 0.0;
   }
 
@@ -143,8 +171,8 @@ impl CustomVelocityAtom {
     self.position = position_;
   }
 
-  pub fn reset_clone(&self) -> CustomVelocityAtom {
-    CustomVelocityAtom {
+  pub fn reset_clone(&self) -> VelocityControlledParticle {
+    VelocityControlledParticle {
       id: self.id,
       iteration: self.iteration,
       type_: self.type_,
@@ -156,13 +184,15 @@ impl CustomVelocityAtom {
       acceleration: Vector3::zeros(),
       force: Vector3::zeros(),
 
-      kinetic_energy: 0.0,
+      kinetic_energy: self.kinetic_energy,
       potential_energy: 0.0,
       thermostat_work: 0.0,
       potential_gravity_energy: 0.0,
 
       ignore_edge_conditions: self.ignore_edge_conditions,
-      particle_velocity_manager_id: self.particle_velocity_manager_id,
+      component_velocity: self.component_velocity,
+      p_control_energy: 0.0,
+      control_velocity_manager_id: self.control_velocity_manager_id,
     }
   }
 
@@ -170,7 +200,7 @@ impl CustomVelocityAtom {
     AtomDTO {
       id: self.id,
       iteration: self.iteration,
-      kind: ParticleKind::CustomVelocityAtom,
+      kind: ParticleKind::VelocityControlledParticle,
       atom_type: self.type_,
       position: self.position,
       velocity: self.velocity,
@@ -178,8 +208,8 @@ impl CustomVelocityAtom {
       potential_energy: self.potential_energy,
       thermostat_work: self.thermostat_work,
       potential_gravity_energy: self.potential_gravity_energy,
-      p_control_energy: 0.0,
       force: self.force,
+      p_control_energy: self.p_control_energy,
     }
   }
 }

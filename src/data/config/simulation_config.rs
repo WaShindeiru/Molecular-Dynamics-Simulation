@@ -19,6 +19,8 @@ pub struct SimulationConfig {
   pub world_type: WorldType,
   pub edge_condition: EdgeCondition,
   pub optimization: bool,
+  /// P-controller gain for VelocityControlledParticle (OptimizedWorld only).
+  pub alpha: f64,
 }
 
 impl SimulationConfig {
@@ -33,6 +35,7 @@ impl SimulationConfig {
     world_type: WorldType,
     edge_condition: EdgeCondition,
     optimization: bool,
+    alpha: f64,
   ) -> Self {
     SimulationConfig {
       world_size,
@@ -45,6 +48,7 @@ impl SimulationConfig {
       world_type,
       edge_condition,
       optimization,
+      alpha,
     }
   }
 

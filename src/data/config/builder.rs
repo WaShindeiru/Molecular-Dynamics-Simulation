@@ -27,6 +27,7 @@ pub struct SimulationConfigBuilder {
   integration_algorithm: Option<IntegrationAlgorithm>,
   world_type: Option<WorldType>,
   edge_condition: Option<EdgeCondition>,
+  alpha: Option<f64>,
 }
 
 impl SimulationConfigBuilder {
@@ -48,6 +49,7 @@ impl SimulationConfigBuilder {
       integration_algorithm: None,
       world_type: None,
       edge_condition: None,
+      alpha: None,
     }
   }
 
@@ -133,6 +135,11 @@ impl SimulationConfigBuilder {
 
   pub fn edge_condition(mut self, edge_condition: EdgeCondition) -> Self {
     self.edge_condition = Some(edge_condition);
+    self
+  }
+
+  pub fn alpha(mut self, alpha: f64) -> Self {
+    self.alpha = Some(alpha);
     self
   }
 
@@ -274,6 +281,7 @@ impl SimulationConfigBuilder {
         split: EdgeCondition::DEFAULT_SPLIT,
       }),
       false,
+      self.alpha.unwrap_or(1e-3),
     ))
   }
 

@@ -149,6 +149,7 @@ impl Atom {
       potential_energy: self.potential_energy,
       thermostat_work: self.thermostat_work,
       potential_gravity_energy: self.potential_gravity_energy,
+      p_control_energy: 0.0,
       force: self.force,
     }
   }

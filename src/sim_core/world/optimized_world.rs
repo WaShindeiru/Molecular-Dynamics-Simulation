@@ -1,5 +1,6 @@
 pub mod computation;
 pub mod computation_collector;
+pub mod control_velocity_manager;
 pub(crate) mod handle_task;
 pub mod history_manager;
 pub mod integration;
@@ -20,6 +21,7 @@ use crate::persistence::dto::world::WorldDTO;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boxed_world::velocity_manager::VelocityManager;
+use crate::sim_core::world::optimized_world::control_velocity_manager::ControlVelocityManager;
 use crate::sim_core::world::optimized_world::task_manager::TaskManager;
 use crate::sim_core::world::saver::PartialWorldSaver;
 use crate::sim_core::world::thermostat::{
@@ -31,6 +33,7 @@ pub struct OptimizedWorld {
   pub persistance_reset: OptimizedPersistanceReset,
   pub task_manager: TaskManager,
   pub velocity_manager: VelocityManager,
+  pub control_velocity_manager: ControlVelocityManager,
   pub iteration: usize,
   pub integration_algorithm_state: IntegrationAlgorithmState,
 }
@@ -47,6 +50,15 @@ impl OptimizedWorld {
     for &(particle_id, vel) in initial_velocities {
       if let Particle::CustomVelocityAtom(p) = &mut particle_config.atoms[particle_id] {
         p.set_velocity(vel);
+      }
+    }
+
+    let mut control_velocity_manager = ControlVelocityManager::from_config(&particle_config);
+    let initial_control_velocities =
+      control_velocity_manager.compute_controlled_velocities_for_iteration(0);
+    for &(particle_id, (component_velocity, _desired_velocity)) in initial_control_velocities {
+      if let Particle::VelocityControlledParticle(p) = &mut particle_config.atoms[particle_id] {
+        p.set_component_velocity(component_velocity);
       }
     }
 
@@ -80,6 +92,7 @@ impl OptimizedWorld {
       persistance_reset,
       task_manager,
       velocity_manager,
+      control_velocity_manager,
       iteration: 0,
     }
   }

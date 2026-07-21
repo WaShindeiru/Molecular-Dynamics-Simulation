@@ -35,6 +35,11 @@ impl OptimizedWorld {
       self.velocity_manager.compute_velocities_for_iteration(next_iteration);
     computation_collector.apply_custom_velocities(&current_custom_velocities);
 
+    let current_control_velocities = self
+      .control_velocity_manager
+      .compute_controlled_velocities_for_iteration(next_iteration);
+    computation_collector.compute_controlled_velocity_particles(&current_control_velocities, self.config.alpha);
+
     let simulation_temperature = computation_collector.get_mean_temperature();
 
     let result = self.integration_algorithm_state.update_state(

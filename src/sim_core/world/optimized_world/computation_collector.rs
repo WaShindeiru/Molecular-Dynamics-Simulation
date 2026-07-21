@@ -57,6 +57,10 @@ impl ComputationCollector {
     let z_max = self.local_container.config().world_size.z;
 
     for id in 0..self.local_container.particles().len() {
+      if !self.local_container.particles()[id].is_atom() {
+        continue;
+      }
+
       let particle = self.local_container.particle_mut(id);
       let new_force = particle.get_force()
         - Vector3::new(0., 0., 1.) * potential_gravity_max * particle.get_mass() / z_max;
@@ -83,6 +87,13 @@ impl ComputationCollector {
         continue;
       }
 
+      let effective_thermostat_epsilon =
+        if let Particle::VelocityControlledParticle(_) = &self.local_container.particles()[id] {
+          0.0
+        } else {
+          thermostat_epsilon
+        };
+
       let half_velocity = self.half_velocity_cache[id];
       let compliance = &self.particle_compliance[id];
 
@@ -95,7 +106,7 @@ impl ComputationCollector {
       let new_velocity = compute_new_velocity(
         half_velocity,
         *particle.get_acceleration(),
-        thermostat_epsilon,
+        effective_thermostat_epsilon,
         effective_time_step,
       );
       particle.set_velocity(new_velocity);
@@ -110,12 +121,34 @@ impl ComputationCollector {
     }
   }
 
+  pub fn compute_controlled_velocity_particles(
+    &mut self,
+    control_data: &[(usize, (Vector3<f64>, Vector3<f64>))],
+    alpha: f64,
+  ) {
+    for &(id, (component_velocity_new, desired_velocity)) in control_data {
+      if let Particle::VelocityControlledParticle(p) = self.local_container.particle_mut(id) {
+        let v = *p.get_velocity();
+        let component_velocity_old = p.get_component_velocity();
+        let kinetic_energy_before = p.get_kinetic_energy();
+
+        let v1 = v - component_velocity_old;
+        let v2 = v1 + alpha * (desired_velocity - v1);
+        let v3 = component_velocity_new + v2;
+
+        p.set_velocity(v3);
+        p.set_component_velocity(component_velocity_new);
+        p.set_p_control_energy(kinetic_energy_before - p.get_kinetic_energy());
+      }
+    }
+  }
+
   pub fn get_mean_temperature(&self) -> f64 {
     let relevant: Vec<_> = self
       .local_container
       .particles()
       .iter()
-      .filter(|p| !p.is_custom_velocity_atom())
+      .filter(|p| p.is_atom())
       .collect();
 
     let count = relevant.len();

@@ -181,7 +181,7 @@ pub fn verlet_noose_hoover_half_velocity_position(
       EdgeCondition::PeriodicAll => check_position_constraint_periodic_all(next_position, container_size),
     };
 
-    let thermostat_work = if current_iteration == 0 {
+    let thermostat_work = if current_iteration == 0 || !atom_i.is_atom() {
       0.
     } else {
       let thermostat_force = previous_thermostat_epsilon * atom_i.get_mass() * atom_i.get_velocity();

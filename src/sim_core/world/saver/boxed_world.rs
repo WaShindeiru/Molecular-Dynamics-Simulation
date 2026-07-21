@@ -6,6 +6,7 @@ use nalgebra::Vector3;
 
 use crate::data::types::AtomType;
 use crate::data::ValueUnits;
+use crate::particle::particle::ParticleKind;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
 use crate::persistence::json::particle_config::{ParticleConfigFile, ParticleInitialState};
@@ -76,6 +77,7 @@ impl PartialWorldSaver {
           atom.position,
           atom.velocity,
           None,
+          None,
         ));
       }
 
@@ -86,6 +88,7 @@ impl PartialWorldSaver {
         num_of_carbon_atoms: c_count,
         num_of_iron_atoms: fe_count,
         velocity_managers: vec![],
+        control_velocity_managers: vec![],
       }
       .to_value_units(ValueUnits::Si);
 
@@ -102,61 +105,80 @@ impl PartialWorldSaver {
     let box_containers = &world.history.box_container;
     let num_of_iterations = world.num_of_world_iterations;
 
-    let mut kinetic_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
+    let mut kinetic_energy_atom: Vec<f64> = Vec::with_capacity(num_of_iterations);
+    let mut kinetic_energy_other: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut potential_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut potential_gravity_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut total_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
     let mut thermostat_work: Vec<f64> = Vec::with_capacity(num_of_iterations);
+    let mut p_control_energy: Vec<f64> = Vec::with_capacity(num_of_iterations);
 
     for (i, box_container_dto) in box_containers.iter().enumerate() {
-      let mut kinetic_energy_i = 0.;
+      let mut kinetic_energy_atom_i = 0.;
+      let mut kinetic_energy_other_i = 0.;
       let mut thermostat_work_i = 0.;
       let mut potential_energy_i = 0.;
       let mut potential_gravity_energy_i = 0.;
+      let mut p_control_energy_i = 0.;
 
       for atom_dto in box_container_dto.atoms.iter() {
-        kinetic_energy_i += atom_dto.kinetic_energy;
+        if atom_dto.kind == ParticleKind::Atom {
+          kinetic_energy_atom_i += atom_dto.kinetic_energy;
+        } else {
+          kinetic_energy_other_i += atom_dto.kinetic_energy;
+        }
         thermostat_work_i += atom_dto.thermostat_work;
         potential_energy_i += atom_dto.potential_energy;
         potential_gravity_energy_i += atom_dto.potential_gravity_energy;
+        p_control_energy_i += atom_dto.p_control_energy;
       }
 
       self.thermostat_work_total += thermostat_work_i;
+      self.p_control_energy_total += p_control_energy_i;
 
-      kinetic_energy.push(kinetic_energy_i);
+      kinetic_energy_atom.push(kinetic_energy_atom_i);
+      kinetic_energy_other.push(kinetic_energy_other_i);
       potential_energy.push(potential_energy_i);
       let potential_energy_i = *potential_energy.get(i).unwrap();
       potential_gravity_energy.push(potential_gravity_energy_i);
-      total_energy.push(kinetic_energy_i + potential_energy_i + potential_gravity_energy_i);
+      total_energy.push(
+        kinetic_energy_atom_i + kinetic_energy_other_i + potential_energy_i + potential_gravity_energy_i,
+      );
       thermostat_work.push(self.thermostat_work_total);
+      p_control_energy.push(self.p_control_energy_total);
     }
 
     let save_dir = Path::new(&self.save_options.save_path);
     let energy_header = match world.integration_algorithm {
       IntegrationAlgorithm::NoseHooverVerlet { .. } => &[
         "iteration",
-        "kinetic_energy",
+        "kinetic_energy_atom",
+        "kinetic_energy_other",
         "potential_energy",
         "potential_gravity_energy",
         "total_energy",
+        "p_control_energy_total",
         "thermostat_work_total",
         "thermostat_epsilon",
       ][..],
       _ => &[
         "iteration",
-        "kinetic_energy",
+        "kinetic_energy_atom",
+        "kinetic_energy_other",
         "potential_energy",
         "potential_gravity_energy",
         "total_energy",
+        "p_control_energy_total",
       ][..],
     };
     let mut wtr = csv_writer_with_header(&save_dir.join("energy.csv"), energy_header)?;
 
     assert!(
-      kinetic_energy.len() == potential_energy.len() && kinetic_energy.len() == total_energy.len()
+      kinetic_energy_atom.len() == potential_energy.len()
+        && kinetic_energy_atom.len() == total_energy.len()
     );
 
-    for i in 0..kinetic_energy.len() {
+    for i in 0..kinetic_energy_atom.len() {
       let should_save = self.energy_frame_iteration_count_current_iteration
         % world.energy_frame_iteration_count
         == 0;
@@ -172,10 +194,12 @@ impl PartialWorldSaver {
         IntegrationAlgorithm::NoseHooverVerlet { .. } => {
           wtr.write_record(&[
             format!("{}", iteration),
-            format!("{}", kinetic_energy.get(i).unwrap()),
+            format!("{}", kinetic_energy_atom.get(i).unwrap()),
+            format!("{}", kinetic_energy_other.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
             format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
+            format!("{}", p_control_energy.get(i).unwrap()),
             format!("{}", thermostat_work.get(i).unwrap()),
             format!("{}", world.history.thermostat_epsilon.get(i).unwrap()),
           ])?;
@@ -183,10 +207,12 @@ impl PartialWorldSaver {
         _ => {
           wtr.write_record(&[
             format!("{}", iteration),
-            format!("{}", kinetic_energy.get(i).unwrap()),
+            format!("{}", kinetic_energy_atom.get(i).unwrap()),
+            format!("{}", kinetic_energy_other.get(i).unwrap()),
             format!("{}", potential_energy.get(i).unwrap()),
             format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
+            format!("{}", p_control_energy.get(i).unwrap()),
           ])?;
         }
       }

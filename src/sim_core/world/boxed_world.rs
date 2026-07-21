@@ -57,6 +57,14 @@ impl BoxedWorld {
       _ => unreachable!(),
     };
 
+    assert!(
+      !particle_config
+        .atoms
+        .iter()
+        .any(|atom| matches!(atom, Particle::VelocityControlledParticle(_))),
+      "VelocityControlledParticle is only supported in OptimizedWorld"
+    );
+
     // Build VelocityManager first so we can seed the initial velocity on each
     // CustomVelocityAtom before the particles are handed to HistoryManager.
     // The first update() call will use next_iteration=1, so we compute velocities

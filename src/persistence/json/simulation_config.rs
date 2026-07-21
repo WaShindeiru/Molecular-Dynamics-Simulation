@@ -100,6 +100,14 @@ pub struct SimulationConfigFile {
   pub edge_condition: EdgeConditionFile,
   #[serde(default)]
   pub optimization: bool,
+  /// P-controller gain for VelocityControlledParticle (OptimizedWorld only). Defaults for
+  /// configs that don't use this particle type.
+  #[serde(default = "default_alpha")]
+  pub alpha: f64,
+}
+
+fn default_alpha() -> f64 {
+  1e-3
 }
 
 impl SimulationConfigFile {
@@ -125,6 +133,7 @@ impl SimulationConfigFile {
       world_type: WorldTypeFile::from_runtime(config.world_type),
       edge_condition: EdgeConditionFile::from_runtime(config.edge_condition),
       optimization: config.optimization,
+      alpha: config.alpha,
     };
 
     unitless.to_value_units(target_units)
@@ -164,6 +173,7 @@ impl SimulationConfigFile {
       unitless.world_type.to_runtime(),
       unitless.edge_condition.to_runtime(),
       unitless.optimization,
+      unitless.alpha,
     ))
   }
 
@@ -213,6 +223,7 @@ impl SimulationConfigFile {
       world_type: self.world_type,
       edge_condition: self.edge_condition,
       optimization: self.optimization,
+      alpha: self.alpha,
     }
   }
 

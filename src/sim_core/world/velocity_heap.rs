@@ -34,10 +34,21 @@ impl PartialOrd for VelocityParticle {
 impl Ord for VelocityParticle {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     match (&self.kind, &other.kind) {
-      (Atom, Atom) => self.velocity.magnitude().total_cmp(&other.velocity.magnitude()),
-    
-      (Atom, CustomPathAtom) | (Atom, CustomVelocityAtom) => std::cmp::Ordering::Greater,
-      (CustomPathAtom, Atom) | (CustomVelocityAtom, Atom) => std::cmp::Ordering::Less,
+      (Atom, Atom)
+      | (VelocityControlledParticle, VelocityControlledParticle)
+      | (Atom, VelocityControlledParticle)
+      | (VelocityControlledParticle, Atom) => {
+        self.velocity.magnitude().total_cmp(&other.velocity.magnitude())
+      }
+
+      (Atom, CustomPathAtom)
+      | (Atom, CustomVelocityAtom)
+      | (VelocityControlledParticle, CustomPathAtom)
+      | (VelocityControlledParticle, CustomVelocityAtom) => std::cmp::Ordering::Greater,
+      (CustomPathAtom, Atom)
+      | (CustomVelocityAtom, Atom)
+      | (CustomPathAtom, VelocityControlledParticle)
+      | (CustomVelocityAtom, VelocityControlledParticle) => std::cmp::Ordering::Less,
 
       (CustomPathAtom, CustomPathAtom)
       | (CustomVelocityAtom, CustomVelocityAtom)
@@ -53,6 +64,7 @@ impl From<&Particle> for VelocityParticle {
       Particle::Atom(_) => ParticleKind::Atom,
       Particle::CustomPathAtom(_) => ParticleKind::CustomPathAtom,
       Particle::CustomVelocityAtom(_) => ParticleKind::CustomVelocityAtom,
+      Particle::VelocityControlledParticle(_) => ParticleKind::VelocityControlledParticle,
     };
     
     VelocityParticle {

@@ -41,6 +41,14 @@ impl LinkedCellWorld {
       _ => unreachable!(),
     };
 
+    assert!(
+      !particle_config
+        .atoms
+        .iter()
+        .any(|atom| matches!(atom, Particle::VelocityControlledParticle(_))),
+      "VelocityControlledParticle is only supported in OptimizedWorld"
+    );
+
     let mut velocity_manager = VelocityManager::from_config(&particle_config);
     let initial_velocities = velocity_manager.compute_velocities_for_iteration(0);
     for &(particle_id, vel) in initial_velocities {
