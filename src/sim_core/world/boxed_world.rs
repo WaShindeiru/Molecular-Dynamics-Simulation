@@ -8,6 +8,8 @@ use crate::data::{ParticleConfig, SimulationConfig};
 
 use crate::persistence::dto::world::WorldDTO;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
+use crate::persistence::json::control_velocity_manager_file::ControlVelocityManagerFile;
+use crate::persistence::json::velocity_manager_file::VelocityManagerFile;
 
 use crate::particle::Particle;
 use crate::sim_core::world::WorldType;
@@ -80,6 +82,17 @@ impl BoxedWorld {
       }
     }
 
+    let velocity_managers_file: Vec<VelocityManagerFile> = particle_config
+      .velocity_schedules
+      .iter()
+      .map(VelocityManagerFile::from_schedule)
+      .collect();
+    let control_velocity_managers_file: Vec<ControlVelocityManagerFile> = particle_config
+      .control_velocity_schedules
+      .iter()
+      .map(ControlVelocityManagerFile::from_schedule)
+      .collect();
+
     let num_of_atoms = particle_config.num_of_atoms;
     let history_manager = HistoryManager::with_config(config.clone(), particle_config);
 
@@ -112,7 +125,13 @@ impl BoxedWorld {
       num_of_atoms,
       config.save_options.laamps_sampling.frame_iteration_count,
       config.save_options.energy_sampling.frame_iteration_count,
-      PartialWorldSaver::new(config.save_options.clone()),
+      PartialWorldSaver::new(
+        config.save_options.clone(),
+        velocity_managers_file.clone(),
+        control_velocity_managers_file.clone(),
+      ),
+      velocity_managers_file,
+      control_velocity_managers_file,
     );
 
     BoxedWorld {
@@ -138,6 +157,8 @@ impl BoxedWorld {
     self.integration_algorithm_state.save_temperature_particles(
       &self.config.integration_algorithm,
       &Path::new(&self.config.save_options.save_path),
+      self.persistance_reset.velocity_managers_file(),
+      self.persistance_reset.control_velocity_managers_file(),
     )?;
 
     self

@@ -129,7 +129,7 @@ impl LinkedCellHistoryManager {
     if let Some(container) = self.history.last() {
       for particle in container.particles().iter().filter_map(|p| p.as_ref()) {
         match particle.get_type() {
-          AtomType::C | AtomType::C_nanotube => c_count += 1,
+          AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => c_count += 1,
           AtomType::Fe => fe_count += 1,
         }
       }

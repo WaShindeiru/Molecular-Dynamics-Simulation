@@ -77,7 +77,7 @@ impl SimpleWorld {
       energy_frame_iteration_count,
 
       save_options: save_options.clone(),
-      world_saver: PartialWorldSaver::new(save_options),
+      world_saver: PartialWorldSaver::new(save_options, vec![], vec![]),
     }
   }
 
@@ -113,7 +113,7 @@ impl SimpleWorld {
       energy_frame_iteration_count: config.save_options.energy_sampling.frame_iteration_count,
 
       save_options: config.save_options.clone(),
-      world_saver: PartialWorldSaver::new(config.save_options.clone()),
+      world_saver: PartialWorldSaver::new(config.save_options.clone(), vec![], vec![]),
     }
   }
 
@@ -335,7 +335,7 @@ impl SimpleWorld {
     if let Some(atom_container) = self.atoms.first() {
       for particle in atom_container.get_atoms().iter() {
         match particle.get_type() {
-          AtomType::C | AtomType::C_nanotube => c_count += 1,
+          AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => c_count += 1,
           AtomType::Fe => fe_count += 1,
         }
       }

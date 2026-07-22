@@ -67,7 +67,7 @@ impl PartialWorldSaver {
 
       for atom in box_container.atoms.iter() {
         match atom.atom_type {
-          AtomType::C | AtomType::C_nanotube => c_count += 1,
+          AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => c_count += 1,
           AtomType::Fe => fe_count += 1,
         }
         particles.push(ParticleInitialState::new(
@@ -76,8 +76,8 @@ impl PartialWorldSaver {
           ParticleTypeFile::from(atom.kind),
           atom.position,
           atom.velocity,
-          None,
-          None,
+          atom.velocity_manager_id,
+          atom.control_velocity_manager_id,
         ));
       }
 
@@ -87,8 +87,8 @@ impl PartialWorldSaver {
         num_of_atoms: c_count + fe_count,
         num_of_carbon_atoms: c_count,
         num_of_iron_atoms: fe_count,
-        velocity_managers: vec![],
-        control_velocity_managers: vec![],
+        velocity_managers: self.velocity_managers_file.clone(),
+        control_velocity_managers: self.control_velocity_managers_file.clone(),
       }
       .to_value_units(ValueUnits::Si);
 

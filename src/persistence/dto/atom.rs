@@ -12,6 +12,9 @@ pub struct AtomDTO {
   pub position: Vector3<f64>,
   pub velocity: Vector3<f64>,
 
+  pub velocity_manager_id: Option<usize>,
+  pub control_velocity_manager_id: Option<usize>,
+
   pub kinetic_energy: f64,
   pub potential_energy: f64,
   pub thermostat_work: f64,

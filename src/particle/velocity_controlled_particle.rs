@@ -204,6 +204,8 @@ impl VelocityControlledParticle {
       atom_type: self.type_,
       position: self.position,
       velocity: self.velocity,
+      velocity_manager_id: None,
+      control_velocity_manager_id: Some(self.control_velocity_manager_id),
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
       thermostat_work: self.thermostat_work,

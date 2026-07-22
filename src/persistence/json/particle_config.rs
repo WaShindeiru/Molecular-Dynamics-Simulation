@@ -32,16 +32,7 @@ impl ParticleConfigFile {
     let particles = config
       .atoms
       .iter()
-      .map(|particle| {
-        let mut particle_file = ParticleInitialState::from_runtime(particle);
-        if let Particle::CustomVelocityAtom(p) = particle {
-          particle_file.velocity_manager_id = Some(p.get_particle_velocity_manager_id());
-        }
-        if let Particle::VelocityControlledParticle(p) = particle {
-          particle_file.control_velocity_manager_id = Some(p.get_control_velocity_manager_id());
-        }
-        particle_file
-      })
+      .map(ParticleInitialState::from_runtime)
       .collect();
 
     let velocity_managers = config
@@ -189,20 +180,29 @@ impl ParticleInitialState {
   }
 
   pub fn from_runtime(particle: &Particle) -> Self {
+    let velocity_manager_id = match particle {
+      Particle::CustomVelocityAtom(p) => Some(p.get_particle_velocity_manager_id()),
+      _ => None,
+    };
+    let control_velocity_manager_id = match particle {
+      Particle::VelocityControlledParticle(p) => Some(p.get_control_velocity_manager_id()),
+      _ => None,
+    };
+
     Self::new(
       particle.get_id(),
       particle.get_type(),
       ParticleTypeFile::from_runtime(particle),
       *particle.get_position(),
       *particle.get_velocity(),
-      None,
-      None,
+      velocity_manager_id,
+      control_velocity_manager_id,
     )
   }
 
   pub fn try_to_runtime(&self) -> io::Result<Particle> {
     let mass = match self.atom_type {
-      AtomType::C | AtomType::C_nanotube => ATOMIC_MASS_C,
+      AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => ATOMIC_MASS_C,
       AtomType::Fe => ATOMIC_MASS_FE,
     };
 

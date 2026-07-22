@@ -1,3 +1,4 @@
+use log::info;
 use nalgebra::Vector3;
 
 use crate::data::ParticleConfig;
@@ -58,6 +59,16 @@ impl ControlVelocityManager {
     &mut self,
     iteration: usize,
   ) -> &[(usize, (Vector3<f64>, Vector3<f64>))] {
-    self.compute_for_iteration(iteration)
+    let result = self.compute_for_iteration(iteration);
+
+    if iteration >= 5 && (iteration - 5) % 20000 == 0 {
+      info!(
+        "compute_controlled_velocities_for_iteration({iteration}): first={:?}, last={:?}",
+        result.first(),
+        result.last()
+      );
+    }
+
+    result
   }
 }

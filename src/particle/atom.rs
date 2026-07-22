@@ -145,6 +145,8 @@ impl Atom {
       atom_type: self.type_,
       position: self.position,
       velocity: self.velocity,
+      velocity_manager_id: None,
+      control_velocity_manager_id: None,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
       thermostat_work: self.thermostat_work,
@@ -232,7 +234,7 @@ impl AtomFactory {
     velocity_: Vector3<f64>,
   ) -> Particle {
     let result = match atom {
-      AtomType::C | AtomType::C_nanotube => Atom {
+      AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => Atom {
         id: self.counter,
         iteration: 0,
         type_: atom,
@@ -270,7 +272,7 @@ impl AtomFactory {
 
   fn get_atom_custom_path(&mut self, atom: AtomType, path: Vec<Vector3<f64>>) -> Particle {
     let result = match atom {
-      AtomType::C | AtomType::C_nanotube => CustomPathAtom::new(
+      AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => CustomPathAtom::new(
         self.counter,
         atom,
         ATOMIC_MASS_C,
@@ -299,7 +301,7 @@ impl AtomFactory {
     particle_velocity_manager_id: usize,
   ) -> Particle {
     let result = match atom {
-      AtomType::C | AtomType::C_nanotube => {
+      AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => {
         CustomVelocityAtom::new(self.counter, atom, ATOMIC_MASS_C, position, particle_velocity_manager_id)
       }
       AtomType::Fe => CustomVelocityAtom::new(

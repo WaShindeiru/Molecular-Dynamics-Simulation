@@ -10,7 +10,9 @@ use log::info;
 use crate::data::types::AtomType;
 use crate::data::{SimulationConfig, ValueUnits};
 use crate::persistence::dto::world::boxed::BoxedWorldDTOWithoutHistory;
+use crate::persistence::json::control_velocity_manager_file::ControlVelocityManagerFile;
 use crate::persistence::json::particle_config::{ParticleConfigFile, ParticleInitialState};
+use crate::persistence::json::velocity_manager_file::VelocityManagerFile;
 use crate::sim_core::world::boxed_world::history_manager::HistoryManager;
 use crate::sim_core::world::saver::{PartialWorldSaver, SaveOptions};
 
@@ -27,6 +29,10 @@ pub struct PersistanceReset {
   reset_counter: usize,
   number_of_resets: usize,
   saver_handle: SaverHandle,
+  // Velocity manager schedules never change once the simulation starts, so the file
+  // representation captured at world construction is reused verbatim for every save.
+  velocity_managers_file: Vec<VelocityManagerFile>,
+  control_velocity_managers_file: Vec<ControlVelocityManagerFile>,
 }
 
 impl PersistanceReset {
@@ -37,6 +43,8 @@ impl PersistanceReset {
     laamps_frame_iteration_count: usize,
     energy_frame_iteration_count: usize,
     saver: PartialWorldSaver,
+    velocity_managers_file: Vec<VelocityManagerFile>,
+    control_velocity_managers_file: Vec<ControlVelocityManagerFile>,
   ) -> Self {
     let save_enabled = config.save_options.save;
     let save_options = config.save_options.clone();
@@ -50,7 +58,17 @@ impl PersistanceReset {
       reset_counter: 1,
       number_of_resets: 0,
       saver_handle: SaverHandle::spawn(saver, save_enabled),
+      velocity_managers_file,
+      control_velocity_managers_file,
     }
+  }
+
+  pub fn velocity_managers_file(&self) -> Vec<VelocityManagerFile> {
+    self.velocity_managers_file.clone()
+  }
+
+  pub fn control_velocity_managers_file(&self) -> Vec<ControlVelocityManagerFile> {
+    self.control_velocity_managers_file.clone()
   }
 
   pub fn history_manager(&self) -> &HistoryManager {
@@ -156,7 +174,7 @@ impl PersistanceReset {
       .flat_map(|sim_box| sim_box.particles().values())
       .map(|particle| {
         match particle.get_type() {
-          AtomType::C | AtomType::C_nanotube => c_count += 1,
+          AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => c_count += 1,
           AtomType::Fe => fe_count += 1,
         }
         ParticleInitialState::from_runtime(particle)
@@ -169,8 +187,8 @@ impl PersistanceReset {
       num_of_atoms: c_count + fe_count,
       num_of_carbon_atoms: c_count,
       num_of_iron_atoms: fe_count,
-      velocity_managers: vec![],
-      control_velocity_managers: vec![],
+      velocity_managers: self.velocity_managers_file.clone(),
+      control_velocity_managers: self.control_velocity_managers_file.clone(),
     }
     .to_value_units(ValueUnits::Si);
 

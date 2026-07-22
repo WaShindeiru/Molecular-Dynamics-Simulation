@@ -3,7 +3,9 @@ use std::path::Path;
 
 use crate::persistence::dto::atom::AtomDTO;
 use crate::persistence::dto::world::WorldDTO;
+use crate::persistence::json::control_velocity_manager_file::ControlVelocityManagerFile;
 use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
+use crate::persistence::json::velocity_manager_file::VelocityManagerFile;
 use crate::persistence::json::velocity_particle::VelocityParticleFile;
 use crate::sim_core::world::velocity_heap::{VelocityHeap, VelocityParticle};
 use csv::Writer;
@@ -99,6 +101,11 @@ impl Default for SaveOptions {
 pub struct PartialWorldSaver {
   save_options: SaveOptions,
 
+  // Velocity manager schedules never change once the simulation starts, so the file
+  // representation captured at world construction is reused verbatim for every save.
+  velocity_managers_file: Vec<VelocityManagerFile>,
+  control_velocity_managers_file: Vec<ControlVelocityManagerFile>,
+
   thermostat_work_total: f64,
   p_control_energy_total: f64,
   laamps_frame_iteration_count_current_iteration: usize,
@@ -109,7 +116,11 @@ pub struct PartialWorldSaver {
 }
 
 impl PartialWorldSaver {
-  pub fn new(save_options: SaveOptions) -> Self {
+  pub fn new(
+    save_options: SaveOptions,
+    velocity_managers_file: Vec<VelocityManagerFile>,
+    control_velocity_managers_file: Vec<ControlVelocityManagerFile>,
+  ) -> Self {
     let velocity_heap = VelocityHeap::new(save_options.velocity_particles_num);
     PartialWorldSaver {
       thermostat_work_total: 0.,
@@ -119,6 +130,8 @@ impl PartialWorldSaver {
       periodic_save_iteration_count: 0,
       velocity_heap,
       save_options,
+      velocity_managers_file,
+      control_velocity_managers_file,
     }
   }
 

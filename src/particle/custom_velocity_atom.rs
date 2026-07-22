@@ -174,6 +174,8 @@ impl CustomVelocityAtom {
       atom_type: self.type_,
       position: self.position,
       velocity: self.velocity,
+      velocity_manager_id: Some(self.particle_velocity_manager_id),
+      control_velocity_manager_id: None,
       kinetic_energy: self.kinetic_energy,
       potential_energy: self.potential_energy,
       thermostat_work: self.thermostat_work,

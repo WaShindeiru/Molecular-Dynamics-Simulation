@@ -4,7 +4,9 @@ use std::path::Path;
 use crate::data::units::TEMPERATURE_U;
 use crate::data::{ParticleConfig, TimeIterationDistance, ValueUnits};
 use crate::particle::Particle;
+use crate::persistence::json::control_velocity_manager_file::ControlVelocityManagerFile;
 use crate::persistence::json::particle_config::ParticleConfigFile;
+use crate::persistence::json::velocity_manager_file::VelocityManagerFile;
 
 use super::types::{
   IntegrationAlgorithm, IntegrationStateUpdateResponse, NoseHooverStage, TemperatureHistoryEntry,
@@ -272,6 +274,8 @@ impl IntegrationAlgorithmState {
     &self,
     integration_algorithm: &IntegrationAlgorithm,
     base_path: &Path,
+    velocity_managers_file: Vec<VelocityManagerFile>,
+    control_velocity_managers_file: Vec<ControlVelocityManagerFile>,
   ) -> io::Result<()> {
     let (history, desired_temperature) = match (self, integration_algorithm) {
       (
@@ -293,7 +297,13 @@ impl IntegrationAlgorithmState {
 
       std::fs::create_dir_all(&dir_path)?;
 
-      let config = ParticleConfig::from_slice(particles);
+      let velocity_schedules = velocity_managers_file.iter().map(VelocityManagerFile::to_schedule).collect();
+      let control_velocity_schedules = control_velocity_managers_file
+        .iter()
+        .map(ControlVelocityManagerFile::to_schedule)
+        .collect();
+      let config =
+        ParticleConfig::new_with_all_schedules(particles.clone(), velocity_schedules, control_velocity_schedules);
       let config_file = ParticleConfigFile::from_runtime(&config, ValueUnits::Si);
       let json = serde_json::to_string_pretty(&config_file)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
