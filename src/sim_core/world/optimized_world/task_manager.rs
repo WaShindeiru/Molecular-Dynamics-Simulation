@@ -68,6 +68,7 @@ impl TaskManager {
     &self,
     container: Arc<LinkedCellContainer>,
     thermostat_epsilon: f64,
+    nanotube_thermostat_epsilon: Option<f64>,
     current_iteration: usize,
     time_step: f64,
   ) -> IntegrationCache {
@@ -86,6 +87,7 @@ impl TaskManager {
         history: Arc::clone(&container),
         time_step,
         previous_thermostat_epsilon: thermostat_epsilon,
+        previous_nanotube_thermostat_epsilon: nanotube_thermostat_epsilon,
         current_iteration,
       };
       self.tx_task.send(task).unwrap();

@@ -46,6 +46,7 @@ impl LinkedCellWorld {
             if let IntegrationAlgorithm::NoseHooverVerlet {
                 desired_temperature,
                 q_effective_mass: q,
+                ..
             } = &self.config.integration_algorithm
             {
                 let temp_info = desired_temperature.get(temperature_index).unwrap();

@@ -159,6 +159,7 @@ impl BoxedWorld {
       &Path::new(&self.config.save_options.save_path),
       self.persistance_reset.velocity_managers_file(),
       self.persistance_reset.control_velocity_managers_file(),
+      None,
     )?;
 
     self

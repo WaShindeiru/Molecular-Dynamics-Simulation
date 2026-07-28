@@ -110,6 +110,40 @@ impl TemperatureInfo {
   }
 }
 
+/// A second, independent Nose-Hoover schedule applied only to `Atom` particles of
+/// `AtomType::C_nanotube` (see [`crate::particle::Particle::is_nanotube_atom`]). Optional, and
+/// only meaningful for `OptimizedWorld` - if absent, the main thermostat covers those particles
+/// too.
+#[derive(Debug, Clone)]
+pub struct NanotubeThermostat {
+  pub desired_temperature: Vec<TemperatureInfo>,
+  pub q_effective_mass: f64,
+}
+
+impl NanotubeThermostat {
+  pub fn to_value_units(&self, source: ValueUnits, target: ValueUnits) -> Self {
+    NanotubeThermostat {
+      desired_temperature: self
+        .desired_temperature
+        .iter()
+        .map(|t| t.to_value_units(source, target))
+        .collect(),
+      q_effective_mass: self.q_effective_mass,
+    }
+  }
+
+  /// Reframes this thermostat as a standalone [`IntegrationAlgorithm`] so it can drive its own
+  /// [`IntegrationAlgorithmState`](super::state::IntegrationAlgorithmState) through the existing
+  /// Nose-Hoover state machine, instead of duplicating that logic.
+  pub fn as_integration_algorithm(&self) -> IntegrationAlgorithm {
+    IntegrationAlgorithm::NoseHooverVerlet {
+      desired_temperature: self.desired_temperature.clone(),
+      q_effective_mass: self.q_effective_mass,
+      nanotube_thermostat: None,
+    }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub enum IntegrationAlgorithm {
   SemiImplicitEuler,
@@ -117,6 +151,7 @@ pub enum IntegrationAlgorithm {
   NoseHooverVerlet {
     desired_temperature: Vec<TemperatureInfo>,
     q_effective_mass: f64,
+    nanotube_thermostat: Option<NanotubeThermostat>,
   },
 }
 
@@ -128,12 +163,16 @@ impl IntegrationAlgorithm {
       IntegrationAlgorithm::NoseHooverVerlet {
         desired_temperature,
         q_effective_mass,
+        nanotube_thermostat,
       } => IntegrationAlgorithm::NoseHooverVerlet {
         desired_temperature: desired_temperature
           .iter()
           .map(|t| t.to_value_units(source, target))
           .collect(),
         q_effective_mass: *q_effective_mass,
+        nanotube_thermostat: nanotube_thermostat
+          .as_ref()
+          .map(|n| n.to_value_units(source, target)),
       },
     }
   }

@@ -72,7 +72,7 @@ impl ComputationCollector {
     }
   }
 
-  pub fn set_velocity(&mut self, thermostat_epsilon: f64) {
+  pub fn set_velocity(&mut self, thermostat_epsilon: f64, nanotube_thermostat_epsilon: Option<f64>) {
     let time_step = self.config.time_step;
     let edge_condition = self.config.edge_condition;
     let subtask_size = match edge_condition {
@@ -83,16 +83,19 @@ impl ComputationCollector {
     let collision_split = edge_condition.collision_split_enabled();
 
     for id in 0..self.local_container.particles().len() {
-      if self.local_container.particles()[id].is_custom_velocity_atom() {
+      let particle = &self.local_container.particles()[id];
+      if particle.is_custom_velocity_atom() {
         continue;
       }
 
-      let effective_thermostat_epsilon =
-        if let Particle::VelocityControlledParticle(_) = &self.local_container.particles()[id] {
-          0.0
-        } else {
-          thermostat_epsilon
-        };
+      let effective_thermostat_epsilon = if let Particle::VelocityControlledParticle(_) = particle
+      {
+        0.0
+      } else if let Some(nanotube_epsilon) = nanotube_thermostat_epsilon {
+        if particle.is_nanotube_atom() { nanotube_epsilon } else { thermostat_epsilon }
+      } else {
+        thermostat_epsilon
+      };
 
       let half_velocity = self.half_velocity_cache[id];
       let compliance = &self.particle_compliance[id];
@@ -144,12 +147,19 @@ impl ComputationCollector {
   }
 
   pub fn get_mean_temperature(&self) -> f64 {
-    let relevant: Vec<_> = self
-      .local_container
-      .particles()
-      .iter()
-      .filter(|p| p.is_atom())
-      .collect();
+    Self::mean_temperature_of(self.local_container.particles().iter().filter(|p| p.is_atom()))
+  }
+
+  /// Mean temperature of the `Atom` particles the nanotube thermostat is scoped to
+  /// (see [`crate::particle::Particle::is_nanotube_atom`]).
+  pub fn get_nanotube_mean_temperature(&self) -> f64 {
+    Self::mean_temperature_of(
+      self.local_container.particles().iter().filter(|p| p.is_nanotube_atom()),
+    )
+  }
+
+  fn mean_temperature_of<'a>(particles: impl Iterator<Item = &'a Particle>) -> f64 {
+    let relevant: Vec<_> = particles.collect();
 
     let count = relevant.len();
     if count == 0 {

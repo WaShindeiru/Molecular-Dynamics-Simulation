@@ -120,6 +120,7 @@ impl LinkedCellWorld {
       &Path::new(&self.config.save_options.save_path),
       self.persistance_reset.velocity_managers_file(),
       self.persistance_reset.control_velocity_managers_file(),
+      None,
     )?;
 
     self.persistance_reset.save_full_snapshot_blocking(self.iteration)

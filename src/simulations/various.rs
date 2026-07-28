@@ -52,6 +52,7 @@ pub fn see_config_json() {
       crate::sim_core::world::thermostat::IntegrationAlgorithm::NoseHooverVerlet {
         desired_temperature: (desired_temperatures),
         q_effective_mass: (1.0),
+        nanotube_thermostat: None,
       },
     )
     .world_type(
@@ -139,6 +140,7 @@ pub fn see_temperature_info_generator_config() {
   let algorithm = IntegrationAlgorithmFile::NoseHooverVerlet {
     desired_temperature,
     q_effective_mass: 1.0,
+    nanotube_thermostat: None,
   };
 
   let json = serde_json::to_string_pretty(&algorithm.to_value_units(Unitless, Si)).unwrap();

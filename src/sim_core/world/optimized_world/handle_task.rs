@@ -23,10 +23,17 @@ pub fn handle_velocity_batch_task(
   history: &LinkedCellContainer,
   time_step: f64,
   previous_thermostat_epsilon: f64,
+  previous_nanotube_thermostat_epsilon: Option<f64>,
   current_iteration: usize,
 ) -> VelocityTaskResult {
   let edge_condition = history.edge_condition();
   let container_size = history.config().world_size;
+
+  // If no nanotube thermostat is configured, nanotube atoms fall back to the main epsilon -
+  // the split below still happens so the two calls below are always well-defined, but with
+  // matching epsilons the split has no effect on the result.
+  let nanotube_thermostat_epsilon =
+    previous_nanotube_thermostat_epsilon.unwrap_or(previous_thermostat_epsilon);
 
   let ids: Vec<usize> = cell_ids.iter().flat_map(|&cell_id| history.ids_in_cell(cell_id)).collect();
 
@@ -34,16 +41,41 @@ pub fn handle_velocity_batch_task(
     .into_iter()
     .partition(|&id| !history.particles().get(id).unwrap().is_custom_velocity_atom());
 
-  let HalfVelocityResult { half_velocity, new_position, thermostat_work, compliance } =
-    verlet_noose_hoover_half_velocity_position(
-      history,
-      &normal_ids,
-      time_step,
-      previous_thermostat_epsilon,
-      current_iteration,
-      &container_size,
-      edge_condition,
-    );
+  let (nanotube_ids, normal_ids): (Vec<usize>, Vec<usize>) = normal_ids
+    .into_iter()
+    .partition(|&id| history.particles().get(id).unwrap().is_nanotube_atom());
+
+  let mut half_velocity_result = verlet_noose_hoover_half_velocity_position(
+    history,
+    &normal_ids,
+    time_step,
+    previous_thermostat_epsilon,
+    current_iteration,
+    &container_size,
+    edge_condition,
+  );
+
+  let nanotube_half_velocity_result = verlet_noose_hoover_half_velocity_position(
+    history,
+    &nanotube_ids,
+    time_step,
+    nanotube_thermostat_epsilon,
+    current_iteration,
+    &container_size,
+    edge_condition,
+  );
+
+  half_velocity_result.half_velocity.extend(nanotube_half_velocity_result.half_velocity);
+  half_velocity_result.new_position.extend(nanotube_half_velocity_result.new_position);
+  half_velocity_result.thermostat_work.extend(nanotube_half_velocity_result.thermostat_work);
+  half_velocity_result.compliance.extend(nanotube_half_velocity_result.compliance);
+
+  let HalfVelocityResult {
+    half_velocity,
+    new_position,
+    thermostat_work,
+    compliance
+  } = half_velocity_result;
 
   let all_normal_particles: HashMap<usize, VelocityTaskParticleData> = compliance
     .into_iter()

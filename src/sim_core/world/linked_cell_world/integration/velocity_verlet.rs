@@ -52,6 +52,11 @@ impl LinkedCellWorld {
     self
       .persistance_reset
       .history_manager_mut()
+      .add_temperature(simulation_temperature);
+
+    self
+      .persistance_reset
+      .history_manager_mut()
       .push_container(computation_collector.build());
 
     self.iteration += 1;

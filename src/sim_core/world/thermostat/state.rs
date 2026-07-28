@@ -171,6 +171,7 @@ impl IntegrationAlgorithmState {
         IntegrationAlgorithm::NoseHooverVerlet {
           desired_temperature,
           q_effective_mass: _q_effective_mass,
+          ..
         },
       ) => {
         let temp_info = *desired_temperature.get(*temperature_index).unwrap();
@@ -276,6 +277,7 @@ impl IntegrationAlgorithmState {
     base_path: &Path,
     velocity_managers_file: Vec<VelocityManagerFile>,
     control_velocity_managers_file: Vec<ControlVelocityManagerFile>,
+    subdirectory: Option<&str>,
   ) -> io::Result<()> {
     let (history, desired_temperature) = match (self, integration_algorithm) {
       (
@@ -285,7 +287,10 @@ impl IntegrationAlgorithmState {
       _ => return Ok(()),
     };
 
-    let dir_path = base_path.join("particles").join("temperature");
+    let mut dir_path = base_path.join("particles").join("temperature");
+    if let Some(subdirectory) = subdirectory {
+      dir_path = dir_path.join(subdirectory);
+    }
 
     for (entry, temp_info) in history.iter().zip(desired_temperature.iter()) {
       let Some(particles) = &entry.particles else {

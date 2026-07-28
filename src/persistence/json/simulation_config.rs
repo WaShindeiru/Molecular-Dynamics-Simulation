@@ -6,6 +6,7 @@ use serde_json::Value;
 
 use crate::data::{SimulationConfig, TimeIterationDistance};
 use crate::data::units::{R_U, TIME_U, ValueUnits};
+use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use super::integration_algorithm_file::IntegrationAlgorithmFile;
 use crate::sim_core::world::saver::FrameSamplingConfig;
 use crate::utils::logging::get_save_path;
@@ -162,6 +163,18 @@ impl SimulationConfigFile {
 
     let num_of_iterations = unitless.num_of_iterations.to_iteration(unitless.time_step);
 
+    let world_type = unitless.world_type.to_runtime();
+    if let IntegrationAlgorithm::NoseHooverVerlet {
+      nanotube_thermostat: Some(_),
+      ..
+    } = &integration_algorithm
+    {
+      assert!(
+        matches!(world_type, crate::sim_core::world::WorldType::OptimizedWorld { .. }),
+        "nanotube_thermostat is only supported for OptimizedWorld"
+      );
+    }
+
     Ok(SimulationConfig::new(
       unitless.world_size,
       gravity_schedule,
@@ -170,7 +183,7 @@ impl SimulationConfigFile {
       unitless.max_iteration_till_reset,
       unitless.save_options.to_runtime(unitless.time_step),
       integration_algorithm,
-      unitless.world_type.to_runtime(),
+      world_type,
       unitless.edge_condition.to_runtime(),
       unitless.optimization,
       unitless.alpha,

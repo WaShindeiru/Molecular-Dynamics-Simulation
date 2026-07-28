@@ -14,6 +14,7 @@ mod getter;
 pub struct LinkedCellHistoryManager {
   config: SimulationConfig,
   thermostat_epsilon: Vec<f64>,
+  temperature: Vec<f64>,
   history: Vec<Arc<LinkedCellContainerOld>>,
   current_index: usize,
 }
@@ -30,12 +31,16 @@ impl LinkedCellHistoryManager {
     let mut thermostat_epsilon = Vec::with_capacity(config.max_iteration_till_reset);
     thermostat_epsilon.push(0.);
 
+    let mut temperature = Vec::with_capacity(config.max_iteration_till_reset);
+    temperature.push(0.);
+
     let mut history = Vec::with_capacity(config.max_iteration_till_reset);
     history.push(Arc::new(container));
 
     LinkedCellHistoryManager {
       config,
       thermostat_epsilon,
+      temperature,
       history,
       current_index: 0,
     }
@@ -53,12 +58,16 @@ impl LinkedCellHistoryManager {
     let mut thermostat_epsilon = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     thermostat_epsilon.push(*self.thermostat_epsilon.last().unwrap());
 
+    let mut temperature = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
+    temperature.push(*self.temperature.last().unwrap());
+
     let mut history = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     history.push(self.history.last().unwrap().clone());
 
     LinkedCellHistoryManager {
       config: self.config.clone(),
       thermostat_epsilon,
+      temperature,
       history,
       current_index: 0,
     }
@@ -76,6 +85,10 @@ impl LinkedCellHistoryManager {
     self.thermostat_epsilon.push(thermostat_epsilon);
   }
 
+  pub fn add_temperature(&mut self, temperature: f64) {
+    self.temperature.push(temperature);
+  }
+
   pub fn push_container(&mut self, container: LinkedCellContainerOld) {
     self.history.push(Arc::new(container));
     self.current_index += 1;
@@ -89,6 +102,13 @@ impl LinkedCellHistoryManager {
       panic!("Thermostat epsilon is empty!");
     }
 
+    let mut new_temperature = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
+    if let Some(last_temperature) = self.temperature.pop() {
+      new_temperature.push(last_temperature);
+    } else {
+      panic!("Temperature is empty!");
+    }
+
     let mut new_history = Vec::with_capacity(self.config.max_iteration_till_reset + 1);
     if let Some(last_container) = self.history.pop() {
       new_history.push(last_container);
@@ -99,6 +119,7 @@ impl LinkedCellHistoryManager {
     self.current_index = 0;
     self.history = new_history;
     self.thermostat_epsilon = new_thermostat_epsilon;
+    self.temperature = new_temperature;
   }
 
   pub fn to_dto(self, partial: BoxedWorldDTOWithoutHistory, lower_index: usize) -> BoxedWorldDTO {
@@ -111,7 +132,13 @@ impl LinkedCellHistoryManager {
       .iter()
       .map(|container| container.to_transfer_struct())
       .collect();
-    HistoryDTO { box_container, thermostat_epsilon: self.thermostat_epsilon }
+    HistoryDTO {
+      box_container,
+      thermostat_epsilon: self.thermostat_epsilon,
+      temperature: self.temperature,
+      nanotube_thermostat_epsilon: None,
+      nanotube_temperature: None,
+    }
   }
 
   pub fn to_transfer_struct(&self, lower_index: usize) -> HistoryDTO {
@@ -119,7 +146,13 @@ impl LinkedCellHistoryManager {
       .iter()
       .map(|container| container.to_transfer_struct())
       .collect();
-    HistoryDTO { box_container, thermostat_epsilon: self.thermostat_epsilon.clone() }
+    HistoryDTO {
+      box_container,
+      thermostat_epsilon: self.thermostat_epsilon.clone(),
+      temperature: self.temperature.clone(),
+      nanotube_thermostat_epsilon: None,
+      nanotube_temperature: None,
+    }
   }
 
   pub fn get_particle_counts(&self) -> (usize, usize, usize) {

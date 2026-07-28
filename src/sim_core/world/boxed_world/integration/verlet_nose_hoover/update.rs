@@ -40,6 +40,7 @@ impl BoxedWorld {
     if let IntegrationAlgorithm::NoseHooverVerlet {
       desired_temperature,
       q_effective_mass: q,
+      ..
     } = &self.config.integration_algorithm
     {
       let temp_info = desired_temperature.get(temperature_index).unwrap();
@@ -143,6 +144,11 @@ impl BoxedWorld {
       }
       _ => panic!("Wrong result type"),
     }
+
+    self
+      .persistance_reset
+      .history_manager_mut()
+      .add_temperature(simulation_temperature);
 
     self
       .persistance_reset

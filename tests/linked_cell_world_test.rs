@@ -36,6 +36,7 @@ fn load_world() -> (LinkedCellWorld, IntegrationAlgorithm, Vec<(usize, AtomType,
             },
         )],
         q_effective_mass: 100.0,
+        nanotube_thermostat: None,
     };
 
     let config = SimulationConfigBuilder::new()

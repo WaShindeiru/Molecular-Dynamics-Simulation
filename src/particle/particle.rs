@@ -270,6 +270,12 @@ impl Particle {
   pub fn is_atom(&self) -> bool {
     matches!(self, Particle::Atom(_))
   }
+
+  /// Particles eligible for the optional nanotube thermostat (`OptimizedWorld` only): must be
+  /// a plain `Atom` (the only kind a thermostat is defined for) of type `C_nanotube`.
+  pub fn is_nanotube_atom(&self) -> bool {
+    self.is_atom() && self.get_type() == AtomType::C_nanotube
+  }
 }
 
 pub fn compute_kinetic_energy(particles: &Vec<Particle>) -> f64 {

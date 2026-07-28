@@ -267,6 +267,7 @@ impl SimulationConfigBuilder {
             2000.,
             TimeIterationDistance::Iteration { value: 20000 },
           )],
+          nanotube_thermostat: None,
         },
       ),
       self.world_type.unwrap_or(WorldType::BoxedWorld {

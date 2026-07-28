@@ -63,6 +63,7 @@ pub fn test_reset_world_no_missing_iterations_runner(
       },
     )],
     q_effective_mass: 100.,
+    nanotube_thermostat: None,
   };
 
   let config = SimulationConfigBuilder::new()
@@ -240,6 +241,7 @@ pub fn test_reset_world_with_thermostat_runner(
       },
     )],
     q_effective_mass: 1000.,
+    nanotube_thermostat: None,
   };
 
   let config = SimulationConfigBuilder::new()
@@ -337,6 +339,7 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
       },
     )],
     q_effective_mass: 100.,
+    nanotube_thermostat: None,
   };
 
   let config = SimulationConfigBuilder::new()
@@ -628,6 +631,7 @@ pub fn test_single_reset_runner(world_type: WorldType, edge_condition: EdgeCondi
       },
     )],
     q_effective_mass: 100.,
+    nanotube_thermostat: None,
   };
 
   let config = SimulationConfigBuilder::new()
@@ -745,6 +749,7 @@ pub fn test_no_reset_runner(world_type: WorldType, edge_condition: EdgeCondition
       },
     )],
     q_effective_mass: 100.,
+    nanotube_thermostat: None,
   };
 
   let config = SimulationConfigBuilder::new()

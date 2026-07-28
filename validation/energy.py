@@ -3,12 +3,13 @@ import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import yaml
 from pathlib import Path
 
 import argparse
 import os
 
-k_b = 8.617333e-5
+TEMPERATURE_U = 11608.7
 
 
 def load_time_step(path: str) -> float:
@@ -18,16 +19,7 @@ def load_time_step(path: str) -> float:
   return float(parameters["time_step"])
 
 
-def count_atoms(path: str) -> int:
-  particles_initial_path = Path(path) / "particles_initial.json"
-  with open(particles_initial_path, encoding="utf-8") as f:
-    particles_initial = json.load(f)
-  return sum(
-    1 for particle in particles_initial["particles"] if particle["particle_type"] == "Atom"
-  )
-
-
-def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: int | None = None, end: int | None = None, temp_ylim: float | None = None) -> None:
+def show_energy_plot(path: str, use_time: bool = True, start: int | None = None, end: int | None = None, temp_ylim: float | None = None) -> None:
   energy_data = pd.read_csv(path + '/energy.csv', header=0)
   energy_data = energy_data[energy_data["iteration"] >= 1].reset_index(drop=True)
   if start is not None:
@@ -35,6 +27,9 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   if end is not None:
     energy_data = energy_data[energy_data["iteration"] <= end]
   energy_data = energy_data.reset_index(drop=True)
+
+  has_thermostat = "thermostat_epsilon" in energy_data.columns
+  has_nanotube_thermostat = "nanotube_thermostat_epsilon" in energy_data.columns
 
   iteration = energy_data["iteration"]
 
@@ -53,11 +48,15 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   potential_gravity_energy = energy_data["potential_gravity_energy"]
   total_energy = energy_data["total_energy"]
   control_energy = energy_data["p_control_energy_total"]
-  if thermostat:
+  temperature = energy_data["temperature"] * TEMPERATURE_U
+  if has_thermostat:
     thermostat_work = energy_data["thermostat_work_total"]
     thermostat_epsilon = energy_data["thermostat_epsilon"]
+  if has_nanotube_thermostat:
+    nanotube_thermostat_epsilon = energy_data["nanotube_thermostat_epsilon"]
+    nanotube_temperature = energy_data["nanotube_temperature"] * TEMPERATURE_U
 
-  if thermostat:
+  if has_thermostat:
     total_energy_show = thermostat_work + control_energy + kinetic_energy + potential_energy + potential_gravity_energy
   else:
     total_energy_show = control_energy + kinetic_energy + potential_energy + potential_gravity_energy
@@ -67,7 +66,7 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.plot(time_elapsed, total_energy_show, label="total energy")
   plt.plot(time_elapsed, control_energy, label="control energy")
   # plt.plot(time_elapsed, total_energy, label="all_energy")
-  if thermostat:
+  if has_thermostat:
     plt.plot(time_elapsed, thermostat_work, label="thermostat work")
   plt.xlabel(x_label)
   plt.ylabel("Energy [eV]")
@@ -101,7 +100,7 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.savefig(path + '/gravitational_potential_energy.png')
   plt.show()
 
-  if thermostat:
+  if has_thermostat:
     total_energy_difference = total_energy + thermostat_work + control_energy - total_energy.iloc[0]
   else:
     total_energy_difference = total_energy + control_energy - total_energy.iloc[0]
@@ -144,17 +143,8 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.savefig(path + '/total_energy.png')
   plt.show()
 
-  num_atoms = count_atoms(path)
-
-  if num_atoms > 0:
-    mean_kinetic_energy = kinetic_energy_atom / num_atoms
-  else:
-    mean_kinetic_energy = kinetic_energy_atom  # Fallback if num_atoms not found
-
-  T = 2 / 3 * mean_kinetic_energy / k_b
-
   plt.figure()
-  plt.plot(time_elapsed, T, label="Temperature")
+  plt.plot(time_elapsed, temperature, label="Temperature")
   plt.xlabel(x_label)
   plt.ylabel("Temperature [K]")
   plt.title(f"Temperature")
@@ -165,7 +155,7 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
   plt.savefig(path + '/Temperature.png')
   plt.show()
 
-  if thermostat:
+  if has_thermostat:
     plt.figure()
     plt.plot(time_elapsed, thermostat_epsilon, label="Thermostat epsilon")
     plt.xlabel(x_label)
@@ -184,6 +174,33 @@ def show_energy_plot(path: str, thermostat: bool, use_time: bool = True, start: 
     #
     # print((T - 1600).abs().min())
 
+  if has_nanotube_thermostat:
+    plt.figure()
+    plt.plot(time_elapsed, nanotube_temperature, label="Nanotube temperature")
+    plt.xlabel(x_label)
+    plt.ylabel("Temperature [K]")
+    plt.title("Nanotube Temperature")
+    if temp_ylim is not None:
+      plt.ylim(top=temp_ylim)
+    plt.legend()
+    plt.savefig(path + '/nanotube_temperature.png')
+    plt.show()
+
+    plt.figure()
+    plt.plot(time_elapsed, nanotube_thermostat_epsilon, label="Nanotube thermostat epsilon")
+    plt.xlabel(x_label)
+    plt.ylabel("thermostat epsilon")
+    plt.title("Nanotube Thermostat epsilon")
+    plt.savefig(path + "/nanotube_thermostat_epsilon.png")
+    plt.show()
+
+  evaluation = {"mean_temperature": float(temperature.mean())}
+  if has_nanotube_thermostat:
+    evaluation["mean_nanotube_temperature"] = float(nanotube_temperature.mean())
+
+  with open(path + "/evaluation.yaml", "w", encoding="utf-8") as f:
+    yaml.safe_dump(evaluation, f)
+
 
 if __name__ == "__main__":
 
@@ -192,7 +209,6 @@ if __name__ == "__main__":
   parser.add_argument("--use-time", action=argparse.BooleanOptionalAction, default=True, help="Use time as x-axis (default: True)")
   parser.add_argument("--start", type=float, default=0, help="Start iteration (default: 0)")
   parser.add_argument("--end", type=float, default=5e50, help="End iteration (default: 5e50)")
-  parser.add_argument("--thermostat", action=argparse.BooleanOptionalAction, default=True, help="Whether thermostat data is present (default: True)")
   parser.add_argument("--temp-ylim", type=float, default=None, help="Upper y-axis limit for temperature plot")
   args = parser.parse_args()
 
@@ -206,5 +222,5 @@ if __name__ == "__main__":
   # newest_folder = "../../output/2026-04-14_12-12-07_exp"
   # compare_different_temps("../../output/2026-04-14_12-12-07_exp")
 
-  show_energy_plot(args.path, args.thermostat, use_time=args.use_time, start=args.start, end=args.end, temp_ylim=args.temp_ylim)
+  show_energy_plot(args.path, use_time=args.use_time, start=args.start, end=args.end, temp_ylim=args.temp_ylim)
   # compare_different_temps(args.path)

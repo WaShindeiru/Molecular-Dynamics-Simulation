@@ -7,10 +7,7 @@ impl fmt::Display for IntegrationAlgorithm {
     match self {
       IntegrationAlgorithm::SemiImplicitEuler => write!(f, "SemiImplicitEuler"),
       IntegrationAlgorithm::VelocityVerlet => write!(f, "VelocityVerlet"),
-      IntegrationAlgorithm::NoseHooverVerlet {
-        desired_temperature: _t,
-        q_effective_mass: _q,
-      } => {
+      IntegrationAlgorithm::NoseHooverVerlet { .. } => {
         write!(f, "NoseHooverVerlet")
       }
     }

@@ -38,6 +38,10 @@ pub struct OptimizedWorld {
   pub control_velocity_manager: ControlVelocityManager,
   pub iteration: usize,
   pub integration_algorithm_state: IntegrationAlgorithmState,
+  /// Independent state for the optional nanotube-only thermostat (see
+  /// [`crate::sim_core::world::thermostat::NanotubeThermostat`]). `None` unless
+  /// `integration_algorithm` is `NoseHooverVerlet` with `nanotube_thermostat` set.
+  pub thermostat_integration_algorithm_state: Option<IntegrationAlgorithmState>,
 }
 
 impl OptimizedWorld {
@@ -105,8 +109,19 @@ impl OptimizedWorld {
       control_velocity_managers_file,
     );
 
+    let thermostat_integration_algorithm_state = match &config.integration_algorithm {
+      IntegrationAlgorithm::NoseHooverVerlet {
+        nanotube_thermostat: Some(nanotube_thermostat),
+        ..
+      } => Some(new_integration_algorithm_state(
+        &nanotube_thermostat.as_integration_algorithm(),
+      )),
+      _ => None,
+    };
+
     OptimizedWorld {
       integration_algorithm_state: new_integration_algorithm_state(&config.integration_algorithm),
+      thermostat_integration_algorithm_state,
       config,
       persistance_reset,
       task_manager,
@@ -126,7 +141,22 @@ impl OptimizedWorld {
       &Path::new(&self.config.save_options.save_path),
       self.persistance_reset.velocity_managers_file(),
       self.persistance_reset.control_velocity_managers_file(),
+      None,
     )?;
+
+    if let (Some(state), IntegrationAlgorithm::NoseHooverVerlet {
+      nanotube_thermostat: Some(nanotube_thermostat),
+      ..
+    }) = (&self.thermostat_integration_algorithm_state, &self.config.integration_algorithm)
+    {
+      state.save_temperature_particles(
+        &nanotube_thermostat.as_integration_algorithm(),
+        &Path::new(&self.config.save_options.save_path),
+        self.persistance_reset.velocity_managers_file(),
+        self.persistance_reset.control_velocity_managers_file(),
+        Some("nanotube"),
+      )?;
+    }
 
     self.persistance_reset.save_full_snapshot_blocking(self.iteration)
   }

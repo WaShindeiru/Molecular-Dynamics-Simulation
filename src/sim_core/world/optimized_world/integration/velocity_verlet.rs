@@ -15,6 +15,7 @@ impl OptimizedWorld {
     let integration_cache = self.task_manager.half_velocity_step(
       current_container,
       current_thermostat_epsilon,
+      None,
       next_iteration,
       self.config.time_step,
     );
@@ -29,7 +30,7 @@ impl OptimizedWorld {
     let mut computation_collector = self.task_manager.force_step(integration_cache);
 
     computation_collector.apply_gravity(next_iteration);
-    computation_collector.set_velocity(new_thermostat_epsilon);
+    computation_collector.set_velocity(new_thermostat_epsilon, None);
 
     let current_custom_velocities =
       self.velocity_manager.compute_velocities_for_iteration(next_iteration);
@@ -53,6 +54,11 @@ impl OptimizedWorld {
       IntegrationStateUpdateResponse::VelocityVerlet => {}
       _ => panic!("Wrong result type"),
     }
+
+    self
+      .persistance_reset
+      .history_manager_mut()
+      .add_temperature(simulation_temperature);
 
     self
       .persistance_reset

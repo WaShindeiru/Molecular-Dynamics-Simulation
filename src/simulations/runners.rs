@@ -42,6 +42,7 @@ pub fn dense_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
     desired_temperature: desired_temperatures,
     q_effective_mass: Q_EFFECTIVE_MASS,
+    nanotube_thermostat: None,
   };
 
   let world_type = WorldType::BoxedWorld {
@@ -94,6 +95,7 @@ pub fn one_particle_edge_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
     desired_temperature: desired_temperatures,
     q_effective_mass: Q_EFFECTIVE_MASS,
+    nanotube_thermostat: None,
   };
 
   let world_type = WorldType::BoxedWorld {
@@ -140,6 +142,7 @@ pub fn two_particles_edge_runner() {
   let integration_algorithm = IntegrationAlgorithm::NoseHooverVerlet {
     desired_temperature: desired_temperatures,
     q_effective_mass: Q_EFFECTIVE_MASS,
+    nanotube_thermostat: None,
   };
 
   let world_type = WorldType::BoxedWorld {
@@ -182,6 +185,7 @@ pub fn sphere_runner() {
       },
     )],
     q_effective_mass: Q_EFFECTIVE_MASS,
+    nanotube_thermostat: None,
   };
   let world_type = WorldType::BoxedWorld {
     task_manager_config: TaskManagerConfig {
@@ -219,6 +223,7 @@ pub fn triangle_runner() {
       },
     )],
     q_effective_mass: Q_EFFECTIVE_MASS,
+    nanotube_thermostat: None,
   };
   let world_type = WorldType::BoxedWorld {
     task_manager_config: TaskManagerConfig {
@@ -255,6 +260,7 @@ pub fn symmetric_triangle_test_runner() {
       },
     )],
     q_effective_mass: Q_EFFECTIVE_MASS,
+    nanotube_thermostat: None,
   };
 
   // let integration_algorithm = IntegrationAlgorithm::VelocityVerlet;

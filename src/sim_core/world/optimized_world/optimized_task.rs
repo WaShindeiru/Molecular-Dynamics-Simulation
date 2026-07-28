@@ -10,6 +10,7 @@ pub enum OptimizedTask {
     history: Arc<LinkedCellContainer>,
     time_step: f64,
     previous_thermostat_epsilon: f64,
+    previous_nanotube_thermostat_epsilon: Option<f64>,
     current_iteration: usize,
   },
   ForceBatchTask {

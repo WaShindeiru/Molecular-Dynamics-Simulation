@@ -1,9 +1,53 @@
 use crate::data::units::ValueUnits;
-use crate::sim_core::world::thermostat::IntegrationAlgorithm;
+use crate::sim_core::world::thermostat::{IntegrationAlgorithm, NanotubeThermostat};
 
 use super::temperature_info_source_file::{
   collect_temperature_infos_from_file, TemperatureInfoSourceFile,
 };
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct NanotubeThermostatFile {
+  pub desired_temperature: Vec<TemperatureInfoSourceFile>,
+  pub q_effective_mass: f64,
+}
+
+impl NanotubeThermostatFile {
+  pub fn from_runtime(thermostat: &NanotubeThermostat) -> Self {
+    NanotubeThermostatFile {
+      desired_temperature: thermostat
+        .desired_temperature
+        .iter()
+        .map(TemperatureInfoSourceFile::from_runtime)
+        .collect(),
+      q_effective_mass: thermostat.q_effective_mass,
+    }
+  }
+
+  pub fn to_runtime(&self) -> Result<NanotubeThermostat, String> {
+    Ok(NanotubeThermostat {
+      desired_temperature: collect_temperature_infos_from_file(&self.desired_temperature)?,
+      q_effective_mass: self.q_effective_mass,
+    })
+  }
+
+  pub fn to_value_units(&self, source: ValueUnits, target: ValueUnits) -> Self {
+    NanotubeThermostatFile {
+      desired_temperature: self
+        .desired_temperature
+        .iter()
+        .map(|entry| match entry {
+          TemperatureInfoSourceFile::Direct(file) => {
+            TemperatureInfoSourceFile::Direct(file.to_value_units(source, target))
+          }
+          TemperatureInfoSourceFile::Simple(file) => {
+            TemperatureInfoSourceFile::Simple(file.to_value_units(source, target))
+          }
+        })
+        .collect(),
+      q_effective_mass: self.q_effective_mass,
+    }
+  }
+}
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
@@ -13,6 +57,8 @@ pub enum IntegrationAlgorithmFile {
   NoseHooverVerlet {
     desired_temperature: Vec<TemperatureInfoSourceFile>,
     q_effective_mass: f64,
+    #[serde(default)]
+    nanotube_thermostat: Option<NanotubeThermostatFile>,
   },
 }
 
@@ -24,12 +70,14 @@ impl IntegrationAlgorithmFile {
       IntegrationAlgorithm::NoseHooverVerlet {
         desired_temperature,
         q_effective_mass,
+        nanotube_thermostat,
       } => IntegrationAlgorithmFile::NoseHooverVerlet {
         desired_temperature: desired_temperature
           .iter()
           .map(TemperatureInfoSourceFile::from_runtime)
           .collect(),
         q_effective_mass: *q_effective_mass,
+        nanotube_thermostat: nanotube_thermostat.as_ref().map(NanotubeThermostatFile::from_runtime),
       },
     }
   }
@@ -41,9 +89,14 @@ impl IntegrationAlgorithmFile {
       IntegrationAlgorithmFile::NoseHooverVerlet {
         desired_temperature,
         q_effective_mass,
+        nanotube_thermostat,
       } => Ok(IntegrationAlgorithm::NoseHooverVerlet {
         desired_temperature: collect_temperature_infos_from_file(desired_temperature)?,
         q_effective_mass: *q_effective_mass,
+        nanotube_thermostat: nanotube_thermostat
+          .as_ref()
+          .map(NanotubeThermostatFile::to_runtime)
+          .transpose()?,
       }),
     }
   }
@@ -55,6 +108,7 @@ impl IntegrationAlgorithmFile {
       IntegrationAlgorithmFile::NoseHooverVerlet {
         desired_temperature,
         q_effective_mass,
+        nanotube_thermostat,
       } => IntegrationAlgorithmFile::NoseHooverVerlet {
         desired_temperature: desired_temperature
           .iter()
@@ -68,6 +122,9 @@ impl IntegrationAlgorithmFile {
           })
           .collect(),
         q_effective_mass: *q_effective_mass,
+        nanotube_thermostat: nanotube_thermostat
+          .as_ref()
+          .map(|n| n.to_value_units(source, target)),
       },
     }
   }

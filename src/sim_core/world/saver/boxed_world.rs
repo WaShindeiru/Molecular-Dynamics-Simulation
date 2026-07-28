@@ -149,8 +149,9 @@ impl PartialWorldSaver {
     }
 
     let save_dir = Path::new(&self.save_options.save_path);
-    let energy_header = match world.integration_algorithm {
-      IntegrationAlgorithm::NoseHooverVerlet { .. } => &[
+    let has_nanotube_thermostat = world.history.nanotube_thermostat_epsilon.is_some();
+    let mut energy_header: Vec<&str> = match world.integration_algorithm {
+      IntegrationAlgorithm::NoseHooverVerlet { .. } => vec![
         "iteration",
         "kinetic_energy_atom",
         "kinetic_energy_other",
@@ -160,8 +161,9 @@ impl PartialWorldSaver {
         "p_control_energy_total",
         "thermostat_work_total",
         "thermostat_epsilon",
-      ][..],
-      _ => &[
+        "temperature",
+      ],
+      _ => vec![
         "iteration",
         "kinetic_energy_atom",
         "kinetic_energy_other",
@@ -169,9 +171,14 @@ impl PartialWorldSaver {
         "potential_gravity_energy",
         "total_energy",
         "p_control_energy_total",
-      ][..],
+        "temperature",
+      ],
     };
-    let mut wtr = csv_writer_with_header(&save_dir.join("energy.csv"), energy_header)?;
+    if has_nanotube_thermostat {
+      energy_header.push("nanotube_thermostat_epsilon");
+      energy_header.push("nanotube_temperature");
+    }
+    let mut wtr = csv_writer_with_header(&save_dir.join("energy.csv"), &energy_header)?;
 
     assert!(
       kinetic_energy_atom.len() == potential_energy.len()
@@ -192,7 +199,7 @@ impl PartialWorldSaver {
 
       match world.integration_algorithm {
         IntegrationAlgorithm::NoseHooverVerlet { .. } => {
-          wtr.write_record(&[
+          let mut record = vec![
             format!("{}", iteration),
             format!("{}", kinetic_energy_atom.get(i).unwrap()),
             format!("{}", kinetic_energy_other.get(i).unwrap()),
@@ -202,7 +209,18 @@ impl PartialWorldSaver {
             format!("{}", p_control_energy.get(i).unwrap()),
             format!("{}", thermostat_work.get(i).unwrap()),
             format!("{}", world.history.thermostat_epsilon.get(i).unwrap()),
-          ])?;
+            format!("{}", world.history.temperature.get(i).unwrap()),
+          ];
+
+          if let (Some(nanotube_thermostat_epsilon), Some(nanotube_temperature)) = (
+            &world.history.nanotube_thermostat_epsilon,
+            &world.history.nanotube_temperature,
+          ) {
+            record.push(format!("{}", nanotube_thermostat_epsilon.get(i).unwrap()));
+            record.push(format!("{}", nanotube_temperature.get(i).unwrap()));
+          }
+
+          wtr.write_record(&record)?;
         }
         _ => {
           wtr.write_record(&[
@@ -213,6 +231,7 @@ impl PartialWorldSaver {
             format!("{}", potential_gravity_energy.get(i).unwrap()),
             format!("{}", total_energy.get(i).unwrap()),
             format!("{}", p_control_energy.get(i).unwrap()),
+            format!("{}", world.history.temperature.get(i).unwrap()),
           ])?;
         }
       }

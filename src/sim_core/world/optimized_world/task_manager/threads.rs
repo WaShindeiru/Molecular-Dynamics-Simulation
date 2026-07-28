@@ -45,6 +45,7 @@ fn worker_task_handle(
           history,
           time_step,
           previous_thermostat_epsilon,
+          previous_nanotube_thermostat_epsilon,
           current_iteration,
         } => {
           let velocity_result = handle_velocity_batch_task(
@@ -53,6 +54,7 @@ fn worker_task_handle(
             &history,
             time_step,
             previous_thermostat_epsilon,
+            previous_nanotube_thermostat_epsilon,
             current_iteration,
           );
           result_tx.send(OptimizedResult::VelocityResult(velocity_result)).unwrap();

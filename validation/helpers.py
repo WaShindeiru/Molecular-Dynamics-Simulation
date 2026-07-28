@@ -65,9 +65,39 @@ def revert_high_velocity_controlled_particles(input_path, output_path):
         json.dump(data, f, indent=2)
 
 
+def remove_nanotube_particles(input_path, output_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    data["particles"] = [
+        particle
+        for particle in data["particles"]
+        if particle.get("atom_type") not in ("C_nanotube_static", "C_nanotube")
+    ]
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def convert_velocity_controlled_into_atom(input_path, output_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    for particle in data["particles"]:
+        if particle["particle_type"] == "VelocityControlledParticle":
+            assert("control_velocity_manager_id" in particle)
+            particle["particle_type"] = "Atom"
+            del particle["control_velocity_manager_id"]
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
 if __name__ == "__main__":
     input_path = sys.argv[1]
     output_path = sys.argv[2]
-    revert_high_velocity_controlled_particles(input_path, output_path)
+    convert_velocity_controlled_into_atom(input_path, output_path)
+    # remove_nanotube_particles(input_path, output_path)
+    # revert_high_velocity_controlled_particles(input_path, output_path)
     # transform_particles(input_path, output_path)
     # move_custom_velocity_atoms(input_path, output_path, 1e-11)
