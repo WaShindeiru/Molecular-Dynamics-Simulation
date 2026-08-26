@@ -9,6 +9,8 @@ from pathlib import Path
 import argparse
 import os
 
+from numpy.ma.core import size
+
 TEMPERATURE_U = 11608.7
 
 
@@ -17,6 +19,8 @@ def load_time_step(path: str) -> float:
   with open(parameters_path, encoding="utf-8") as f:
     parameters = json.load(f)
   return float(parameters["time_step"])
+
+
 
 
 def show_energy_plot(path: str, use_time: bool = True, start: int | None = None, end: int | None = None, temp_ylim: float | None = None) -> None:
@@ -36,10 +40,10 @@ def show_energy_plot(path: str, use_time: bool = True, start: int | None = None,
   if use_time:
     time_step = load_time_step(path)
     time_elapsed = iteration * time_step
-    x_label = "time elapsed [s]"
+    x_label = "czas [s]"
   else:
     time_elapsed = iteration
-    x_label = "iteration"
+    x_label = "iteracja"
 
   kinetic_energy_atom = energy_data["kinetic_energy_atom"]
   kinetic_energy_other = energy_data["kinetic_energy_other"]
@@ -79,16 +83,22 @@ def show_energy_plot(path: str, use_time: bool = True, start: int | None = None,
   plt.savefig(path + '/energy.png')
   plt.show()
 
-  # plt.figure()
-  # plt.plot(time_elapsed, kinetic_energy, label="kinetic energy")
-  # plt.plot(time_elapsed, potential_energy, label="potential energy")
-  # plt.plot(time_elapsed, total_energy_show, label="total energy")
-  # plt.xlabel(x_label)
-  # plt.ylabel("Energy [eV]")
-  # plt.title("Energy plot")
-  # plt.legend()
-  # plt.savefig(path + '/energy_simple.png')
-  # plt.show()
+  plt.figure()
+  plt.plot(time_elapsed, kinetic_energy, label="energia kinetyczna")
+  plt.plot(time_elapsed, potential_energy, label="energia potencjalna")
+  plt.plot(time_elapsed, total_energy_show, label="energia całkowita")
+  plt.xlabel(x_label, fontsize=14)
+  plt.ylabel("Energia [eV]", fontsize=14)
+  plt.title("Energia", fontsize=17)
+  plt.grid(True, alpha=0.3)
+  plt.tick_params(axis='x', labelsize=12)  # x-axis only
+  plt.tick_params(axis='y', labelsize=12)  # y-axis only
+  plt.gca().xaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes\
+  plt.gca().yaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes
+  plt.legend(fontsize=14)
+  plt.tight_layout()
+  plt.savefig(path + '/energy_simple.png')
+  plt.show()
 
   plt.figure()
   plt.plot(time_elapsed, potential_gravity_energy, label="gravitational pot energy")
@@ -101,12 +111,14 @@ def show_energy_plot(path: str, use_time: bool = True, start: int | None = None,
   plt.show()
 
   if has_thermostat:
-    total_energy_difference = total_energy + thermostat_work + control_energy - total_energy.iloc[0]
+    total_energy_all = total_energy + thermostat_work + control_energy
   else:
-    total_energy_difference = total_energy + control_energy - total_energy.iloc[0]
+    total_energy_all = total_energy + control_energy
+
+  total_energy_difference = total_energy_all - total_energy_all.iloc[0]
 
   plt.figure()
-  plt.plot(time_elapsed, total_energy_difference, label="Total energy error")
+  plt.plot(time_elapsed, total_energy_difference, label="Zmiana energii")
 
   max_error_label = total_energy_difference.diff().argmax()
   print(max_error_label)
@@ -114,13 +126,62 @@ def show_energy_plot(path: str, use_time: bool = True, start: int | None = None,
   # diff = total_energy_difference[(time_elapsed > 0.7e-11) & (time_elapsed < 0.71e-11)]
   # print(diff)
 
-  plt.xlabel(x_label)
-  plt.ylabel("Energy [eV]")
-  plt.title("Total energy error")
+  plt.xlabel(x_label, fontsize=14)
+  plt.ylabel("Energia [eV]", fontsize=14)
+  plt.title("Zmiana energii symulacji", fontsize=17)
+  plt.grid(True, alpha=0.3)
+  plt.tick_params(axis='x', labelsize=12)  # x-axis only
+  plt.tick_params(axis='y', labelsize=12)  # y-axis only\
+  plt.legend(fontsize=14)
+  plt.gca().xaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes\
+  plt.gca().yaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes
+  plt.tight_layout()
   # plt.xlim([0, 2.3e-10])
   # plt.ylim([0, 60])
   # plt.xlim([0, 3e-10])
   plt.savefig(path + '/energy_difference.png')
+  plt.show()
+
+  # Per-iteration absolute energy differences
+  abs_energy_diff = np.abs(total_energy_all.diff().iloc[1:])
+  cumulative_energy_change = abs_energy_diff.cumsum()
+
+  # Create full series with first value = 0
+  cumulative_energy_change_full = pd.Series(index=total_energy_all.index, dtype=float)
+  cumulative_energy_change_full.iloc[0] = 0
+  cumulative_energy_change_full.iloc[1:] = cumulative_energy_change.values
+
+  # FIGURE 1: Cumulative absolute energy change
+  plt.figure()
+  plt.plot(time_elapsed, cumulative_energy_change_full, label="Błąd energii")
+  plt.xlabel(x_label, fontsize=14)
+  plt.ylabel("Energia [eV]", fontsize=14)
+  plt.title('Błąd energii symulacji', fontsize=17)
+  plt.tick_params(axis='x', labelsize=12)  # x-axis only
+  plt.tick_params(axis='y', labelsize=12)  # y-axis only
+  plt.gca().xaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes\
+  plt.gca().yaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes
+  plt.legend(fontsize=14)
+  plt.grid(True, alpha=0.3)
+  plt.tight_layout()
+  plt.savefig(path + '/energy_difference_momentum.png')
+  plt.show()
+
+  # FIGURE 2: Normalized by initial energy
+  plt.figure()
+  plt.plot(time_elapsed, cumulative_energy_change_full / np.abs(total_energy_all.iloc[0]),
+           label="Względny błąd energii")
+  plt.xlabel(x_label, fontsize=14)
+  plt.ylabel("Względny błąd energii", fontsize=14)
+  plt.title('Względny błąd energii symulacji', fontsize=17)
+  plt.tick_params(axis='x', labelsize=12)  # x-axis only
+  plt.tick_params(axis='y', labelsize=12)  # y-axis only
+  plt.gca().xaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes\
+  plt.gca().yaxis.get_offset_text().set_fontsize(14)  # gca() = get current axes
+  plt.legend(fontsize=14)
+  plt.grid(True, alpha=0.3)
+  plt.tight_layout()
+  plt.savefig(path + '/energy_difference_momentum_relative.png')
   plt.show()
 
   # plt.figure()

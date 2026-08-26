@@ -93,10 +93,44 @@ def convert_velocity_controlled_into_atom(input_path, output_path):
         json.dump(data, f, indent=2)
 
 
+def filter_particles_in_box(input_path, output_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    data["particles"] = [
+        particle
+        for particle in data["particles"]
+        if (
+            0 <= particle["position"]["x"] <= 12e-10
+            and 0 <= particle["position"]["y"] <= 12e-10
+            and 11e-10 <= particle["position"]["z"] <= 19e-10
+        )
+    ]
+
+    for i, particle in enumerate(data["particles"]):
+        particle["id"] = i
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def translate_particles(input_path, output_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    for particle in data["particles"]:
+        particle["position"]["x"] += 2e-10
+        particle["position"]["y"] += 2e-10
+        particle["position"]["z"] += -9e-10
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
 if __name__ == "__main__":
     input_path = sys.argv[1]
     output_path = sys.argv[2]
-    convert_velocity_controlled_into_atom(input_path, output_path)
+    translate_particles(input_path, output_path)
     # remove_nanotube_particles(input_path, output_path)
     # revert_high_velocity_controlled_particles(input_path, output_path)
     # transform_particles(input_path, output_path)
