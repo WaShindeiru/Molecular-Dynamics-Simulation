@@ -24,7 +24,11 @@ pub mod vel_man_reindex;
 
 /// Run molecular dynamics simulation from JSON config files.
 #[derive(Debug, Parser)]
-#[command(name = "carbon_nanotube", version, about)]
+#[command(
+  name = "carbon_nanotube",
+  version = concat!(env!("CARGO_PKG_VERSION"), " (", env!("GIT_HASH"), ")"),
+  about
+)]
 pub struct Cli {
   #[command(subcommand)]
   pub command: Command,

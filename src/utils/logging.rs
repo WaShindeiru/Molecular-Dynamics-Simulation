@@ -18,6 +18,9 @@ pub fn get_save_path(prefix: String) -> String {
   prefix + &*time_string
 }
 
+/// Git commit hash embedded at compile time (see `build.rs`). Suffix `-dirty` if the tree was dirty.
+pub const GIT_HASH: &str = env!("GIT_HASH");
+
 pub fn init_logging(directory: String) {
   let label = "simulation";
 
@@ -33,4 +36,6 @@ pub fn init_logging(directory: String) {
       .start()
       .expect("failed to start flexi_logger")
   });
+
+  log::info!("Binary git commit: {GIT_HASH}");
 }
