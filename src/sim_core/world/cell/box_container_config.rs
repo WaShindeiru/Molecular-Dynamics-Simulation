@@ -105,6 +105,16 @@ pub fn new_config(atoms: &[Particle], world_size: Vector3<f64>) -> BoxContainerC
     box_count_y as usize,
     box_count_z as usize,
   );
+  assert!(
+    box_count_dim.x >= 3 && box_count_dim.y >= 3 && box_count_dim.z >= 3,
+    "linked-cell grid must be at least 3x3x3 to avoid duplicate periodic neighbour images; \
+     got {}x{}x{} (world_size={:?}, cell target length={})",
+    box_count_dim.x,
+    box_count_dim.y,
+    box_count_dim.z,
+    world_size,
+    box_length_,
+  );
   let box_count = box_count_dim.x * box_count_dim.y * box_count_dim.z;
 
   let box_length_x = world_size.x / box_count_x;
