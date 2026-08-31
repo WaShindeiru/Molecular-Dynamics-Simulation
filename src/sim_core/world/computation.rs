@@ -32,6 +32,20 @@ pub fn rescale_with_thermostat(
   velocity / scale
 }
 
+/// Work from the ξ(t) friction term during the first half of the Verlet step.
+/// Uses displacement v(t)·Δt/2 — the second half is tracked via
+/// [`compute_thermostat_rescaling_work`] in `set_velocity`.
+pub fn compute_thermostat_force_work(
+  thermostat_epsilon: f64,
+  mass: f64,
+  velocity: Vector3<f64>,
+  time_step: f64,
+) -> f64 {
+  let thermostat_force = thermostat_epsilon * mass * velocity;
+  let thermostat_path = velocity * (time_step / 2.0);
+  thermostat_force.dot(&thermostat_path)
+}
+
 /// Kinetic energy removed by thermostat velocity rescaling (step 6).
 /// Positive when ξ > 0 (cooling), matching the sign convention of the half-step force work.
 pub fn compute_thermostat_rescaling_work(
@@ -91,6 +105,24 @@ mod tests {
 
     let work = compute_thermostat_rescaling_work(velocity, mass, thermostat_epsilon, time_step);
     assert!(work > 0.0);
+  }
+
+  #[test]
+  fn force_and_rescaling_work_approximate_full_step_path_work() {
+    let velocity = Vector3::new(100.0, 50.0, 25.0);
+    let mass = 12.0;
+    let thermostat_epsilon = 0.8;
+    let time_step = 1e-15;
+
+    let half_step_work =
+      compute_thermostat_force_work(thermostat_epsilon, mass, velocity, time_step);
+    let rescaling_work =
+      compute_thermostat_rescaling_work(velocity, mass, thermostat_epsilon, time_step);
+
+    // Old code used the full-step path v·Δt (≈2× the first-half path v·Δt/2).
+    let full_step_path_work = thermostat_epsilon * mass * velocity.magnitude_squared() * time_step;
+
+    assert!((half_step_work + rescaling_work - full_step_path_work).abs() < full_step_path_work.abs() * 0.2);
   }
 
   #[test]

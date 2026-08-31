@@ -2,7 +2,7 @@ use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::periodic::{check_position_constraint_periodic, check_position_constraint_periodic_all, check_position_constraint_periodic_quadratic};
 use crate::sim_core::world::boundary_constraint::simple::check_position_constraint_simple;
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
-use crate::utils::math::cos_from_vec;
+use crate::sim_core::world::computation::compute_thermostat_force_work;
 use nalgebra::Vector3;
 use std::collections::HashMap;
 
@@ -66,12 +66,12 @@ where
     if current_iteration == 0 {
       thermostat_work = 0.;
     } else {
-      let thermostat_force =
-        previous_thermostat_epsilon * atom_i.get_mass() * atom_i.get_velocity();
-      let thermostat_path = next_position - previous_position;
-      thermostat_work = thermostat_force.magnitude()
-        * thermostat_path.magnitude()
-        * cos_from_vec(&thermostat_force, &thermostat_path);
+      thermostat_work = compute_thermostat_force_work(
+        previous_thermostat_epsilon,
+        atom_i.get_mass(),
+        *atom_i.get_velocity(),
+        time_step,
+      );
     }
 
     compliance_cache.insert(i_id, compliance);

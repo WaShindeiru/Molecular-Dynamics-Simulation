@@ -17,6 +17,7 @@ use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::comput
 use crate::sim_core::world::cell::{FixedPositionParticle, LinkedCellContainer};
 use crate::sim_core::world::computation::FP;
 use crate::utils::math::cos_from_vec;
+use crate::sim_core::world::computation::compute_thermostat_force_work;
 
 /// Same physics as `crate::sim_core::world::computation::compute_forces_potential`, but
 /// operating on plain `{id, position}` pairs (already periodic-adjusted, see
@@ -184,9 +185,12 @@ pub fn verlet_noose_hoover_half_velocity_position(
     let thermostat_work = if current_iteration == 0 || !atom_i.is_atom() {
       0.
     } else {
-      let thermostat_force = previous_thermostat_epsilon * atom_i.get_mass() * atom_i.get_velocity();
-      let thermostat_path = next_position - previous_position;
-      thermostat_force.magnitude() * thermostat_path.magnitude() * cos_from_vec(&thermostat_force, &thermostat_path)
+      compute_thermostat_force_work(
+        previous_thermostat_epsilon,
+        atom_i.get_mass(),
+        *atom_i.get_velocity(),
+        time_step,
+      )
     };
 
     compliance_cache.insert(i_id, compliance);
