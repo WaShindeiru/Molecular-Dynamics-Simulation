@@ -5,7 +5,9 @@ use crate::data::units::K_B;
 use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_task::ForceTaskParticleData;
-use crate::sim_core::world::computation::{compute_new_velocity};
+use crate::sim_core::world::computation::{
+  compute_new_velocity, compute_thermostat_rescaling_work, rescale_with_thermostat,
+};
 use crate::sim_core::world::linked_cell_world::LinkedCellContainerOld;
 
 pub struct ComputationCollector {
@@ -98,12 +100,23 @@ impl ComputationCollector {
         time_step
       };
       let particle = self.local_container.particle_mut(id);
-      let new_velocity = compute_new_velocity(
+      let velocity_without_thermostat = compute_new_velocity(
         half_velocity,
         *particle.get_acceleration(),
+        effective_time_step,
+      );
+      let rescaling_work = compute_thermostat_rescaling_work(
+        velocity_without_thermostat,
+        particle.get_mass(),
         thermostat_epsilon,
         effective_time_step,
       );
+      let new_velocity = rescale_with_thermostat(
+        velocity_without_thermostat,
+        thermostat_epsilon,
+        effective_time_step,
+      );
+      particle.set_thermostat_work(particle.get_thermostat_work() + rescaling_work);
       particle.set_velocity(new_velocity);
     }
   }

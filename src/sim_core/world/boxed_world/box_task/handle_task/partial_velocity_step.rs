@@ -4,7 +4,9 @@ use crate::particle::Particle;
 use crate::sim_core::world::boundary_constraint::{EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boundary_constraint::periodic::apply_velocity_constraint_periodic;
 use crate::sim_core::world::boxed_world::integration::verlet_nose_hoover::computation::{HalfVelocityResult, verlet_noose_hoover_half_velocity_position};
-use crate::sim_core::world::computation::compute_new_velocity;
+use crate::sim_core::world::computation::{
+  compute_new_velocity, compute_thermostat_rescaling_work, rescale_with_thermostat,
+};
 use nalgebra::Vector3;
 
 pub struct PartialVelocityStepParticle {
@@ -111,12 +113,27 @@ impl PartialVelocityStep {
 
     let new_velocity: HashMap<usize, Vector3<f64>> = corrected_half_velocity
       .iter()
-      .map(|(id, half_vel)| 
-        (*id, compute_new_velocity(
-          half_vel.clone(), 
-          *previous_particles.get(id).unwrap().particle.get_acceleration(), 
-          self.thermostat_epsilon, 
-          self.time_step_coef)))
+      .map(|(id, half_vel)| {
+        let particle = &previous_particles.get(id).unwrap().particle;
+        let velocity_without_thermostat = compute_new_velocity(
+          half_vel.clone(),
+          *particle.get_acceleration(),
+          self.time_step_coef,
+        );
+        let rescaling_work = compute_thermostat_rescaling_work(
+          velocity_without_thermostat,
+          particle.get_mass(),
+          self.thermostat_epsilon,
+          self.time_step_coef,
+        );
+        *self.thermostat_work.get_mut(id).unwrap() += rescaling_work;
+        let new_vel = rescale_with_thermostat(
+          velocity_without_thermostat,
+          self.thermostat_epsilon,
+          self.time_step_coef,
+        );
+        (*id, new_vel)
+      })
       .collect();
 
     let new_particles: HashMap<usize, PartialVelocityStepParticle> = previous_particles

@@ -18,12 +18,95 @@ pub struct FP {
 pub fn compute_new_velocity(
   half_velocity: Vector3<f64>,
   acceleration: Vector3<f64>,
+  time_step: f64,
+) -> Vector3<f64> {
+  half_velocity + 0.5 * acceleration * time_step
+}
+
+pub fn rescale_with_thermostat(
+  velocity: Vector3<f64>,
   thermostat_epsilon: f64,
   time_step: f64,
 ) -> Vector3<f64> {
-  let numerator = half_velocity + 0.5 * acceleration * time_step;
-  let denominator = 1.0 + 0.5 * time_step * thermostat_epsilon;
-  numerator / denominator
+  let scale = 1.0 + 0.5 * time_step * thermostat_epsilon;
+  velocity / scale
+}
+
+/// Kinetic energy removed by thermostat velocity rescaling (step 6).
+/// Positive when ξ > 0 (cooling), matching the sign convention of the half-step force work.
+pub fn compute_thermostat_rescaling_work(
+  velocity_before_rescale: Vector3<f64>,
+  mass: f64,
+  thermostat_epsilon: f64,
+  time_step: f64,
+) -> f64 {
+  let scale = 1.0 + 0.5 * time_step * thermostat_epsilon;
+  let ke_before = 0.5 * mass * velocity_before_rescale.magnitude_squared();
+  ke_before * (1.0 - 1.0 / (scale * scale))
+}
+
+pub fn compute_final_velocity(
+  half_velocity: Vector3<f64>,
+  acceleration: Vector3<f64>,
+  thermostat_epsilon: f64,
+  time_step: f64,
+) -> Vector3<f64> {
+  let velocity_without_thermostat = compute_new_velocity(half_velocity, acceleration, time_step);
+  rescale_with_thermostat(velocity_without_thermostat, thermostat_epsilon, time_step)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use nalgebra::Vector3;
+
+  #[test]
+  fn compute_final_velocity_matches_old_formula() {
+    let half_velocity = Vector3::new(1.0, 2.0, 3.0);
+    let acceleration = Vector3::new(0.1, -0.2, 0.3);
+    let thermostat_epsilon = 0.5;
+    let time_step = 1e-15;
+
+    let numerator = half_velocity + 0.5 * acceleration * time_step;
+    let denominator = 1.0 + 0.5 * time_step * thermostat_epsilon;
+    let expected = numerator / denominator;
+
+    let actual = compute_final_velocity(half_velocity, acceleration, thermostat_epsilon, time_step);
+    assert!((actual - expected).magnitude() < 1e-20);
+  }
+
+  #[test]
+  fn rescale_with_thermostat_is_identity_when_epsilon_is_zero() {
+    let velocity = Vector3::new(1.0, 2.0, 3.0);
+    let rescaled = rescale_with_thermostat(velocity, 0.0, 1e-15);
+    assert!((rescaled - velocity).magnitude() < 1e-20);
+  }
+
+  #[test]
+  fn rescaling_work_positive_when_cooling() {
+    let velocity = Vector3::new(100.0, 0.0, 0.0);
+    let mass = 12.0;
+    let thermostat_epsilon = 1.0;
+    let time_step = 1e-15;
+
+    let work = compute_thermostat_rescaling_work(velocity, mass, thermostat_epsilon, time_step);
+    assert!(work > 0.0);
+  }
+
+  #[test]
+  fn rescaling_work_equals_ke_before_minus_ke_after() {
+    let velocity = Vector3::new(100.0, 50.0, 25.0);
+    let mass = 12.0;
+    let thermostat_epsilon = 0.8;
+    let time_step = 1.0;
+
+    let work = compute_thermostat_rescaling_work(velocity, mass, thermostat_epsilon, time_step);
+    let final_velocity = rescale_with_thermostat(velocity, thermostat_epsilon, time_step);
+    let ke_before = 0.5 * mass * velocity.magnitude_squared();
+    let ke_after = 0.5 * mass * final_velocity.magnitude_squared();
+
+    assert!((work - (ke_before - ke_after)).abs() < 1e-10);
+  }
 }
 
 pub trait ForceComputationOperations {
