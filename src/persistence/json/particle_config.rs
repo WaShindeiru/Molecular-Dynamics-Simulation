@@ -107,6 +107,23 @@ impl ParticleConfigFile {
     self
   }
 
+  pub fn reindex(&mut self) {
+    for (new_id, particle) in self.particles.iter_mut().enumerate() {
+      particle.id = new_id;
+    }
+
+    let (carbon, iron) = self.particles.iter().fold((0usize, 0usize), |acc, particle| {
+      match particle.atom_type {
+        AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static => (acc.0 + 1, acc.1),
+        AtomType::Fe => (acc.0, acc.1 + 1),
+      }
+    });
+
+    self.num_of_atoms = self.particles.len();
+    self.num_of_carbon_atoms = carbon;
+    self.num_of_iron_atoms = iron;
+  }
+
   pub fn to_value_units(&self, target: ValueUnits) -> Self {
     let source = self.value_units;
     let position_scale = ValueUnits::scale_between(source, target, R_U);

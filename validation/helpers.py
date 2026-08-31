@@ -119,18 +119,81 @@ def translate_particles(input_path, output_path):
         data = json.load(f)
 
     for particle in data["particles"]:
-        particle["position"]["x"] += 2e-10
-        particle["position"]["y"] += 2e-10
-        particle["position"]["z"] += -9e-10
+        particle["position"]["x"] += 9.2e-10
+        particle["position"]["y"] += 9.55e-10
+        particle["position"]["z"] += 2.47e-9
 
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2)
 
 
+def freeze_low_z_particles(input_path, output_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    for particle in data["particles"]:
+        if particle["position"]["z"] > 20e-10:
+            particle["atom_type"] = "C_nanotube_static"
+            particle["particle_type"] = "CustomVelocityAtom"
+            particle["velocity_manager_id"] = 1
+            particle.pop("control_velocity_manager_id", None)
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+CARBON_ATOM_TYPES = ("C", "C_nanotube", "C_nanotube_static")
+
+
+def reindex_particles(input_path, output_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    carbon = 0
+    iron = 0
+    for i, particle in enumerate(data["particles"]):
+        particle["id"] = i
+        atom_type = particle.get("atom_type")
+        if atom_type in CARBON_ATOM_TYPES:
+            carbon += 1
+        elif atom_type == "Fe":
+            iron += 1
+        else:
+            raise ValueError(f"unknown atom_type {atom_type!r}")
+
+    data["num_of_atoms"] = len(data["particles"])
+    data["num_of_carbon_atoms"] = carbon
+    data["num_of_iron_atoms"] = iron
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def inspect_particle_bounds(input_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    particles = data["particles"]
+    if not particles:
+        raise ValueError(f"no particles in {input_path}")
+
+    xs = [particle["position"]["x"] for particle in particles]
+    ys = [particle["position"]["y"] for particle in particles]
+    zs = [particle["position"]["z"] for particle in particles]
+
+    print(f"x: min = {min(xs)}, max = {max(xs)}")
+    print(f"y: min = {min(ys)}, max = {max(ys)}")
+    print(f"z: min = {min(zs)}, max = {max(zs)}")
+
+
 if __name__ == "__main__":
     input_path = sys.argv[1]
     output_path = sys.argv[2]
-    translate_particles(input_path, output_path)
+    reindex_particles(input_path, output_path)
+    # reindex_particles(input_path, output_path)
+    # reindex_particles(input_path, output_path)
+    # translate_particles(input_path, output_path)
+    # freeze_low_z_particles(input_path, output_path)
     # remove_nanotube_particles(input_path, output_path)
     # revert_high_velocity_controlled_particles(input_path, output_path)
     # transform_particles(input_path, output_path)

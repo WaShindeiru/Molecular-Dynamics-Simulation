@@ -19,9 +19,7 @@ pub fn reindex_command(command: ReindexCommand) -> io::Result<()> {
   let mut config: ParticleConfigFile =
     serde_json::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
-  for (new_id, particle) in config.particles.iter_mut().enumerate() {
-    particle.id = new_id;
-  }
+  config.reindex();
 
   let json = serde_json::to_string_pretty(&config)
     .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
