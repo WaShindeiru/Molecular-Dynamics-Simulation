@@ -17,6 +17,8 @@ fn main() {
     std::process::exit(1);
   }
 
+  // see_dense_generator_configuration();
+
   // see_temperature_info_generator_config();
 
   // see_config_json()

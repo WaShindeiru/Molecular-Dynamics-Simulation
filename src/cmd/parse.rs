@@ -102,5 +102,9 @@ fn read_particles_from_generator_json(
       io::ErrorKind::InvalidData,
       "Dense generator config does not contain nanotube particles.",
     )),
+    GeneratorConfig::Random(_) => Err(io::Error::new(
+      io::ErrorKind::InvalidData,
+      "Random generator config does not contain nanotube particles.",
+    )),
   }
 }

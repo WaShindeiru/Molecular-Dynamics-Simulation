@@ -1,5 +1,6 @@
 pub mod dense;
 pub mod nanotube;
+pub mod random;
 pub mod velocity_nanotube;
 
 use crate::data::SimulationConfig;
@@ -7,6 +8,7 @@ use crate::data::ValueUnits;
 use crate::simulations::generators::core::generate::GeneratorType;
 use crate::simulations::generators::core::generator_config::dense::DenseGeneratorConfig;
 use crate::simulations::generators::core::generator_config::nanotube::NanotubeGeneratorConfig;
+use crate::simulations::generators::core::generator_config::random::RandomGeneratorConfig;
 use crate::simulations::generators::core::generator_config::velocity_nanotube::VelocityNanotubeGeneratorConfig;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -15,6 +17,7 @@ pub enum GeneratorConfig {
   Dense(DenseGeneratorConfig),
   Nanotube(NanotubeGeneratorConfig),
   VelocityNanotube(VelocityNanotubeGeneratorConfig),
+  Random(RandomGeneratorConfig),
 }
 
 impl GeneratorConfig {
@@ -29,6 +32,9 @@ impl GeneratorConfig {
       GeneratorConfig::VelocityNanotube(config) => {
         GeneratorType::VelocityNanotube(config.to_generator())
       }
+      GeneratorConfig::Random(config) => {
+        GeneratorType::Random(config.to_generator(simulation_config))
+      }
     }
   }
 
@@ -42,6 +48,9 @@ impl GeneratorConfig {
       }
       GeneratorConfig::VelocityNanotube(config) => {
         GeneratorConfig::VelocityNanotube(config.to_value_units(source, target))
+      }
+      GeneratorConfig::Random(config) => {
+        GeneratorConfig::Random(config.to_value_units(source, target))
       }
     }
   }

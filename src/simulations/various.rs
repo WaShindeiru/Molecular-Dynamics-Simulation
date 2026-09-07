@@ -84,7 +84,7 @@ pub fn see_dense_generator_configuration() {
   let config_file =
     GeneratorConfigFile::new(config_local, ValueUnits::Unitless).to_value_units(ValueUnits::Si);
   config_file
-    .to_json_file("/media/washindeiru/7E442D59442D1585/md/temp/dense.json")
+    .to_json_file("/mnt/7E442D59442D1585/md/paper/exp/cores-scaling/test/v1/dense.json")
     .expect("should work!");
 }
 

@@ -6,10 +6,12 @@ use crate::simulations::generators::core::generator_config::GeneratorConfig;
 use crate::simulations::generators::core::generator_config::dense::DenseGeneratorConfig;
 use dense::DenseGenerator;
 use nanotube::NanotubeGenerator;
+use random::RandomGenerator;
 use velocity_nanotube::VelocityNanotubeGenerator;
 
 pub mod dense;
 pub mod nanotube;
+pub mod random;
 pub mod velocity_nanotube;
 
 #[derive(Debug)]
@@ -33,6 +35,7 @@ pub enum GeneratorType {
   Dense(DenseGenerator),
   Nanotube(NanotubeGenerator),
   VelocityNanotube(VelocityNanotubeGenerator),
+  Random(RandomGenerator),
 }
 
 pub trait Generator {
@@ -45,6 +48,7 @@ impl Generator for GeneratorType {
       GeneratorType::Dense(g) => g.generate(),
       GeneratorType::Nanotube(g) => g.generate(),
       GeneratorType::VelocityNanotube(g) => g.generate(),
+      GeneratorType::Random(g) => g.generate(),
     }
   }
 }

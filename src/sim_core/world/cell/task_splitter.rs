@@ -78,7 +78,9 @@ impl TaskSplitter {
     let nz = config.box_count_dim.z;
 
     let num_of_tasks_per_floor = x_splits * y_splits;
-    let num_of_floors = num_of_tasks / num_of_tasks_per_floor;
+    // Integer division can be 0 when num_of_tasks < x*y (e.g. a 1-core run).
+    // Keep at least one floor so every cell is assigned.
+    let num_of_floors = (num_of_tasks / num_of_tasks_per_floor).max(1);
 
     let x_per_box = nx / x_splits;
     let x_remainder = nx % x_splits;
@@ -197,6 +199,40 @@ mod tests {
       (9, 0..3, 2..4, 3..5),
       (10, 3..5, 2..4, 3..5),
       (11, 5..7, 2..4, 3..5),
+    ];
+
+    for (task_id, x_range, y_range, z_range) in expected_ranges {
+      let expected = expected_cell_ids(x_range, y_range, z_range, &box_count_dim);
+      let actual = mapping
+        .get(&task_id)
+        .unwrap_or_else(|| panic!("missing task_id {}", task_id));
+      assert_eq!(actual.as_ref(), &expected, "task_id {} cell ids mismatch", task_id);
+    }
+
+    let mut all_ids: Vec<usize> = mapping.values().flat_map(|v| v.iter().copied()).collect();
+    all_ids.sort_unstable();
+    let expected_all: Vec<usize> = (0..(7 * 4 * 5)).collect();
+    assert_eq!(all_ids, expected_all, "every cell must be assigned exactly once");
+  }
+
+  // Fewer tasks than one FloorBox floor: 3x2 = 6 tasks/floor, but only 3 requested.
+  // Must still produce one full floor covering every cell (no divide-by-zero).
+  #[test]
+  fn split_boxes_uses_one_floor_when_too_few_tasks() {
+    let box_count_dim = Vector3::new(7, 4, 5);
+    let config = make_config(box_count_dim);
+
+    let mapping = TaskSplitter::split_boxes(3, &config, 3, 2);
+
+    assert_eq!(mapping.len(), 6);
+
+    let expected_ranges: Vec<(usize, Range<usize>, Range<usize>, Range<usize>)> = vec![
+      (0, 0..3, 0..2, 0..5),
+      (1, 3..5, 0..2, 0..5),
+      (2, 5..7, 0..2, 0..5),
+      (3, 0..3, 2..4, 0..5),
+      (4, 3..5, 2..4, 0..5),
+      (5, 5..7, 2..4, 0..5),
     ];
 
     for (task_id, x_range, y_range, z_range) in expected_ranges {
