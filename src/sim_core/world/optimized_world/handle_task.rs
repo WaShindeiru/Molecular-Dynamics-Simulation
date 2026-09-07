@@ -138,6 +138,7 @@ pub fn handle_force_batch_task(
   integration_cache: &LinkedCellContainer,
   fp: &mut Vec<FP>,
   gradients_cache: &mut Vec<Vector3<f64>>,
+  neighbors: &mut Vec<FixedPositionParticle>,
 ) -> ForceTaskResult {
   let mut particles: HashMap<usize, ForceTaskParticleData> = HashMap::new();
   let mut potential_energy_total = 0.0f64;
@@ -149,8 +150,14 @@ pub fn handle_force_batch_task(
       integration_cache.neighbour_atoms_periodic_fixed_positions(cell_id);
     particles_j.extend(integration_cache.atoms_for_cell_fixed(cell_id));
 
-    let potential_energy =
-      compute_forces_potential(&particles_i, &particles_j, integration_cache, fp, gradients_cache);
+    let potential_energy = compute_forces_potential(
+      &particles_i,
+      &particles_j,
+      integration_cache,
+      fp,
+      gradients_cache,
+      neighbors,
+    );
     potential_energy_total += potential_energy;
 
     for particle in particles_j.iter() {

@@ -19,6 +19,10 @@ use crate::sim_core::world::computation::FP;
 use crate::utils::math::cos_from_vec;
 use crate::sim_core::world::computation::compute_thermostat_force_work;
 
+/// Same cutoff used by `crate::particle::potential::compute_forces_potential`: `fc == 0`
+/// beyond `R+D`, so this only drops a numerically negligible sliver of the transition.
+const FC_CUTOFF: f64 = 1e-10;
+
 /// Same physics as `crate::sim_core::world::computation::compute_forces_potential`, but
 /// operating on plain `{id, position}` pairs (already periodic-adjusted, see
 /// `LinkedCellContainer::atoms_for_cell_fixed`/`neighbour_atoms_periodic_fixed_positions`)
@@ -26,12 +30,16 @@ use crate::sim_core::world::computation::compute_thermostat_force_work;
 /// `particles_i`/`particles_j` are plain slices, so no per-pair `Arc` clone/drop and no
 /// per-call `Vec` re-clone of the interaction-partner set, which the trait-object version pays
 /// for on every `(i, j)` pair via `particles_j.clone().into_iter()`.
+///
+/// For each `i`, partners in the 27-cell stencil are filtered to those with `fc_ij > 0`
+/// before the Brenner `(j, k)` loops — same neighbor skip as `particle::potential`.
 pub fn compute_forces_potential(
   particles_i: &[FixedPositionParticle],
   particles_j: &[FixedPositionParticle],
   container: &LinkedCellContainer,
   fp: &mut Vec<FP>,
   gradients_cache: &mut Vec<Vector3<f64>>,
+  neighbors: &mut Vec<FixedPositionParticle>,
 ) -> f64 {
   let zero_fp = FP { force: Vector3::zeros(), potential_energy: 0. };
 
@@ -45,11 +53,22 @@ pub fn compute_forces_potential(
     let i_id = i.id;
     let i_type = container.particles().get(i_id).unwrap().get_type();
 
+    neighbors.clear();
     for j in particles_j {
-      let j_id = j.id;
-      if j_id == i_id {
+      if j.id == i_id {
         continue;
       }
+      let j_type = container.particles().get(j.id).unwrap().get_type();
+      let c_ij = get_constants(&get_interaction_type(&i_type, &j_type));
+      let r_ij_mag = (j.position - i.position).magnitude();
+      if fc(r_ij_mag, c_ij.R, c_ij.D) < FC_CUTOFF {
+        continue;
+      }
+      neighbors.push(*j);
+    }
+
+    for j in neighbors.iter() {
+      let j_id = j.id;
       let j_type = container.particles().get(j_id).unwrap().get_type();
 
       let c_ij = get_constants(&get_interaction_type(&i_type, &j_type));
@@ -70,9 +89,9 @@ pub fn compute_forces_potential(
       let mut bij_grad_j: Vector3<f64> = Vector3::zeros();
       let mut chi_ij: f64 = 0.;
 
-      for k in particles_j {
+      for k in neighbors.iter() {
         let k_id = k.id;
-        if k_id == j_id || k_id == i_id {
+        if k_id == j_id {
           continue;
         }
         let k_type = container.particles().get(k_id).unwrap().get_type();
@@ -124,9 +143,9 @@ pub fn compute_forces_potential(
       assert!(!force_j.x.is_nan() && !force_j.y.is_nan() && !force_j.z.is_nan());
       fp[j_id].force += force_j;
 
-      for k in particles_j {
+      for k in neighbors.iter() {
         let k_id = k.id;
-        if k_id == j_id || k_id == i_id {
+        if k_id == j_id {
           continue;
         }
         let force_k = (-fc_ij * gradients_cache[k_id] * b_ij_grad_chi_ij * va_ij) * -0.5;
