@@ -79,6 +79,20 @@ def remove_nanotube_particles(input_path, output_path):
         json.dump(data, f, indent=2)
 
 
+def keep_atom_particles(input_path, output_path):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    data["particles"] = [
+        particle
+        for particle in data["particles"]
+        if particle.get("particle_type") == "Atom"
+    ]
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
 def convert_velocity_controlled_into_atom(input_path, output_path):
     with open(input_path) as f:
         data = json.load(f)
@@ -101,14 +115,29 @@ def filter_particles_in_box(input_path, output_path):
         particle
         for particle in data["particles"]
         if (
-            0 <= particle["position"]["x"] <= 12e-10
-            and 0 <= particle["position"]["y"] <= 12e-10
-            and 11e-10 <= particle["position"]["z"] <= 19e-10
+            0 <= particle["position"]["x"] <= 100e-10
+            and 0 <= particle["position"]["y"] <= 100e-10
+            and 0 <= particle["position"]["z"] <= 14e-10
         )
     ]
 
+
     for i, particle in enumerate(data["particles"]):
         particle["id"] = i
+
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def move_particles_by_type(input_path, output_path, particle_type, dx=0.0, dy=0.0, dz=0.0):
+    with open(input_path) as f:
+        data = json.load(f)
+
+    for particle in data["particles"]:
+        if particle.get("particle_type") == particle_type:
+            particle["position"]["x"] += dx
+            particle["position"]["y"] += dy
+            particle["position"]["z"] += dz
 
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2)
@@ -189,7 +218,14 @@ def inspect_particle_bounds(input_path):
 if __name__ == "__main__":
     input_path = sys.argv[1]
     output_path = sys.argv[2]
-    reindex_particles(input_path, output_path)
+    move_particles_by_type(
+        input_path,
+        output_path,
+        "Atom",
+        dx=0.0,
+        dy=0.0,
+        dz=1e-9,
+    )
     # reindex_particles(input_path, output_path)
     # reindex_particles(input_path, output_path)
     # translate_particles(input_path, output_path)

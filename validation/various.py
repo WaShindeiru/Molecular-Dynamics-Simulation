@@ -3,8 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-def read_atoms_from_output_dumps(directory: str, atom_id_1: int, atom_id_2: int) -> pd.DataFrame:
-  """Read positions of two selected atoms from all output*.dump files in a directory."""
+def read_atoms_from_output_dumps(directory: str, atom_id_1, atom_id_2=None) -> pd.DataFrame:
+  """Read positions of selected atoms from all output*.dump files in a directory.
+
+  Call as either:
+    read_atoms_from_output_dumps(directory, atom_id_1, atom_id_2)
+    read_atoms_from_output_dumps(directory, [id1, id2, ...])
+  """
   directory_path = Path(directory)
   if not directory_path.is_dir():
     raise FileNotFoundError(f"Directory does not exist: {directory}")
@@ -16,7 +21,12 @@ def read_atoms_from_output_dumps(directory: str, atom_id_1: int, atom_id_2: int)
   if not dump_files:
     raise FileNotFoundError(f"No files matching output*.dump in: {directory}")
 
-  selected_ids = {int(atom_id_1), int(atom_id_2)}
+  if atom_id_2 is None:
+    selected_ids = {int(atom_id) for atom_id in atom_id_1}
+  else:
+    selected_ids = {int(atom_id_1), int(atom_id_2)}
+  if not selected_ids:
+    raise ValueError("no atom ids given")
   records = []
 
   for dump_file in dump_files:
@@ -89,6 +99,17 @@ def get_distance(data, atom_id_1, atom_id_2):
   )
 
   return merged[['iteration', 'distance']]
+
+def get_pair_distances(data, pairs):
+  """Distance time series for each (id_a, id_b) pair, one column per pair."""
+  frames = []
+  for atom_id_1, atom_id_2 in pairs:
+    distance = get_distance(data, atom_id_1, atom_id_2)
+    column = f"{atom_id_1}-{atom_id_2}"
+    frames.append(distance.rename(columns={"distance": column}).set_index("iteration"))
+  if not frames:
+    return pd.DataFrame()
+  return pd.concat(frames, axis=1)
 
 def get_distribution(data, idx_01, idx_02, name):
   df_pivot = data.pivot_table(index='iteration', columns='atom_id')
