@@ -93,7 +93,7 @@ def plot_rolling_series(
   hline: float | None = None,
   hline_label: str | None = None,
 ) -> None:
-  window = max(11, (len(values) // 100) | 1)
+  window = max(11, (len(values) // 400) | 1)
   roll = values.rolling(window=window, center=True, min_periods=1)
   smoothed = roll.mean()
   roll_min = roll.min()
