@@ -82,7 +82,7 @@ pub fn compute_forces_potential(
 
       let fc_ij_grad_i = fc_gradient(&r_ij_vec, r_ij_mag, c_ij.R, c_ij.D);
       let vr_ij_grad_i = vr_gradient(&r_ij_vec, r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
-      assert!(!vr_ij_grad_i.x.is_nan() && !vr_ij_grad_i.y.is_nan() && !vr_ij_grad_i.z.is_nan());
+      debug_assert!(!vr_ij_grad_i.x.is_nan() && !vr_ij_grad_i.y.is_nan() && !vr_ij_grad_i.z.is_nan());
       let va_ij_grad_i = va_gradient(&r_ij_vec, r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
 
       let mut bij_grad_i: Vector3<f64> = Vector3::zeros();
@@ -134,13 +134,13 @@ pub fn compute_forces_potential(
       let force_i = (fc_ij_grad_i * (vr_ij - b_ij * va_ij)
         + fc_ij * (vr_ij_grad_i - bij_grad_i * va_ij - b_ij * va_ij_grad_i))
         * -0.5;
-      assert!(!force_i.x.is_nan() && !force_i.y.is_nan() && !force_i.z.is_nan());
+      debug_assert!(!force_i.x.is_nan() && !force_i.y.is_nan() && !force_i.z.is_nan());
       fp[i_id].force += force_i;
 
       let force_j = (-fc_ij_grad_i * (vr_ij - b_ij * va_ij)
         + fc_ij * (-vr_ij_grad_i - bij_grad_j * va_ij - b_ij * (-va_ij_grad_i)))
         * -0.5;
-      assert!(!force_j.x.is_nan() && !force_j.y.is_nan() && !force_j.z.is_nan());
+      debug_assert!(!force_j.x.is_nan() && !force_j.y.is_nan() && !force_j.z.is_nan());
       fp[j_id].force += force_j;
 
       for k in neighbors.iter() {
@@ -149,7 +149,7 @@ pub fn compute_forces_potential(
           continue;
         }
         let force_k = (-fc_ij * gradients_cache[k_id] * b_ij_grad_chi_ij * va_ij) * -0.5;
-        assert!(!force_k.x.is_nan() && !force_k.y.is_nan() && !force_k.z.is_nan());
+        debug_assert!(!force_k.x.is_nan() && !force_k.y.is_nan() && !force_k.z.is_nan());
         fp[k_id].force += force_k;
       }
 
