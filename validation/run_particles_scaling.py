@@ -14,13 +14,14 @@ from pathlib import Path
 SRC = Path("/mnt/7E442D59442D1585/md/paper/exp/particles-scaling/test")
 BASE = Path("/mnt/7E442D59442D1585/md/paper/exp/particles-scaling")
 BIN = Path("/home/washindeiru/studia/sem9/md/carbon_nanotube/target/release/carbon_nanotube")
-REPEATS = (1, 2, 3)
+REPEATS = [1]
 
 
 def particle_counts() -> list[int]:
   """50, 100, 250, 500, then every 250 up to 7000."""
-  counts = [50, 100, 250, 500]
-  n = 750
+  # counts = [50, 100, 250, 500]
+  counts = []
+  n = 2250
   while n <= 7000:
     counts.append(n)
     n += 250

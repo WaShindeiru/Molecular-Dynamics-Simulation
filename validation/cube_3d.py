@@ -23,8 +23,13 @@ color_id[0:3, 3:5, 2:4] = 9
 color_id[3:6, 3:5, 2:4] = 10
 color_id[6:8, 3:5, 2:4] = 11
 
+
+def uniform_cube(n=6, cid=0):
+    return np.full((n, n, n), cid, dtype=int)
+
+
 PALETTE = [
-    "#4C78A8", "#F58518", "#E45756", "#72B7B2",
+    "#8BB8DC", "#F58518", "#E45756", "#72B7B2",
     "#54A24B", "#EECA3B", "#B279A2", "#FF9DA6",
     "#9D755D", "#BAB0AC", "#1F77B4", "#D62728",
 ]
@@ -95,7 +100,7 @@ def plot_3d(ax, color_id, gap=0.18, alpha=0.92):
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_zlabel("")
-    ax.set_title("Podział zadań - widok 3d")
+    # ax.set_title("Podział zadań - widok 3d")
     ax.set_box_aspect((nx, ny, nz))
     ax.view_init(elev=26, azim=-40)
     apply_font(ax, title_y=TITLE_Y_3D)
@@ -137,7 +142,7 @@ def plot_cells(color_id, gap=0.18):
     fig3d = plt.figure()
     ax3d = fig3d.add_subplot(111, projection="3d")
     plot_3d(ax3d, color_id, gap=gap)
-    fig3d.tight_layout()
+    # fig3d.tight_layout()
     fig3d.savefig("task_split.png", dpi=200, bbox_inches="tight", pad_inches=0.4)
 
     fig2d = plt.figure()
@@ -152,4 +157,5 @@ def plot_cells(color_id, gap=0.18):
 
 
 if __name__ == "__main__":
-    plot_cells(color_id)
+    # plot_cells(color_id)
+    plot_cells(uniform_cube())
