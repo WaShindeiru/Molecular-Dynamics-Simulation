@@ -8,7 +8,9 @@ use carbon_nanotube::sim_core::world::boundary_constraint::EdgeCondition;
 use carbon_nanotube::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
-use carbon_nanotube::sim_core::world::saver::{FrameSamplingConfig, PeriodicSave, SaveOptions};
+use carbon_nanotube::sim_core::world::saver::{
+  FrameReduce, FrameSamplingConfig, PeriodicSave, SaveOptions,
+};
 use nalgebra::Vector3;
 use std::collections::HashSet;
 use std::fs;
@@ -223,10 +225,12 @@ pub fn test_reset_world_with_thermostat_runner(
     laamps_sampling: FrameSamplingConfig {
       one_frame_duration: TIME_STEP,
       frame_iteration_count: 1,
+      reduce: FrameReduce::Snapshot,
     },
     energy_sampling: FrameSamplingConfig {
       one_frame_duration: TIME_STEP,
       frame_iteration_count: 1,
+      reduce: FrameReduce::Snapshot,
     },
     velocity_particles_num: 10,
     save_final_particles: false,
@@ -320,10 +324,12 @@ pub fn test_save_files_completeness_runner(world_type: WorldType, edge_condition
     laamps_sampling: FrameSamplingConfig {
       one_frame_duration: TIME_STEP,
       frame_iteration_count: 1,
+      reduce: FrameReduce::Snapshot,
     },
     energy_sampling: FrameSamplingConfig {
       one_frame_duration: TIME_STEP,
       frame_iteration_count: 1,
+      reduce: FrameReduce::Snapshot,
     },
     velocity_particles_num: 10,
     save_final_particles: false,

@@ -1,11 +1,13 @@
 use crate::data::units::{TIME_U, ValueUnits};
-use crate::sim_core::world::saver::FrameSamplingConfig;
+use crate::sim_core::world::saver::{FrameReduce, FrameSamplingConfig};
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct FrameSamplingConfigFile {
   pub one_frame_duration: f64,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub frame_iteration_count: Option<usize>,
+  #[serde(default, skip_serializing_if = "FrameReduce::is_snapshot")]
+  pub reduce: FrameReduce,
 }
 
 impl FrameSamplingConfigFile {
@@ -13,6 +15,7 @@ impl FrameSamplingConfigFile {
     Self {
       one_frame_duration: config.one_frame_duration,
       frame_iteration_count: Some(config.frame_iteration_count),
+      reduce: config.reduce,
     }
   }
 
@@ -28,6 +31,7 @@ impl FrameSamplingConfigFile {
     FrameSamplingConfig {
       one_frame_duration: self.one_frame_duration,
       frame_iteration_count,
+      reduce: self.reduce,
     }
   }
 
@@ -36,6 +40,7 @@ impl FrameSamplingConfigFile {
       one_frame_duration: self.one_frame_duration
         * ValueUnits::scale_between(source, target, TIME_U),
       frame_iteration_count: self.frame_iteration_count,
+      reduce: self.reduce,
     }
   }
 }

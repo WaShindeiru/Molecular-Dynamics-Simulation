@@ -7,7 +7,7 @@ use crate::sim_core::world::cell::TaskSplitVariant;
 use crate::sim_core::world::thermostat::{
   IntegrationAlgorithm, TemperatureInfo, TimeIterationDistance,
 };
-use crate::sim_core::world::saver::{FrameSamplingConfig, SaveOptions};
+use crate::sim_core::world::saver::{FrameReduce, FrameSamplingConfig, SaveOptions};
 use nalgebra::Vector3;
 
 pub struct SimulationConfigBuilder {
@@ -23,6 +23,7 @@ pub struct SimulationConfigBuilder {
   one_frame_duration_laamps: Option<f64>,
   save_all_iterations_energy: Option<bool>,
   one_frame_duration_energy: Option<f64>,
+  energy_sampling_reduce: Option<FrameReduce>,
   save_options: Option<SaveOptions>,
   integration_algorithm: Option<IntegrationAlgorithm>,
   world_type: Option<WorldType>,
@@ -45,6 +46,7 @@ impl SimulationConfigBuilder {
       one_frame_duration_laamps: None,
       save_all_iterations_energy: None,
       one_frame_duration_energy: None,
+      energy_sampling_reduce: None,
       save_options: None,
       integration_algorithm: None,
       world_type: None,
@@ -115,6 +117,11 @@ impl SimulationConfigBuilder {
 
   pub fn one_frame_duration_energy(mut self, one_frame_duration_energy: f64) -> Self {
     self.one_frame_duration_energy = Some(one_frame_duration_energy);
+    self
+  }
+
+  pub fn energy_sampling_reduce(mut self, energy_sampling_reduce: FrameReduce) -> Self {
+    self.energy_sampling_reduce = Some(energy_sampling_reduce);
     self
   }
 
@@ -234,6 +241,9 @@ impl SimulationConfigBuilder {
       });
     save_options.save_all_iterations_laamps = save_all_iterations_laamps;
     save_options.save_all_iterations_energy = save_all_iterations_energy;
+    let energy_reduce = self
+      .energy_sampling_reduce
+      .unwrap_or(save_options.energy_sampling.reduce);
     save_options.laamps_sampling = FrameSamplingConfig::from_duration(
       time_step,
       self
@@ -248,6 +258,7 @@ impl SimulationConfigBuilder {
         .unwrap_or(default_one_frame_duration),
       save_all_iterations_energy,
     );
+    save_options.energy_sampling.reduce = energy_reduce;
 
     let gravity_schedule = self
       .gravity_schedule

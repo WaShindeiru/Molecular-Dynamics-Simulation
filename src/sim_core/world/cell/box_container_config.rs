@@ -67,19 +67,19 @@ impl BoxContainerConfig {
 }
 
 pub fn detect_box_type(atoms: &[Particle]) -> SimulationBoxType {
-  let mut fe = false;
-  let mut c = false;
-
-  for particle in atoms {
-    if matches!(
-      particle.get_type(),
-      AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static
-    ) {
-      c = true;
-    } else {
-      fe = true;
-    }
-  }
+  // let mut fe = false;
+  // let mut c = false;
+  //
+  // for particle in atoms {
+  //   if matches!(
+  //     particle.get_type(),
+  //     AtomType::C | AtomType::C_nanotube | AtomType::C_nanotube_static
+  //   ) {
+  //     c = true;
+  //   } else {
+  //     fe = true;
+  //   }
+  // }
 
   // if fe && c {
   //   InteractionType::FeC

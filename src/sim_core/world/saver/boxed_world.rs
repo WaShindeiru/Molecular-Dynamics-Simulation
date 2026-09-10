@@ -10,7 +10,12 @@ use crate::particle::particle::ParticleKind;
 use crate::persistence::dto::world::boxed::BoxedWorldDTO;
 use crate::persistence::json::particle_config::particle_type_file::ParticleTypeFile;
 use crate::persistence::json::particle_config::{ParticleConfigFile, ParticleInitialState};
-use crate::sim_core::world::saver::{PartialWorldSaver, PeriodicSave, csv_writer_with_header};
+use crate::sim_core::world::saver::{
+  FrameReduce, PartialWorldSaver, PeriodicSave, csv_writer_with_header,
+};
+use super::energy_frame::{
+  EnergyCsvLayout, EnergyRow, energy_csv_header, write_energy_record,
+};
 use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 
 impl PartialWorldSaver {
@@ -149,35 +154,15 @@ impl PartialWorldSaver {
     }
 
     let save_dir = Path::new(&self.save_options.save_path);
-    let has_nanotube_thermostat = world.history.nanotube_thermostat_epsilon.is_some();
-    let mut energy_header: Vec<&str> = match world.integration_algorithm {
-      IntegrationAlgorithm::NoseHooverVerlet { .. } => vec![
-        "iteration",
-        "kinetic_energy_atom",
-        "kinetic_energy_other",
-        "potential_energy",
-        "potential_gravity_energy",
-        "total_energy",
-        "p_control_energy_total",
-        "thermostat_work_total",
-        "thermostat_epsilon",
-        "temperature",
-      ],
-      _ => vec![
-        "iteration",
-        "kinetic_energy_atom",
-        "kinetic_energy_other",
-        "potential_energy",
-        "potential_gravity_energy",
-        "total_energy",
-        "p_control_energy_total",
-        "temperature",
-      ],
+    let layout = EnergyCsvLayout {
+      nose_hoover: matches!(
+        world.integration_algorithm,
+        IntegrationAlgorithm::NoseHooverVerlet { .. }
+      ),
+      nanotube: world.history.nanotube_thermostat_epsilon.is_some(),
     };
-    if has_nanotube_thermostat {
-      energy_header.push("nanotube_thermostat_epsilon");
-      energy_header.push("nanotube_temperature");
-    }
+    self.energy_frame_accumulator.set_layout(layout);
+    let energy_header = energy_csv_header(layout);
     let mut wtr = csv_writer_with_header(&save_dir.join("energy.csv"), &energy_header)?;
 
     assert!(
@@ -185,60 +170,80 @@ impl PartialWorldSaver {
         && kinetic_energy_atom.len() == total_energy.len()
     );
 
+    let window = world.energy_frame_iteration_count.max(1);
+    let reduce = self.save_options.energy_sampling.reduce;
+
     for i in 0..kinetic_energy_atom.len() {
-      let should_save = self.energy_frame_iteration_count_current_iteration
-        % world.energy_frame_iteration_count
-        == 0;
-      self.energy_frame_iteration_count_current_iteration += 1;
-
-      if !should_save {
-        continue;
-      }
-
       let iteration = world.number_of_resets * world.max_iteration_till_reset + i;
+      let row = EnergyRow {
+        kinetic_energy_atom: *kinetic_energy_atom.get(i).unwrap(),
+        kinetic_energy_other: *kinetic_energy_other.get(i).unwrap(),
+        potential_energy: *potential_energy.get(i).unwrap(),
+        potential_gravity_energy: *potential_gravity_energy.get(i).unwrap(),
+        total_energy: *total_energy.get(i).unwrap(),
+        p_control_energy_total: *p_control_energy.get(i).unwrap(),
+        thermostat_work_total: *thermostat_work.get(i).unwrap(),
+        thermostat_epsilon: world
+          .history
+          .thermostat_epsilon
+          .get(i)
+          .copied()
+          .unwrap_or(0.0),
+        temperature: *world.history.temperature.get(i).unwrap(),
+        nanotube_thermostat_epsilon: world
+          .history
+          .nanotube_thermostat_epsilon
+          .as_ref()
+          .and_then(|v| v.get(i).copied())
+          .unwrap_or(0.0),
+        nanotube_temperature: world
+          .history
+          .nanotube_temperature
+          .as_ref()
+          .and_then(|v| v.get(i).copied())
+          .unwrap_or(0.0),
+      };
 
-      match world.integration_algorithm {
-        IntegrationAlgorithm::NoseHooverVerlet { .. } => {
-          let mut record = vec![
-            format!("{}", iteration),
-            format!("{}", kinetic_energy_atom.get(i).unwrap()),
-            format!("{}", kinetic_energy_other.get(i).unwrap()),
-            format!("{}", potential_energy.get(i).unwrap()),
-            format!("{}", potential_gravity_energy.get(i).unwrap()),
-            format!("{}", total_energy.get(i).unwrap()),
-            format!("{}", p_control_energy.get(i).unwrap()),
-            format!("{}", thermostat_work.get(i).unwrap()),
-            format!("{}", world.history.thermostat_epsilon.get(i).unwrap()),
-            format!("{}", world.history.temperature.get(i).unwrap()),
-          ];
-
-          if let (Some(nanotube_thermostat_epsilon), Some(nanotube_temperature)) = (
-            &world.history.nanotube_thermostat_epsilon,
-            &world.history.nanotube_temperature,
-          ) {
-            record.push(format!("{}", nanotube_thermostat_epsilon.get(i).unwrap()));
-            record.push(format!("{}", nanotube_temperature.get(i).unwrap()));
-          }
-
-          wtr.write_record(&record)?;
+      let emit = match reduce {
+        FrameReduce::Snapshot => {
+          let should_save =
+            self.energy_frame_iteration_count_current_iteration % window == 0;
+          self.energy_frame_iteration_count_current_iteration += 1;
+          should_save.then_some((iteration, row))
         }
-        _ => {
-          wtr.write_record(&[
-            format!("{}", iteration),
-            format!("{}", kinetic_energy_atom.get(i).unwrap()),
-            format!("{}", kinetic_energy_other.get(i).unwrap()),
-            format!("{}", potential_energy.get(i).unwrap()),
-            format!("{}", potential_gravity_energy.get(i).unwrap()),
-            format!("{}", total_energy.get(i).unwrap()),
-            format!("{}", p_control_energy.get(i).unwrap()),
-            format!("{}", world.history.temperature.get(i).unwrap()),
-          ])?;
+        FrameReduce::Mean => {
+          self.energy_frame_iteration_count_current_iteration += 1;
+          self.energy_frame_accumulator.push(iteration, row, window)
         }
+      };
+
+      if let Some((iteration, row)) = emit {
+        write_energy_record(&mut wtr, iteration, &row, layout)?;
       }
     }
 
     wtr.flush()?;
 
+    Ok(())
+  }
+
+  pub(super) fn flush_energy_frame_mean(&mut self) -> io::Result<()> {
+    if !matches!(self.save_options.energy_sampling.reduce, FrameReduce::Mean) {
+      return Ok(());
+    }
+    let Some(layout) = self.energy_frame_accumulator.layout() else {
+      return Ok(());
+    };
+    let Some((iteration, row)) = self.energy_frame_accumulator.take_partial() else {
+      return Ok(());
+    };
+
+    let save_dir = Path::new(&self.save_options.save_path);
+    fs::create_dir_all(save_dir)?;
+    let energy_header = energy_csv_header(layout);
+    let mut wtr = csv_writer_with_header(&save_dir.join("energy.csv"), &energy_header)?;
+    write_energy_record(&mut wtr, iteration, &row, layout)?;
+    wtr.flush()?;
     Ok(())
   }
 
