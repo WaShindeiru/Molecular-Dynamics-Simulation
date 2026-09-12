@@ -14,9 +14,9 @@ pub fn vr_gradient(
 ) -> Vector3<f64> {
   let common = vr(r_ij_mag, D0, S, Beta, r0) * (Beta * (2. * S).sqrt());
 
-  assert!(!r_ij_vec.x.is_nan() && !r_ij_vec.y.is_nan() && !r_ij_vec.z.is_nan());
-  assert!(!common.is_nan());
-  assert!(!r_ij_mag.is_nan());
+  debug_assert!(!r_ij_vec.x.is_nan() && !r_ij_vec.y.is_nan() && !r_ij_vec.z.is_nan());
+  debug_assert!(!common.is_nan());
+  debug_assert!(!r_ij_mag.is_nan());
 
   Vector3::new(
     common * r_ij_vec.x / r_ij_mag,

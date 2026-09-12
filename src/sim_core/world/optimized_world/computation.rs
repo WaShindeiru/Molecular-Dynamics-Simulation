@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use nalgebra::Vector3;
 
+use crate::data::NeighborCutoff;
 use crate::data::constants::get_constants;
 use crate::data::types::get_interaction_type;
 use crate::particle::potential::b::g;
@@ -26,12 +27,18 @@ use crate::sim_core::world::computation::compute_thermostat_force_work;
 /// `particles_i`/`particles_j` are plain slices, so no per-pair `Arc` clone/drop and no
 /// per-call `Vec` re-clone of the interaction-partner set, which the trait-object version pays
 /// for on every `(i, j)` pair via `particles_j.clone().into_iter()`.
+///
+/// For each `i`, partners in the 27-cell stencil are collected into `neighbors` (skipping `i`
+/// itself). `NeighborCutoff::Enabled` then keeps only pairs with `fc_ij >= threshold`;
+/// `Disabled` keeps the full stencil.
 pub fn compute_forces_potential(
   particles_i: &[FixedPositionParticle],
   particles_j: &[FixedPositionParticle],
   container: &LinkedCellContainer,
   fp: &mut Vec<FP>,
   gradients_cache: &mut Vec<Vector3<f64>>,
+  neighbors: &mut Vec<FixedPositionParticle>,
+  neighbor_cutoff: NeighborCutoff,
 ) -> f64 {
   let zero_fp = FP { force: Vector3::zeros(), potential_energy: 0. };
 
@@ -45,11 +52,26 @@ pub fn compute_forces_potential(
     let i_id = i.id;
     let i_type = container.particles().get(i_id).unwrap().get_type();
 
+    neighbors.clear();
     for j in particles_j {
-      let j_id = j.id;
-      if j_id == i_id {
+      if j.id == i_id {
         continue;
       }
+      match neighbor_cutoff {
+        NeighborCutoff::Disabled => neighbors.push(*j),
+        NeighborCutoff::Enabled { threshold } => {
+          let j_type = container.particles().get(j.id).unwrap().get_type();
+          let c_ij = get_constants(&get_interaction_type(&i_type, &j_type));
+          let r_ij_mag = (j.position - i.position).magnitude();
+          if fc(r_ij_mag, c_ij.R, c_ij.D) >= threshold {
+            neighbors.push(*j);
+          }
+        }
+      }
+    }
+
+    for j in neighbors.iter() {
+      let j_id = j.id;
       let j_type = container.particles().get(j_id).unwrap().get_type();
 
       let c_ij = get_constants(&get_interaction_type(&i_type, &j_type));
@@ -63,16 +85,16 @@ pub fn compute_forces_potential(
 
       let fc_ij_grad_i = fc_gradient(&r_ij_vec, r_ij_mag, c_ij.R, c_ij.D);
       let vr_ij_grad_i = vr_gradient(&r_ij_vec, r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
-      assert!(!vr_ij_grad_i.x.is_nan() && !vr_ij_grad_i.y.is_nan() && !vr_ij_grad_i.z.is_nan());
+      debug_assert!(!vr_ij_grad_i.x.is_nan() && !vr_ij_grad_i.y.is_nan() && !vr_ij_grad_i.z.is_nan());
       let va_ij_grad_i = va_gradient(&r_ij_vec, r_ij_mag, c_ij.D0, c_ij.S, c_ij.Beta, c_ij.r0);
 
       let mut bij_grad_i: Vector3<f64> = Vector3::zeros();
       let mut bij_grad_j: Vector3<f64> = Vector3::zeros();
       let mut chi_ij: f64 = 0.;
 
-      for k in particles_j {
+      for k in neighbors.iter() {
         let k_id = k.id;
-        if k_id == j_id || k_id == i_id {
+        if k_id == j_id {
           continue;
         }
         let k_type = container.particles().get(k_id).unwrap().get_type();
@@ -115,22 +137,22 @@ pub fn compute_forces_potential(
       let force_i = (fc_ij_grad_i * (vr_ij - b_ij * va_ij)
         + fc_ij * (vr_ij_grad_i - bij_grad_i * va_ij - b_ij * va_ij_grad_i))
         * -0.5;
-      assert!(!force_i.x.is_nan() && !force_i.y.is_nan() && !force_i.z.is_nan());
+      debug_assert!(!force_i.x.is_nan() && !force_i.y.is_nan() && !force_i.z.is_nan());
       fp[i_id].force += force_i;
 
       let force_j = (-fc_ij_grad_i * (vr_ij - b_ij * va_ij)
         + fc_ij * (-vr_ij_grad_i - bij_grad_j * va_ij - b_ij * (-va_ij_grad_i)))
         * -0.5;
-      assert!(!force_j.x.is_nan() && !force_j.y.is_nan() && !force_j.z.is_nan());
+      debug_assert!(!force_j.x.is_nan() && !force_j.y.is_nan() && !force_j.z.is_nan());
       fp[j_id].force += force_j;
 
-      for k in particles_j {
+      for k in neighbors.iter() {
         let k_id = k.id;
-        if k_id == j_id || k_id == i_id {
+        if k_id == j_id {
           continue;
         }
         let force_k = (-fc_ij * gradients_cache[k_id] * b_ij_grad_chi_ij * va_ij) * -0.5;
-        assert!(!force_k.x.is_nan() && !force_k.y.is_nan() && !force_k.z.is_nan());
+        debug_assert!(!force_k.x.is_nan() && !force_k.y.is_nan() && !force_k.z.is_nan());
         fp[k_id].force += force_k;
       }
 

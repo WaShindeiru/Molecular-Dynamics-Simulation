@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::data::NeighborCutoff;
 use crate::sim_core::world::boxed_world::box_task::{ForceTaskResult, VelocityTaskResult};
 use crate::sim_core::world::cell::LinkedCellContainer;
 
@@ -17,6 +18,7 @@ pub enum OptimizedTask {
     task_id: usize,
     cell_ids: Arc<Vec<usize>>,
     integration_cache: Arc<LinkedCellContainer>,
+    neighbor_cutoff: NeighborCutoff,
   },
 }
 

@@ -4,7 +4,7 @@ use std::{fs, io};
 use nalgebra::Vector3;
 use serde_json::Value;
 
-use crate::data::{SimulationConfig, TimeIterationDistance};
+use crate::data::{NeighborCutoff, SimulationConfig, TimeIterationDistance};
 use crate::data::units::{R_U, TIME_U, ValueUnits};
 use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use super::integration_algorithm_file::IntegrationAlgorithmFile;
@@ -105,6 +105,7 @@ pub struct SimulationConfigFile {
   /// configs that don't use this particle type.
   #[serde(default = "default_alpha")]
   pub alpha: f64,
+  pub neighbor_cutoff: NeighborCutoff,
 }
 
 fn default_alpha() -> f64 {
@@ -135,6 +136,7 @@ impl SimulationConfigFile {
       edge_condition: EdgeConditionFile::from_runtime(config.edge_condition),
       optimization: config.optimization,
       alpha: config.alpha,
+      neighbor_cutoff: config.neighbor_cutoff,
     };
 
     unitless.to_value_units(target_units)
@@ -175,6 +177,17 @@ impl SimulationConfigFile {
       );
     }
 
+    if let NeighborCutoff::Enabled { threshold } = unitless.neighbor_cutoff {
+      if threshold <= 0.0 {
+        return Err(io::Error::new(
+          io::ErrorKind::InvalidData,
+          format!(
+            "neighbor_cutoff Enabled threshold must be > 0, got {threshold}"
+          ),
+        ));
+      }
+    }
+
     Ok(SimulationConfig::new(
       unitless.world_size,
       gravity_schedule,
@@ -187,6 +200,7 @@ impl SimulationConfigFile {
       unitless.edge_condition.to_runtime(),
       unitless.optimization,
       unitless.alpha,
+      unitless.neighbor_cutoff,
     ))
   }
 
@@ -237,6 +251,7 @@ impl SimulationConfigFile {
       edge_condition: self.edge_condition,
       optimization: self.optimization,
       alpha: self.alpha,
+      neighbor_cutoff: self.neighbor_cutoff,
     }
   }
 

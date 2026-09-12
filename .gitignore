@@ -9,3 +9,6 @@ perf.data
 profile.json.gz
 md_fec.cpp
 **/__pycache__/
+
+*.tex
+*.parquet

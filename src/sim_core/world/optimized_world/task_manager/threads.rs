@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 use std::thread::JoinHandle;
 
+use crate::sim_core::world::cell::FixedPositionParticle;
 use crate::sim_core::world::computation::FP;
 use crate::sim_core::world::optimized_world::handle_task::{
   handle_force_batch_task, handle_velocity_batch_task,
@@ -13,6 +14,7 @@ use crate::sim_core::world::optimized_world::optimized_task::{OptimizedResult, O
 pub struct Worker {
   pub fp: Vec<FP>,
   pub gradients_cache: Vec<Vector3<f64>>,
+  pub neighbors: Vec<FixedPositionParticle>,
 }
 
 impl Worker {
@@ -20,6 +22,7 @@ impl Worker {
     Worker {
       fp: vec![FP { force: Vector3::zeros(), potential_energy: 0. }; num_atoms],
       gradients_cache: vec![Vector3::zeros(); num_atoms],
+      neighbors: Vec::new(),
     }
   }
 }
@@ -60,13 +63,15 @@ fn worker_task_handle(
           result_tx.send(OptimizedResult::VelocityResult(velocity_result)).unwrap();
         }
 
-        OptimizedTask::ForceBatchTask { task_id, cell_ids, integration_cache } => {
+        OptimizedTask::ForceBatchTask { task_id, cell_ids, integration_cache, neighbor_cutoff } => {
           let force_result = handle_force_batch_task(
             task_id,
             &*cell_ids,
             &integration_cache,
             &mut worker.fp,
             &mut worker.gradients_cache,
+            &mut worker.neighbors,
+            neighbor_cutoff,
           );
           result_tx.send(OptimizedResult::ForceResult(force_result)).unwrap();
         }

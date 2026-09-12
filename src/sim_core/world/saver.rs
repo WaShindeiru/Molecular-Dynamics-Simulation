@@ -12,12 +12,17 @@ use csv::Writer;
 use std::fs::{self, File, OpenOptions};
 
 mod boxed_world;
+mod energy_frame;
 mod simple_world;
+
+pub use energy_frame::FrameReduce;
+use energy_frame::EnergyFrameAccumulator;
 
 #[derive(Clone, Copy)]
 pub struct FrameSamplingConfig {
   pub one_frame_duration: f64,
   pub frame_iteration_count: usize,
+  pub reduce: FrameReduce,
 }
 
 impl FrameSamplingConfig {
@@ -46,6 +51,7 @@ impl FrameSamplingConfig {
     FrameSamplingConfig {
       one_frame_duration,
       frame_iteration_count,
+      reduce: FrameReduce::Snapshot,
     }
   }
 }
@@ -55,6 +61,7 @@ impl Default for FrameSamplingConfig {
     FrameSamplingConfig {
       one_frame_duration: 1e-16,
       frame_iteration_count: 1,
+      reduce: FrameReduce::Snapshot,
     }
   }
 }
@@ -110,6 +117,7 @@ pub struct PartialWorldSaver {
   p_control_energy_total: f64,
   laamps_frame_iteration_count_current_iteration: usize,
   energy_frame_iteration_count_current_iteration: usize,
+  energy_frame_accumulator: EnergyFrameAccumulator,
   periodic_save_iteration_count: usize,
 
   velocity_heap: VelocityHeap,
@@ -127,6 +135,7 @@ impl PartialWorldSaver {
       p_control_energy_total: 0.,
       laamps_frame_iteration_count_current_iteration: 0,
       energy_frame_iteration_count_current_iteration: 0,
+      energy_frame_accumulator: EnergyFrameAccumulator::default(),
       periodic_save_iteration_count: 0,
       velocity_heap,
       save_options,
@@ -142,6 +151,8 @@ impl PartialWorldSaver {
   }
 
   pub fn persist_velocity_particles(&mut self) -> io::Result<()> {
+    self.flush_energy_frame_mean()?;
+
     let dir = Path::new(&self.save_options.save_path).join("particles");
     fs::create_dir_all(&dir)?;
 
