@@ -1,4 +1,4 @@
-use crate::data::{ParticleConfig, SimulationConfig, config::ConfigAll};
+use crate::data::{NeighborCutoff, ParticleConfig, SimulationConfig, config::ConfigAll};
 use crate::particle::Particle;
 use crate::sim_core::world::WorldType;
 use crate::sim_core::world::boundary_constraint::EdgeCondition;
@@ -29,6 +29,7 @@ pub struct SimulationConfigBuilder {
   world_type: Option<WorldType>,
   edge_condition: Option<EdgeCondition>,
   alpha: Option<f64>,
+  neighbor_cutoff: Option<NeighborCutoff>,
 }
 
 impl SimulationConfigBuilder {
@@ -52,6 +53,7 @@ impl SimulationConfigBuilder {
       world_type: None,
       edge_condition: None,
       alpha: None,
+      neighbor_cutoff: None,
     }
   }
 
@@ -147,6 +149,11 @@ impl SimulationConfigBuilder {
 
   pub fn alpha(mut self, alpha: f64) -> Self {
     self.alpha = Some(alpha);
+    self
+  }
+
+  pub fn neighbor_cutoff(mut self, neighbor_cutoff: NeighborCutoff) -> Self {
+    self.neighbor_cutoff = Some(neighbor_cutoff);
     self
   }
 
@@ -294,6 +301,7 @@ impl SimulationConfigBuilder {
       }),
       false,
       self.alpha.unwrap_or(1e-3),
+      self.neighbor_cutoff.unwrap_or(NeighborCutoff::Enabled { threshold: 1e-10 }),
     ))
   }
 

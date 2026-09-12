@@ -5,6 +5,6 @@ pub mod units;
 
 pub use config::ConfigAll;
 pub use config::particle_config::ParticleConfig;
-pub use config::simulation_config::SimulationConfig;
+pub use config::simulation_config::{NeighborCutoff, SimulationConfig};
 pub use types::{InteractionType, TimeIterationDistance};
 pub use units::ValueUnits;

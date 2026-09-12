@@ -63,7 +63,7 @@ fn worker_task_handle(
           result_tx.send(OptimizedResult::VelocityResult(velocity_result)).unwrap();
         }
 
-        OptimizedTask::ForceBatchTask { task_id, cell_ids, integration_cache } => {
+        OptimizedTask::ForceBatchTask { task_id, cell_ids, integration_cache, neighbor_cutoff } => {
           let force_result = handle_force_batch_task(
             task_id,
             &*cell_ids,
@@ -71,6 +71,7 @@ fn worker_task_handle(
             &mut worker.fp,
             &mut worker.gradients_cache,
             &mut worker.neighbors,
+            neighbor_cutoff,
           );
           result_tx.send(OptimizedResult::ForceResult(force_result)).unwrap();
         }

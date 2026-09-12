@@ -7,6 +7,15 @@ use crate::sim_core::world::thermostat::IntegrationAlgorithm;
 use crate::sim_core::world::saver::SaveOptions;
 use nalgebra::Vector3;
 
+/// Brenner `fc` neighbor filter for OptimizedWorld force computation.
+/// Threshold is dimensionless (`fc` is in `[0, 1]`).
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
+pub enum NeighborCutoff {
+  Disabled,
+  Enabled { threshold: f64 },
+}
+
 #[derive(Clone)]
 pub struct SimulationConfig {
   pub world_size: Vector3<f64>,
@@ -21,6 +30,7 @@ pub struct SimulationConfig {
   pub optimization: bool,
   /// P-controller gain for VelocityControlledParticle (OptimizedWorld only).
   pub alpha: f64,
+  pub neighbor_cutoff: NeighborCutoff,
 }
 
 impl SimulationConfig {
@@ -36,6 +46,7 @@ impl SimulationConfig {
     edge_condition: EdgeCondition,
     optimization: bool,
     alpha: f64,
+    neighbor_cutoff: NeighborCutoff,
   ) -> Self {
     SimulationConfig {
       world_size,
@@ -49,6 +60,7 @@ impl SimulationConfig {
       edge_condition,
       optimization,
       alpha,
+      neighbor_cutoff,
     }
   }
 

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use nalgebra::Vector3;
 
+use crate::data::NeighborCutoff;
 use crate::data::constants::get_constants;
 use crate::data::types::get_interaction_type;
 use crate::particle::potential::b::g;
@@ -19,10 +20,6 @@ use crate::sim_core::world::computation::FP;
 use crate::utils::math::cos_from_vec;
 use crate::sim_core::world::computation::compute_thermostat_force_work;
 
-/// Same cutoff used by `crate::particle::potential::compute_forces_potential`: `fc == 0`
-/// beyond `R+D`, so this only drops a numerically negligible sliver of the transition.
-const FC_CUTOFF: f64 = 1e-10;
-
 /// Same physics as `crate::sim_core::world::computation::compute_forces_potential`, but
 /// operating on plain `{id, position}` pairs (already periodic-adjusted, see
 /// `LinkedCellContainer::atoms_for_cell_fixed`/`neighbour_atoms_periodic_fixed_positions`)
@@ -31,8 +28,9 @@ const FC_CUTOFF: f64 = 1e-10;
 /// per-call `Vec` re-clone of the interaction-partner set, which the trait-object version pays
 /// for on every `(i, j)` pair via `particles_j.clone().into_iter()`.
 ///
-/// For each `i`, partners in the 27-cell stencil are filtered to those with `fc_ij > 0`
-/// before the Brenner `(j, k)` loops — same neighbor skip as `particle::potential`.
+/// For each `i`, partners in the 27-cell stencil are collected into `neighbors` (skipping `i`
+/// itself). `NeighborCutoff::Enabled` then keeps only pairs with `fc_ij >= threshold`;
+/// `Disabled` keeps the full stencil.
 pub fn compute_forces_potential(
   particles_i: &[FixedPositionParticle],
   particles_j: &[FixedPositionParticle],
@@ -40,6 +38,7 @@ pub fn compute_forces_potential(
   fp: &mut Vec<FP>,
   gradients_cache: &mut Vec<Vector3<f64>>,
   neighbors: &mut Vec<FixedPositionParticle>,
+  neighbor_cutoff: NeighborCutoff,
 ) -> f64 {
   let zero_fp = FP { force: Vector3::zeros(), potential_energy: 0. };
 
@@ -58,13 +57,17 @@ pub fn compute_forces_potential(
       if j.id == i_id {
         continue;
       }
-      let j_type = container.particles().get(j.id).unwrap().get_type();
-      let c_ij = get_constants(&get_interaction_type(&i_type, &j_type));
-      let r_ij_mag = (j.position - i.position).magnitude();
-      if fc(r_ij_mag, c_ij.R, c_ij.D) < FC_CUTOFF {
-        continue;
+      match neighbor_cutoff {
+        NeighborCutoff::Disabled => neighbors.push(*j),
+        NeighborCutoff::Enabled { threshold } => {
+          let j_type = container.particles().get(j.id).unwrap().get_type();
+          let c_ij = get_constants(&get_interaction_type(&i_type, &j_type));
+          let r_ij_mag = (j.position - i.position).magnitude();
+          if fc(r_ij_mag, c_ij.R, c_ij.D) >= threshold {
+            neighbors.push(*j);
+          }
+        }
       }
-      neighbors.push(*j);
     }
 
     for j in neighbors.iter() {

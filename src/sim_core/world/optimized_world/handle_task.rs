@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use nalgebra::Vector3;
 
+use crate::data::NeighborCutoff;
 use crate::sim_core::world::boundary_constraint::{Compliance, EdgeCondition, ParticleCompliance};
 use crate::sim_core::world::boxed_world::box_task::handle_task::handle_partial_velocity_step::apply_velocity_constraint;
 use crate::sim_core::world::boxed_world::box_task::{
@@ -139,6 +140,7 @@ pub fn handle_force_batch_task(
   fp: &mut Vec<FP>,
   gradients_cache: &mut Vec<Vector3<f64>>,
   neighbors: &mut Vec<FixedPositionParticle>,
+  neighbor_cutoff: NeighborCutoff,
 ) -> ForceTaskResult {
   let mut particles: HashMap<usize, ForceTaskParticleData> = HashMap::new();
   let mut potential_energy_total = 0.0f64;
@@ -157,6 +159,7 @@ pub fn handle_force_batch_task(
       fp,
       gradients_cache,
       neighbors,
+      neighbor_cutoff,
     );
     potential_energy_total += potential_energy;
 

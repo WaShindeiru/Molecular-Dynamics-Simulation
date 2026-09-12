@@ -70,5 +70,8 @@
     "type": "Periodic",
     "split": true,
     "trigger_small_subtask_size": 100
+  },
+  "neighbor_cutoff": {
+    "type": "Disabled"
   }
 }

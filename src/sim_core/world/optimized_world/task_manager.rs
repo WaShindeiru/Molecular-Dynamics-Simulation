@@ -131,6 +131,7 @@ impl TaskManager {
         task_id: *task_id,
         cell_ids: Arc::clone(cell_ids),
         integration_cache: Arc::clone(&read_container),
+        neighbor_cutoff: self.simulation_config.neighbor_cutoff,
       };
       self.tx_task.send(task).unwrap();
     }
