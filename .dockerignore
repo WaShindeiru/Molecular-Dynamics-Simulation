@@ -1,0 +1,15 @@
+/target
+/output
+/validation
+/.idea
+/.agents
+/.codex
+.git
+**/.idea
+**/__pycache__/
+*.parquet
+*.png
+*.tex
+perf.data
+profile.json.gz
+md_fec.cpp

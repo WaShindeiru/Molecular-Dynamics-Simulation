@@ -1,0 +1,17 @@
+# Bind-mount your experiment directory (parameters.json, particles_initial.json,
+# and results) to /data in the container.
+#
+#   DATA_DIR=/path/to/experiments docker compose run --rm md
+#
+# In parameters.json set save_options.save_path to a path under /data
+# (for example "/data/results/" or "/data/"). Host-absolute paths will not exist
+# inside the container unless they are the same as this mount.
+
+services:
+  md:
+    build: .
+    working_dir: /data
+    volumes:
+      - type: bind
+        source: ${DATA_DIR:?Set DATA_DIR to the host directory with parameters.json}
+        target: /data
