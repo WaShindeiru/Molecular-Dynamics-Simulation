@@ -19,9 +19,8 @@ REPEATS = [1]
 
 def particle_counts() -> list[int]:
   """50, 100, 250, 500, then every 250 up to 7000."""
-  # counts = [50, 100, 250, 500]
-  counts = []
-  n = 2250
+  counts = [50, 100, 250, 500]
+  n = 750
   while n <= 7000:
     counts.append(n)
     n += 250
