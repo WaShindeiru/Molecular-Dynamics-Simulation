@@ -28,11 +28,11 @@ pub struct IntegrationCacheBuilder {
 }
 
 impl IntegrationCacheBuilder {
-  pub fn new(old: Arc<LinkedCellContainer>) -> Self {
+  pub fn new(old: &LinkedCellContainer) -> Self {
     let num_particles = old.particles().len();
     IntegrationCacheBuilder {
-      local_container: LinkedCellContainer::metadata_clone(&old),
-      read_container: LinkedCellContainer::metadata_clone(&old),
+      local_container: LinkedCellContainer::metadata_clone(old),
+      read_container: LinkedCellContainer::metadata_clone(old),
       half_velocity: vec![Vector3::zeros(); num_particles],
       particle_compliance: vec![placeholder_compliance(); num_particles],
     }

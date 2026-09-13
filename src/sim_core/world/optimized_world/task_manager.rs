@@ -78,7 +78,6 @@ impl TaskManager {
       .expect("split_into_tasks must be called before half_velocity_step");
 
     let num_tasks = mapping.len();
-    let mut builder = IntegrationCacheBuilder::new(Arc::clone(&container));
 
     for (task_id, cell_ids) in mapping {
       let task = OptimizedTask::VelocityBatchTask {
@@ -93,6 +92,8 @@ impl TaskManager {
       self.tx_task.send(task).unwrap();
     }
 
+    let mut builder = IntegrationCacheBuilder::new(container.as_ref());
+    
     for _ in 0..num_tasks {
       match self.rx_result.recv_timeout(Duration::from_secs(20)) {
         Ok(OptimizedResult::VelocityResult(result)) => {
