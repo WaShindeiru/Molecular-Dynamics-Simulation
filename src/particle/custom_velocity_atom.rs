@@ -166,6 +166,29 @@ impl CustomVelocityAtom {
     }
   }
 
+  pub fn reset_clone_full(&self) -> CustomVelocityAtom {
+    CustomVelocityAtom {
+      id: self.id,
+      iteration: self.iteration,
+      type_: self.type_,
+      mass: self.mass,
+
+      position: Vector3::zeros(),
+      velocity: Vector3::zeros(),
+
+      acceleration: Vector3::zeros(),
+      force: Vector3::zeros(),
+
+      kinetic_energy: 0.0,
+      potential_energy: 0.0,
+      thermostat_work: 0.0,
+      potential_gravity_energy: 0.0,
+
+      ignore_edge_conditions: self.ignore_edge_conditions,
+      particle_velocity_manager_id: self.particle_velocity_manager_id,
+    }
+  }
+
   pub fn to_transfer_struct(&self) -> AtomDTO {
     AtomDTO {
       id: self.id,

@@ -228,6 +228,15 @@ impl Particle {
       Particle::VelocityControlledParticle(p) => Particle::VelocityControlledParticle(p.reset_clone()),
     }
   }
+
+  pub fn reset_clone_full(&self) -> Particle {
+    match self {
+      Particle::Atom(atom) => Particle::Atom(atom.reset_clone_full()),
+      Particle::CustomPathAtom(p) => Particle::CustomPathAtom(p.reset_clone_full()),
+      Particle::CustomVelocityAtom(p) => Particle::CustomVelocityAtom(p.reset_clone_full()),
+      Particle::VelocityControlledParticle(p) => Particle::VelocityControlledParticle(p.reset_clone_full()),
+    }
+  }
 }
 
 impl AsRef<Particle> for Particle {

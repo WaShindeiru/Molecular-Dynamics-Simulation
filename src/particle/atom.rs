@@ -137,6 +137,26 @@ impl Atom {
     }
   }
 
+  pub fn reset_clone_full(&self) -> Atom {
+    Atom {
+      id: self.id,
+      iteration: self.iteration,
+      type_: self.type_,
+      mass: self.mass,
+
+      position: Vector3::new(0., 0., 0.),
+      velocity: Vector3::new(0., 0., 0.), // TODO: reconsider this
+
+      acceleration: Vector3::new(0., 0., 0.),
+      force: Vector3::new(0., 0., 0.),
+
+      kinetic_energy: 0.0,
+      potential_energy: 0.,
+      thermostat_work: 0.,
+      potential_gravity_energy: 0.,
+    }
+  }
+
   pub fn to_transfer_struct(&self) -> AtomDTO {
     AtomDTO {
       id: self.id,

@@ -95,6 +95,30 @@ impl LinkedCellContainer {
     }
   }
 
+  /// Like `new_empty`, but each slot is a `reset_clone_full` of the corresponding source
+  /// particle (correct variant and identity, dynamics zeroed) instead of a dummy atom.
+  /// Particles are not placed into cells; `present` stays false until
+  /// `update_for_velocity_step` (or `add_particle`) records a real result.
+  pub fn metadata_clone(source: &LinkedCellContainer) -> Self {
+    let num_particles = source.particles.len();
+    let config = source.config;
+    let edge_condition = source.edge_condition;
+    let (mx, my, mz) = (
+      config.box_count_dim.x,
+      config.box_count_dim.y,
+      config.box_count_dim.z,
+    );
+    LinkedCellContainer {
+      header: Cube::new_with_value(mx, my, mz, -1i32),
+      link: vec![-1i32; num_particles],
+      cell: vec![Vector3::new(-1, -1, -1); num_particles],
+      particles: source.particles.iter().map(|p| p.reset_clone_full()).collect(),
+      present: vec![false; num_particles],
+      config,
+      edge_condition,
+    }
+  }
+
   /// Builds a container directly from a complete particle list (does not place particles into
   /// cells — call `sort()` afterward if cell membership is needed).
   pub fn new(particles: Vec<Particle>, config: BoxContainerConfig, edge_condition: EdgeCondition) -> Self {
@@ -124,19 +148,41 @@ impl LinkedCellContainer {
     }
   }
 
-  pub fn add_particle(&mut self, particle: Particle) {
-    let id = particle.get_id();
-    debug_assert!(self.link[id] == -1, "particle {} already sorted", id);
-    debug_assert!(!self.present[id], "particle {} already present", id);
-
-    let coords = self.config.box_coordinates_for_position(particle.get_position());
+  fn insert_into_cell(&mut self, id: usize) {
+    let coords = self.config.box_coordinates_for_position(self.particles[id].get_position());
     let (kx, ky, kz) = (coords.x, coords.y, coords.z);
 
     let old_head = *self.header.get(kx, ky, kz).unwrap();
     self.link[id] = old_head;
     self.header.set(kx, ky, kz, id as i32).unwrap();
     self.cell[id] = Vector3::new(coords.x as i32, coords.y as i32, coords.z as i32);
+  }
+
+  pub fn add_particle(&mut self, particle: Particle) {
+    let id = particle.get_id();
+    debug_assert!(self.link[id] == -1, "particle {} already sorted", id);
+    debug_assert!(!self.present[id], "particle {} already present", id);
+
     self.particles[id] = particle;
+    self.insert_into_cell(id);
+    self.present[id] = true;
+  }
+
+  /// Applies a velocity-step result in place: next iteration, thermostat work, new position,
+  /// then cell membership from the updated position. Slot must come from `metadata_clone`
+  /// (not yet present / not yet linked).
+  pub fn update_for_velocity_step(&mut self, id: usize, new_position: Vector3<f64>, thermostat_work: f64) {
+    debug_assert!(self.link[id] == -1, "particle {} already sorted", id);
+    debug_assert!(!self.present[id], "particle {} already present", id);
+
+    {
+      let particle = &mut self.particles[id];
+      particle.set_iteration(particle.get_iteration() + 1);
+      particle.set_thermostat_work(thermostat_work);
+      particle.update_position(new_position);
+    }
+
+    self.insert_into_cell(id);
     self.present[id] = true;
   }
 

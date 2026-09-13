@@ -21,7 +21,6 @@ fn placeholder_compliance() -> ParticleCompliance {
 }
 
 pub struct IntegrationCacheBuilder {
-  old: Arc<LinkedCellContainer>,
   local_container: LinkedCellContainer,
   read_container: LinkedCellContainer,
   half_velocity: Vec<Vector3<f64>>,
@@ -31,14 +30,11 @@ pub struct IntegrationCacheBuilder {
 impl IntegrationCacheBuilder {
   pub fn new(old: Arc<LinkedCellContainer>) -> Self {
     let num_particles = old.particles().len();
-    let config = *old.config();
-    let edge_condition = old.edge_condition();
     IntegrationCacheBuilder {
-      local_container: LinkedCellContainer::new_empty(num_particles, config, edge_condition),
-      read_container: LinkedCellContainer::new_empty(num_particles, config, edge_condition),
+      local_container: LinkedCellContainer::metadata_clone(&old),
+      read_container: LinkedCellContainer::metadata_clone(&old),
       half_velocity: vec![Vector3::zeros(); num_particles],
       particle_compliance: vec![placeholder_compliance(); num_particles],
-      old,
     }
   }
 
@@ -47,12 +43,8 @@ impl IntegrationCacheBuilder {
       self.half_velocity[id] = data.half_velocity;
       self.particle_compliance[id] = data.compliance;
 
-      let particle = &self.old.particles()[id];
-      let mut new_particle = particle.reset_clone();
-      new_particle.update_position(data.new_position);
-      new_particle.set_thermostat_work(data.thermostat_work);
-      self.local_container.add_particle(new_particle.clone());
-      self.read_container.add_particle(new_particle);
+      self.local_container.update_for_velocity_step(id, data.new_position, data.thermostat_work);
+      self.read_container.update_for_velocity_step(id, data.new_position, data.thermostat_work);
     }
   }
 
