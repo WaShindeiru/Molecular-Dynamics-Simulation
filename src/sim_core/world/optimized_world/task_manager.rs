@@ -55,9 +55,9 @@ impl TaskManager {
   }
 
   pub fn split_into_tasks_multiplier(&mut self, container: &LinkedCellContainer) {
-    assert!(self.task_cell_mapping.is_none());
+    debug_assert!(self.task_cell_mapping.is_none());
     let num_of_tasks = (self.num_workers as f64 * self.task_worker_multiplier).floor() as usize;
-    self.task_cell_mapping = Some(self.task_splitter.split(num_of_tasks, container.config()));
+    self.task_cell_mapping = Some(self.task_splitter.split(num_of_tasks.max(1), container.config()));
   }
 
   pub fn task_cell_mapping(&self) -> Option<&HashMap<usize, Arc<Vec<usize>>>> {

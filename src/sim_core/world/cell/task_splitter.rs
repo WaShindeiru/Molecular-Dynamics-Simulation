@@ -26,6 +26,7 @@ impl TaskSplitter {
     num_of_tasks: usize,
     config: &BoxContainerConfig,
   ) -> HashMap<usize, Arc<Vec<usize>>> {
+    let num_of_tasks = num_of_tasks.max(1);
     match self.variant {
       TaskSplitVariant::Floor => Self::split_floor(num_of_tasks, config),
       TaskSplitVariant::FloorBox { x, y } => Self::split_boxes(num_of_tasks, config, x, y),
@@ -36,6 +37,7 @@ impl TaskSplitter {
     num_of_tasks: usize,
     config: &BoxContainerConfig,
   ) -> HashMap<usize, Arc<Vec<usize>>> {
+    let num_of_tasks = num_of_tasks.max(1);
     let nx = config.box_count_dim.x;
     let ny = config.box_count_dim.y;
     let nz = config.box_count_dim.z;
@@ -78,6 +80,10 @@ impl TaskSplitter {
     let nz = config.box_count_dim.z;
 
     let num_of_tasks_per_floor = x_splits * y_splits;
+    debug_assert!(
+      num_of_tasks_per_floor >= 1,
+      "FloorBox x and y splits must be >= 1 (got x={x_splits}, y={y_splits})"
+    );
     // Integer division can be 0 when num_of_tasks < x*y (e.g. a 1-core run).
     // Keep at least one floor so every cell is assigned.
     let num_of_floors = (num_of_tasks / num_of_tasks_per_floor).max(1);
@@ -215,14 +221,14 @@ mod tests {
     assert_eq!(all_ids, expected_all, "every cell must be assigned exactly once");
   }
 
-  // Fewer tasks than one FloorBox floor: 3x2 = 6 tasks/floor, but only 3 requested.
-  // Must still produce one full floor covering every cell (no divide-by-zero).
+  // Fewer tasks than one FloorBox floor: 3x2 = 6 tasks/floor, but only 1 requested
+  // (1-core run). Must still produce one full floor covering every cell.
   #[test]
   fn split_boxes_uses_one_floor_when_too_few_tasks() {
     let box_count_dim = Vector3::new(7, 4, 5);
     let config = make_config(box_count_dim);
 
-    let mapping = TaskSplitter::split_boxes(3, &config, 3, 2);
+    let mapping = TaskSplitter::split_boxes(1, &config, 3, 2);
 
     assert_eq!(mapping.len(), 6);
 
