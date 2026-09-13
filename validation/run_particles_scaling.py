@@ -99,7 +99,7 @@ def main() -> int:
     print(f"binary missing: {BIN}", file=sys.stderr)
     return 1
 
-  counts = args.only if args.only is not None else particle_counts()
+  counts = particle_counts()
   print(f"particle counts ({len(counts)}): {counts}")
 
   for n in counts:
