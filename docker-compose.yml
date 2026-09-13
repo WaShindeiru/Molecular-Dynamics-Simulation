@@ -1,7 +1,10 @@
-# Bind-mount your experiment directory (parameters.json, particles_initial.json,
-# and results) to /data in the container.
+# Bind-mount your experiment directory to /data in the container.
 #
+# Single run (parameters.json + particles_initial.json):
 #   DATA_DIR=/path/to/experiments docker compose run --rm md
+#
+# Particle-count scaling (expects DATA_DIR/test/{parameters.json,generator_config.json}):
+#   DATA_DIR=/path/to/particles-scaling docker compose run --rm particles-scaling
 #
 # In parameters.json set save_options.save_path to a path under /data
 # (for example "/data/results/" or "/data/"). Host-absolute paths will not exist
@@ -13,5 +16,18 @@ services:
     working_dir: /data
     volumes:
       - type: bind
-        source: ${DATA_DIR:?Set DATA_DIR to the host directory with parameters.json}
+        source: ${DATA_DIR:?Set DATA_DIR to the host experiment directory}
+        target: /data
+
+  particles-scaling:
+    build: .
+    working_dir: /data
+    entrypoint: ["python3", "/app/validation/run_particles_scaling.py"]
+    environment:
+      SRC: /data/test
+      BASE: /data
+      BIN: /app/target/release/carbon_nanotube
+    volumes:
+      - type: bind
+        source: ${DATA_DIR:?Set DATA_DIR to the host experiment directory}
         target: /data

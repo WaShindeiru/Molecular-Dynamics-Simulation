@@ -11,9 +11,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-SRC = Path("/mnt/7E442D59442D1585/md/paper/exp/particles-scaling/test")
-BASE = Path("/mnt/7E442D59442D1585/md/paper/exp/particles-scaling")
-BIN = Path("/home/washindeiru/studia/sem9/md/carbon_nanotube/target/release/carbon_nanotube")
+SRC = Path(os.environ.get("SRC", "/mnt/7E442D59442D1585/md/paper/exp/particles-scaling/test"))
+BASE = Path(os.environ.get("BASE", "/mnt/7E442D59442D1585/md/paper/exp/particles-scaling"))
+BIN = Path(os.environ.get("BIN", "/home/washindeiru/studia/sem9/md/carbon_nanotube/target/release/carbon_nanotube"))
 REPEATS = [1]
 
 

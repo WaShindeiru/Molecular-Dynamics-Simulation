@@ -39,7 +39,8 @@ run_repeats() {
   done
 }
 
-run_repeats 11 "0-11"
-# run_repeats 0 "0-0"
+for ((i = 11; i >= 0; i--)); do
+  run_repeats "$i" "0-$i"
+done
 
 echo "=== all runs finished ==="

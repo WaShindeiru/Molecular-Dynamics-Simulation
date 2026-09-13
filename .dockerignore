@@ -1,6 +1,6 @@
 /target
 /output
-/validation
+/validation/*.ipynb
 /.idea
 /.agents
 /.codex
