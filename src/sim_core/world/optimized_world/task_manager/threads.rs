@@ -93,7 +93,7 @@ pub fn create_threads(
   let num_workers = if debug {
     1
   } else {
-    thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
+    thread::available_parallelism().map(|n| n.get() - 1).unwrap_or(1)
   };
   log::info!("Using {num_workers} threads.");
 
